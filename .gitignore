@@ -1,0 +1,29 @@
+node_modules/
+dist/
+.next/
+build/
+*.tsbuildinfo
+.expo/
+.turbo/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Expo
+.expo-shared/

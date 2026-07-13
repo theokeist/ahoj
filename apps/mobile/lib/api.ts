@@ -1,0 +1,119 @@
+import axios from "axios";
+import Constants from "expo-constants";
+import { useAuthStore } from "../store";
+
+const API_URL =
+  Constants.expoConfig?.extra?.API_URL ?? "http://localhost:3000";
+
+export const api = axios.create({
+  baseURL: API_URL,
+  timeout: 10_000,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+// Request interceptor — attach Bearer token
+api.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().accessToken;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Response interceptor — refresh token on 401
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        const { data } = await axios.post(
+          `${API_URL}/auth/refresh`,
+          {},
+          { withCredentials: true }
+        );
+
+        useAuthStore.getState().updateToken(data.accessToken);
+        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+        return api(originalRequest);
+      } catch {
+        useAuthStore.getState().logout();
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+// ─── API functions ────────────────────────────────────────────────────────────
+
+export const authApi = {
+  register: (body: {
+    username: string;
+    email: string;
+    password: string;
+    dateOfBirth: string;
+  }) => api.post("/auth/register", body).then((r) => r.data),
+
+  login: (body: { email: string; password: string }) =>
+    api.post("/auth/login", body).then((r) => r.data),
+
+  logout: () => api.post("/auth/logout").then((r) => r.data),
+};
+
+export const feedApi = {
+  getProximityFeed: (params: {
+    lat: number;
+    lng: number;
+    radius?: number;
+    limit?: number;
+    cursor?: string;
+  }) => api.get("/feed", { params }).then((r) => r.data),
+};
+
+export const storiesApi = {
+  getUserStories: (userId: string) =>
+    api.get(`/stories/${userId}`).then((r) => r.data),
+
+  markViewed: (storyId: string) =>
+    api.post(`/stories/${storyId}/view`).then((r) => r.data),
+
+  uploadStory: (body: { mediaUrl: string; mediaType: "IMAGE" | "VIDEO" }) =>
+    api.post("/stories", body).then((r) => r.data),
+};
+
+export const usersApi = {
+  getMe: () => api.get("/users/me").then((r) => r.data),
+  getUser: (id: string) => api.get(`/users/${id}`).then((r) => r.data),
+  updateProfile: (body: object) =>
+    api.put("/users/me", body).then((r) => r.data),
+  updateMessage: (message: string) =>
+    api.put("/users/me/message", { message }).then((r) => r.data),
+  updateLocation: (lat: number, lng: number) =>
+    api.put("/users/me/location", { lat, lng }).then((r) => r.data),
+};
+
+export const chatsApi = {
+  getChats: () => api.get("/chats").then((r) => r.data),
+  createChat: (participantId: string) =>
+    api.post("/chats", { participantId }).then((r) => r.data),
+  getMessages: (chatId: string, cursor?: string) =>
+    api
+      .get(`/chats/${chatId}/messages`, { params: { cursor } })
+      .then((r) => r.data),
+  sendMessage: (chatId: string, content: string, type = "TEXT") =>
+    api.post(`/chats/${chatId}/messages`, { content, type }).then((r) => r.data),
+};
+
+export const accessRequestsApi = {
+  request: (targetId: string) =>
+    api.post(`/access-requests/${targetId}`).then((r) => r.data),
+  getIncoming: () => api.get("/access-requests/incoming").then((r) => r.data),
+  respond: (requestId: string, status: "APPROVED" | "DENIED") =>
+    api.put(`/access-requests/${requestId}`, { status }).then((r) => r.data),
+};
