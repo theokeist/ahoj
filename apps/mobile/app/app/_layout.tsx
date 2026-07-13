@@ -17,6 +17,7 @@ export default function AppLayout() {
       <Stack.Screen name="user/[id]" options={{ presentation: "card" }} />
       <Stack.Screen name="story/[userId]" options={{ presentation: "fullScreenModal", animation: "fade" }} />
       <Stack.Screen name="story/create" options={{ presentation: "modal" }} />
+      <Stack.Screen name="chat/[id]" options={{ presentation: "card" }} />
     </Stack>
   );
 }

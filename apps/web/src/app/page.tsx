@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { MapPin, Shield, MessageSquare, Flame, Sparkles, User, Lock, Unlock, Compass, Smartphone, Monitor } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { MapPin, Shield, MessageSquare, Flame, Sparkles, User, Lock, Unlock, Compass, Smartphone, Send } from "lucide-react";
 
 // Mock users for the web simulator
 const MOCK_NEARBY_USERS = [
@@ -15,10 +15,14 @@ const MOCK_NEARBY_USERS = [
       "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&q=80&w=600",
       "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=600"
     ],
-    bio: "Miluju hory, kafe a spontánní výlety. Hledám lidi se stejnou energií!",
+    bio: "Miluju hory, kafe a spontánní výlety. Hledám lidi se stejnou energii!",
     privacyMode: "PUBLIC",
     avatarColor: "bg-pink-500",
-    initial: "N"
+    initial: "N",
+    replyTemplates: [
+      "Ahoj! Zrovna balím batoh na víkend, plánuju Sněžku. Přidáš se? 🏔️",
+      "Výlety plánuju většinou spontánně. Co máš v plánu ty?"
+    ]
   },
   {
     id: "2",
@@ -32,7 +36,11 @@ const MOCK_NEARBY_USERS = [
     bio: "Pojďme na rychlé espresso a probrat cokoli. Brno střecha?",
     privacyMode: "PUBLIC",
     avatarColor: "bg-blue-500",
-    initial: "K"
+    initial: "K",
+    replyTemplates: [
+      "Ahoj! Zrovna sedím v kavárně za rohem. Mají tu skvělou Keňu, stav se! ☕",
+      "Espresso je základ! Kdy máš čas?"
+    ]
   },
   {
     id: "3",
@@ -43,10 +51,14 @@ const MOCK_NEARBY_USERS = [
     stories: [
       "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=600"
     ],
-    bio: "Techno, vinyls and late night talks. Requester gets full access.",
+    bio: "Techno, vinyls and late night talks.",
     privacyMode: "PRIVATE",
     avatarColor: "bg-purple-600",
-    initial: "S"
+    initial: "S",
+    replyTemplates: [
+      "Čau, díky za zprávu! Ten klub večer otvírá v 10. Lístky ještě jsou! 🎧",
+      "Hraju hlavně industrial techno. Co posloucháš ty?"
+    ]
   },
   {
     id: "4",
@@ -58,16 +70,43 @@ const MOCK_NEARBY_USERS = [
     bio: "Design student. Drawing people and cities. Catch me nearby.",
     privacyMode: "PUBLIC",
     avatarColor: "bg-yellow-500",
-    initial: "E"
+    initial: "E",
+    replyTemplates: [
+      "Ahoj! Kreslím zrovna stromy v parku pod hradem, vezmi si skicák a přijď! 🎨",
+      "Používám hlavně uhel a akvarel. Zkoušíš taky?"
+    ]
   }
 ];
+
+type Message = {
+  id: string;
+  sender: "me" | "partner";
+  text: string;
+  timestamp: string;
+};
 
 export default function Home() {
   const [selectedUser, setSelectedUser] = useState<typeof MOCK_NEARBY_USERS[0] | null>(null);
   const [activeStoryIdx, setActiveStoryIdx] = useState(0);
   const [currentRadius, setCurrentRadius] = useState(2); // km
-  const [privacyDemo, setPrivacyDemo] = useState<"PUBLIC" | "PRIVATE">("PUBLIC");
   const [storyProgress, setStoryProgress] = useState(0);
+
+  // Private profile access simulation states
+  const [privateUnlocked, setPrivateUnlocked] = useState<Record<string, boolean>>({});
+  const [pendingRequests, setPendingRequests] = useState<Record<string, "NONE" | "PENDING" | "APPROVED">>({});
+
+  // Active chat state
+  const [activeChatUser, setActiveChatUser] = useState<typeof MOCK_NEARBY_USERS[0] | null>(null);
+  const [chatMessages, setChatMessages] = useState<Record<string, Message[]>>({});
+  const [typedMessage, setTypedMessage] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages, activeChatUser, isTyping]);
 
   // Story autoplay effect
   useEffect(() => {
@@ -82,7 +121,6 @@ export default function Home() {
               if (prevIdx < selectedUser.stories.length - 1) {
                 return prevIdx + 1;
               } else {
-                // Close story
                 setSelectedUser(null);
                 return 0;
               }
@@ -95,6 +133,56 @@ export default function Home() {
     }
     return () => clearInterval(interval);
   }, [selectedUser, activeStoryIdx]);
+
+  // Request Access Handler
+  const handleRequestAccess = (userId: string) => {
+    setPendingRequests((prev) => ({ ...prev, [userId]: "PENDING" }));
+    
+    // Simulate automated approval after 2 seconds
+    setTimeout(() => {
+      setPendingRequests((prev) => ({ ...prev, [userId]: "APPROVED" }));
+      setPrivateUnlocked((prev) => ({ ...prev, [userId]: true }));
+    }, 2000);
+  };
+
+  // Send message handler
+  const handleSendMessage = () => {
+    if (!typedMessage.trim() || !activeChatUser) return;
+
+    const userKey = activeChatUser.id;
+    const newMsg: Message = {
+      id: Date.now().toString(),
+      sender: "me",
+      text: typedMessage,
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    };
+
+    setChatMessages((prev) => ({
+      ...prev,
+      [userKey]: [...(prev[userKey] || []), newMsg]
+    }));
+    setTypedMessage("");
+
+    // Simulate partner typing response
+    setIsTyping(true);
+    setTimeout(() => {
+      setIsTyping(false);
+      const responses = activeChatUser.replyTemplates || ["Díky za zprávu! 👍"];
+      const responseText = responses[Math.floor(Math.random() * responses.length)];
+
+      const partnerMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        sender: "partner",
+        text: responseText,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      };
+
+      setChatMessages((prev) => ({
+        ...prev,
+        [userKey]: [...(prev[userKey] || []), partnerMsg]
+      }));
+    }, 1500);
+  };
 
   return (
     <div className="min-h-screen bg-[#1A0A2E] text-white overflow-hidden relative">
@@ -145,10 +233,9 @@ export default function Home() {
         {/* Hero Interactive App Device Mockup */}
         <div className="md:col-span-5 flex justify-center">
           <div className="w-[320px] h-[640px] rounded-[48px] border-[8px] border-zinc-800 bg-[#240D40] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] p-4 overflow-hidden relative flex flex-col">
-            {/* Camera notch */}
             <div className="absolute top-2 left-1/2 -translate-x-1/2 w-32 h-6 bg-zinc-800 rounded-full z-20" />
 
-            {/* Simulated app screen header */}
+            {/* Simulated App Screen Header */}
             <div className="flex items-center justify-between pt-6 pb-4 border-b border-white/10 px-2">
               <span className="text-lg font-black text-[#7B2FE7]">/A\</span>
               <span className="text-sm font-bold">Nearby Feed</span>
@@ -157,25 +244,29 @@ export default function Home() {
               </span>
             </div>
 
-            {/* Feed items */}
+            {/* Feed Items */}
             <div className="flex-1 overflow-y-auto pt-4 gap-4 flex flex-col">
-              {MOCK_NEARBY_USERS.map((user) => (
-                <div key={user.id} className="flex items-center gap-3 bg-[#2A1050] p-3 rounded-2xl border border-[#7B2FE7]/20">
-                  <div className="relative">
-                    {user.hasActiveStories && (
-                      <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-[#7B2FE7] to-[#FF6B6B] animate-spin-slow" />
-                    )}
-                    <div className={`w-10 h-10 rounded-full ${user.avatarColor} flex items-center justify-center font-bold text-sm border-2 border-[#2A1050] relative z-10`}>
-                      {user.privacyMode === "PRIVATE" ? "🔒" : user.initial}
+              {MOCK_NEARBY_USERS.map((user) => {
+                const isUserPrivate = user.privacyMode === "PRIVATE";
+                const isUnlocked = privateUnlocked[user.id];
+                return (
+                  <div key={user.id} className="flex items-center gap-3 bg-[#2A1050] p-3 rounded-2xl border border-[#7B2FE7]/20">
+                    <div className="relative">
+                      {user.hasActiveStories && (
+                        <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-[#7B2FE7] to-[#FF6B6B] animate-pulse" />
+                      )}
+                      <div className={`w-10 h-10 rounded-full ${user.avatarColor} flex items-center justify-center font-bold text-sm border-2 border-[#2A1050] relative z-10`}>
+                        {isUserPrivate && !isUnlocked ? "🔒" : user.initial}
+                      </div>
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs font-bold text-zinc-300">{user.username}</span>
+                      <p className="text-[11px] text-zinc-400 truncate font-semibold">"{user.message}"</p>
+                    </div>
+                    <span className="text-[10px] text-zinc-400 font-bold whitespace-nowrap">~{user.distanceMeters}m</span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <TextWithTruncate text={user.username} className="text-xs font-bold text-zinc-300" />
-                    <p className="text-[11px] text-zinc-400 truncate font-semibold">"{user.message}"</p>
-                  </div>
-                  <span className="text-[10px] text-zinc-400 font-bold whitespace-nowrap">~{user.distanceMeters}m</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Simulated Tab Bar */}
@@ -193,7 +284,7 @@ export default function Home() {
         <div className="text-center flex flex-col items-center gap-4 mb-16">
           <h2 className="text-4xl font-extrabold tracking-tight">Interactive Proximity Simulator</h2>
           <p className="text-zinc-400 max-w-xl">
-            Simulate your location right now. Click on any nearby card to preview stories or test privacy modes in real-time.
+            Simulate your location. Tap on any nearby card to watch active stories, request private access, or start a real-time messaging simulation.
           </p>
         </div>
 
@@ -221,12 +312,50 @@ export default function Home() {
               />
             </div>
 
-            {/* Info Alerts */}
-            <div className="p-4 bg-[#1A0A2E] border border-white/10 rounded-2xl text-xs text-zinc-400 leading-relaxed flex flex-col gap-2">
-              <span className="font-bold text-zinc-300">💡 Interactive Hint:</span>
-              <span>1. Click on cards with red/purple rings to watch active stories.</span>
-              <span>2. Observe how the private user hides profile details until accepted.</span>
-            </div>
+            {/* Active chat preview if selected */}
+            {activeChatUser && (
+              <div className="border border-[#7B2FE7]/30 bg-[#1A0A2E] rounded-2xl overflow-hidden flex flex-col h-[300px]">
+                <div className="bg-[#2A1050] p-3 flex justify-between items-center border-b border-white/5">
+                  <span className="font-bold text-xs">💬 Chat: @{activeChatUser.username}</span>
+                  <button onClick={() => setActiveChatUser(null)} className="text-zinc-400 text-xs">✕ Close</button>
+                </div>
+                
+                {/* Chat Message list */}
+                <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
+                  {(chatMessages[activeChatUser.id] || []).map((msg) => (
+                    <div key={msg.id} className={`max-w-[85%] p-2.5 rounded-2xl text-xs ${
+                      msg.sender === "me" 
+                        ? "bg-[#7B2FE7] self-end rounded-tr-none text-white" 
+                        : "bg-[#2A1050] self-start rounded-tl-none text-zinc-300"
+                    }`}>
+                      <p>{msg.text}</p>
+                      <span className="text-[8px] text-white/40 block text-right mt-1">{msg.timestamp}</span>
+                    </div>
+                  ))}
+                  {isTyping && (
+                    <div className="bg-[#2A1050] text-zinc-400 max-w-[50px] p-2 rounded-2xl text-xs self-start italic animate-pulse">
+                      ...
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Input row */}
+                <div className="p-2 border-t border-white/5 flex gap-2">
+                  <input
+                    type="text"
+                    value={typedMessage}
+                    onChange={(e) => setTypedMessage(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                    placeholder="Type a message..."
+                    className="flex-1 bg-[#2A1050] rounded-full px-3 py-1.5 text-xs text-white outline-none"
+                  />
+                  <button onClick={handleSendMessage} className="bg-[#7B2FE7] p-1.5 rounded-full text-white">
+                    <Send size={12} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Feed Preview */}
@@ -240,20 +369,14 @@ export default function Home() {
                 const distanceKm = user.distanceMeters / 1000;
                 if (distanceKm > currentRadius) return null;
 
+                const isUserPrivate = user.privacyMode === "PRIVATE";
+                const isUnlocked = privateUnlocked[user.id];
+                const requestStatus = pendingRequests[user.id] || "NONE";
+
                 return (
                   <div
                     key={user.id}
-                    onClick={() => {
-                      if (user.hasActiveStories) {
-                        setSelectedUser(user);
-                        setActiveStoryIdx(0);
-                      } else {
-                        alert(`${user.username}: ${user.bio}`);
-                      }
-                    }}
-                    className={`bg-[#2A1050] hover:bg-[#2A1050]/80 border border-[#7B2FE7]/30 p-5 rounded-3xl cursor-pointer transition-all flex flex-col gap-4 relative group ${
-                      user.hasActiveStories ? "hover:border-[#FF6B6B]" : ""
-                    }`}
+                    className={`bg-[#2A1050] border border-[#7B2FE7]/30 p-5 rounded-3xl flex flex-col gap-4 relative transition-all`}
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-3">
@@ -262,13 +385,13 @@ export default function Home() {
                             <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-[#7B2FE7] to-[#FF6B6B] animate-pulse" />
                           )}
                           <div className={`w-12 h-12 rounded-full ${user.avatarColor} flex items-center justify-center font-extrabold text-lg border-2 border-[#2A1050] relative z-10`}>
-                            {user.privacyMode === "PRIVATE" ? "🔒" : user.initial}
+                            {isUserPrivate && !isUnlocked ? "🔒" : user.initial}
                           </div>
                         </div>
                         <div>
                           <h4 className="font-extrabold text-zinc-100 flex items-center gap-1.5">
                             {user.username}
-                            {user.privacyMode === "PRIVATE" && <span className="text-xs font-semibold text-zinc-500">🔒</span>}
+                            {isUserPrivate && <span className="text-xs font-semibold text-zinc-500">🔒</span>}
                           </h4>
                           <span className="text-xs text-[#7B2FE7] font-semibold">~{user.distanceMeters} meters away</span>
                         </div>
@@ -279,11 +402,52 @@ export default function Home() {
                       <p className="text-sm font-semibold italic text-zinc-300">"{user.message}"</p>
                     </div>
 
-                    {user.hasActiveStories && (
-                      <span className="text-xs text-[#FF6B6B] font-bold self-end flex items-center gap-1 mt-1 group-hover:scale-105 transition-transform">
-                        ⚡ Watch Stories
-                      </span>
-                    )}
+                    {/* Actions row */}
+                    <div className="flex justify-end gap-2 mt-2">
+                      {isUserPrivate && !isUnlocked ? (
+                        <button
+                          onClick={() => handleRequestAccess(user.id)}
+                          className="bg-[#7B2FE7]/20 hover:bg-[#7B2FE7]/40 border border-[#7B2FE7] text-white px-4 py-1.5 rounded-full text-xs font-bold transition-all"
+                        >
+                          {requestStatus === "PENDING" ? "Requested..." : "🔑 Request Access"}
+                        </button>
+                      ) : (
+                        <>
+                          {user.hasActiveStories && (
+                            <button
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setActiveStoryIdx(0);
+                              }}
+                              className="bg-gradient-to-r from-[#7B2FE7] to-[#FF6B6B] text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-md hover:scale-105 transition-transform"
+                            >
+                              ⚡ Watch Stories
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              setActiveChatUser(user);
+                              if (!chatMessages[user.id]) {
+                                setChatMessages((prev) => ({
+                                  ...prev,
+                                  [user.id]: [
+                                    {
+                                      id: "welcome",
+                                      sender: "partner",
+                                      text: `Ahoj! Napiš mi ohledně: "${user.message}"`,
+                                      timestamp: "Now"
+                                    }
+                                  ]
+                                }));
+                              }
+                            }}
+                            className="bg-[#240D40] hover:bg-[#2A1050] border border-white/10 text-zinc-300 px-4 py-1.5 rounded-full text-xs font-bold transition-all"
+                          >
+                            💬 Chat
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -388,9 +552,4 @@ export default function Home() {
       )}
     </div>
   );
-}
-
-// Utility component to handle text mapping safely
-function TextWithTruncate({ text, className }: { text: string; className?: string }) {
-  return <span className={className}>{text}</span>;
 }
