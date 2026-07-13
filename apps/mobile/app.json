@@ -12,7 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#1A0A2E"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.ahoj.mobile",
@@ -65,7 +67,8 @@
           "icon": "./assets/notification-icon.png",
           "color": "#7B2FE7"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

@@ -88,7 +88,17 @@ function FeedItem({
         activeOpacity={0.8}
       >
         {/* Avatar with story ring */}
-        <View style={styles.avatarWrapper}>
+        <TouchableOpacity
+          onPress={() => {
+            if (user.hasActiveStories) {
+              router.push(`/app/story/${user.id}`);
+            } else {
+              router.push(`/app/user/${user.id}`);
+            }
+          }}
+          activeOpacity={0.8}
+          style={styles.avatarWrapper}
+        >
           <StoryRing hasStories={user.hasActiveStories} />
           <View style={[styles.avatar, isPrivate && styles.avatarPrivate]}>
             {user.profilePhotoUrl && !isPrivate ? (
@@ -106,7 +116,7 @@ function FeedItem({
               </View>
             )}
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Info */}
         <View style={styles.userInfo}>
@@ -221,10 +231,12 @@ export default function FeedScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerLogo}>/A\</Text>
+        <TouchableOpacity onPress={() => router.push("/app/story/create")}>
+          <Text style={styles.headerIcon}>➕</Text>
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Nearby</Text>
-        <TouchableOpacity onPress={() => router.push("/app/settings")}>
-          <Text style={styles.headerIcon}>⚙️</Text>
+        <TouchableOpacity onPress={() => router.push("/app/tabs/profile")}>
+          <Text style={styles.headerIcon}>👤</Text>
         </TouchableOpacity>
       </View>
 

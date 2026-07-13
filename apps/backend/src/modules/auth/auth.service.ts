@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { differenceInYears } from "date-fns";
 

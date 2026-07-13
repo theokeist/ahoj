@@ -10,7 +10,6 @@ import { config } from "./config/env.js";
 import { AHOJ_CONSTANTS } from "@ahoj/shared";
 import { db } from "./db/index.js";
 import { redis } from "./utils/redis.js";
-import "./types/fastify.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { usersRoutes } from "./modules/users/users.routes.js";
 import { feedRoutes } from "./modules/feed/feed.routes.js";

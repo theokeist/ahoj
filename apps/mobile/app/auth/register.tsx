@@ -18,22 +18,56 @@ import { useAuthStore } from "../../store";
 import { colors, typography, spacing, radius } from "../../lib/theme";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [dob, setDob] = useState(""); // YYYY-MM-DD format
   const setAuth = useAuthStore((s) => s.setAuth);
 
-  const loginMutation = useMutation({
-    mutationFn: () => authApi.login({ email, password }),
+  const registerMutation = useMutation({
+    mutationFn: () =>
+      authApi.register({
+        username,
+        email,
+        password,
+        dateOfBirth: dob,
+      }),
     onSuccess: (data: any) => {
       setAuth(data.user, data.accessToken);
-      router.replace("/app/tabs/feed");
+      // Proceed to profile setup
+      router.replace("/auth/setup");
     },
     onError: (err: any) => {
-      const msg = err?.response?.data?.error ?? "Login failed";
-      Alert.alert("Login failed", msg);
+      const msg = err?.response?.data?.error ?? "Registration failed";
+      Alert.alert("Registration failed", msg);
     },
   });
+
+  const handleRegister = () => {
+    // Basic date formatting check
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(dob)) {
+      Alert.alert("Invalid date", "Please use YYYY-MM-DD format (e.g. 2005-10-15)");
+      return;
+    }
+
+    // Verify age (must be 16+)
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
+    if (age < 16) {
+      Alert.alert("Age Restriction", "You must be at least 16 years old to join ahoj.");
+      return;
+    }
+
+    registerMutation.mutate();
+  };
 
   return (
     <KeyboardAvoidingView
@@ -46,8 +80,8 @@ export default function LoginScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.back}>
             <Text style={styles.backText}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Welcome back</Text>
-          <Text style={styles.subtitle}>Sign in to your ahoj account</Text>
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>Join ahoj and discover people nearby</Text>
         </Animated.View>
 
         {/* Form */}
@@ -56,12 +90,26 @@ export default function LoginScreen() {
           style={styles.form}
         >
           <View style={styles.inputGroup}>
+            <Text style={styles.label}>Username</Text>
+            <TextInput
+              style={styles.input}
+              value={username}
+              onChangeText={setUsername}
+              placeholder="e.g. alex_vibe"
+              placeholderTextColor={colors.text.tertiary}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="next"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
             <TextInput
               style={styles.input}
               value={email}
               onChangeText={setEmail}
-              placeholder="you@example.com"
+              placeholder="alex@example.com"
               placeholderTextColor={colors.text.tertiary}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -76,25 +124,45 @@ export default function LoginScreen() {
               style={styles.input}
               value={password}
               onChangeText={setPassword}
-              placeholder="••••••••"
+              placeholder="•••••••• (Min 8 chars)"
               placeholderTextColor={colors.text.tertiary}
               secureTextEntry
-              autoComplete="current-password"
-              returnKeyType="done"
-              onSubmitEditing={() => loginMutation.mutate()}
+              autoComplete="new-password"
+              returnKeyType="next"
             />
           </View>
 
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Date of Birth (YYYY-MM-DD)</Text>
+            <TextInput
+              style={styles.input}
+              value={dob}
+              onChangeText={setDob}
+              placeholder="2005-10-15"
+              placeholderTextColor={colors.text.tertiary}
+              keyboardType="numeric"
+              maxLength={10}
+              returnKeyType="done"
+            />
+            <Text style={styles.helpText}>Must be 16 or older to sign up.</Text>
+          </View>
+
           <TouchableOpacity
-            style={[styles.button, loginMutation.isPending && styles.buttonDisabled]}
-            onPress={() => loginMutation.mutate()}
-            disabled={loginMutation.isPending || !email || !password}
+            style={[
+              styles.button,
+              (registerMutation.isPending || !username || !email || !password || !dob) &&
+                styles.buttonDisabled,
+            ]}
+            onPress={handleRegister}
+            disabled={
+              registerMutation.isPending || !username || !email || !password || !dob
+            }
             activeOpacity={0.85}
           >
-            {loginMutation.isPending ? (
+            {registerMutation.isPending ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>Sign in</Text>
+              <Text style={styles.buttonText}>Continue</Text>
             )}
           </TouchableOpacity>
         </Animated.View>
@@ -104,9 +172,9 @@ export default function LoginScreen() {
           entering={FadeInDown.delay(300).duration(500)}
           style={styles.footer}
         >
-          <Text style={styles.footerText}>Don't have an account? </Text>
-          <TouchableOpacity onPress={() => router.push("/auth/register")}>
-            <Text style={styles.footerLink}>Sign up</Text>
+          <Text style={styles.footerText}>Already have an account? </Text>
+          <TouchableOpacity onPress={() => router.push("/auth/login")}>
+            <Text style={styles.footerLink}>Sign in</Text>
           </TouchableOpacity>
         </Animated.View>
       </ScrollView>
@@ -139,6 +207,7 @@ const styles = StyleSheet.create({
     fontSize: typography.base,
     color: colors.text.primary,
   },
+  helpText: { fontSize: typography.xs, color: colors.text.tertiary },
   button: {
     backgroundColor: colors.primary,
     borderRadius: radius.full,
