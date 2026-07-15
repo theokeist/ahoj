@@ -3,8 +3,18 @@ import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import cookie from "@fastify/cookie";
 import rateLimit from "@fastify/rate-limit";
+import multipart from "@fastify/multipart";
+import fastifyStatic from "@fastify/static";
 import { Server } from "socket.io";
 import { createServer } from "http";
+import path from "path";
+import fs from "fs";
+
+const uploadsDir = path.join(__dirname, "../uploads");
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 import { config } from "./config/env.js";
 import { AHOJ_CONSTANTS } from "@ahoj/shared";
@@ -12,6 +22,7 @@ import { db } from "./db/index.js";
 import { redis } from "./utils/redis.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { usersRoutes } from "./modules/users/users.routes.js";
+import { infoRoutes } from "./modules/info/info.routes.js";
 import { feedRoutes } from "./modules/feed/feed.routes.js";
 import { storiesRoutes } from "./modules/stories/stories.routes.js";
 import { chatsRoutes } from "./modules/chats/chats.routes.js";
@@ -66,15 +77,54 @@ async function buildApp() {
     }),
   });
 
+  await app.register(multipart, {
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB limit
+    },
+  });
+
+  await app.register(fastifyStatic, {
+    root: uploadsDir,
+    prefix: "/uploads/",
+  });
+
+  // ─── Global Error Handler ──────────────────────────────────────────────────
+
+  app.setErrorHandler((error: any, request, reply) => {
+    if (error.name === "ZodError" || (error as any).constructor?.name === "ZodError") {
+      return reply.status(400).send({
+        error: "Validation Error",
+        message: "Invalid request payload",
+        details: (error as any).issues,
+      });
+    }
+
+    // Rate limiter error
+    if (error.statusCode === 429) {
+      return reply.status(429).send({
+        error: "Too Many Requests",
+        message: error.message,
+      });
+    }
+
+    request.log.error(error);
+    return reply.status(error.statusCode || 500).send({
+      error: error.name || "Internal Server Error",
+      message: error.message || "Something went wrong on our end",
+    });
+  });
+
   // ─── Decorators — share db and redis across routes ─────────────────────────
 
   app.decorate("db", db);
   app.decorate("redis", redis);
+  app.decorate("io", null); // Populated in main()
 
   // ─── Routes ────────────────────────────────────────────────────────────────
 
   await app.register(authRoutes, { prefix: "/auth" });
   await app.register(usersRoutes, { prefix: "/users" });
+  await app.register(infoRoutes, { prefix: "/info" });
   await app.register(feedRoutes, { prefix: "/feed" });
   await app.register(storiesRoutes, { prefix: "/stories" });
   await app.register(chatsRoutes, { prefix: "/chats" });
@@ -105,6 +155,8 @@ async function main() {
     pingTimeout: 30_000,
     pingInterval: 25_000,
   });
+
+  app.io = io; // Make io available to routes
 
   registerSocketHandlers(io, db, redis);
 

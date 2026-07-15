@@ -6,5 +6,6 @@ declare module "fastify" {
   interface FastifyInstance {
     db: DB;
     redis: Redis;
+    io: import("socket.io").Server | null;
   }
 }

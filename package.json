@@ -14,7 +14,8 @@
     "test": "turbo run test",
     "db:migrate": "pnpm --filter=@ahoj/backend db:migrate",
     "db:studio": "pnpm --filter=@ahoj/backend db:studio",
-    "format": "prettier --write \"**/*.{ts,tsx,json,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "clean:ports": "kill -9 $(lsof -t -i:3000 -i:3001 -i:8081) 2>/dev/null || true"
   },
   "devDependencies": {
     "turbo": "^2.0.0",
@@ -25,5 +26,13 @@
     "node": ">=20.0.0",
     "pnpm": ">=9.0.0"
   },
-  "packageManager": "pnpm@11.12.0"
+  "packageManager": "pnpm@11.12.0",
+  "resolutions": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  }
 }

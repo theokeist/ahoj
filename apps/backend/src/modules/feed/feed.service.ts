@@ -36,9 +36,16 @@ export async function getProximityFeed(
     SELECT
       u.id,
       u.username,
-      -- Hide photo if private (client shows blur)
-      CASE WHEN u.privacy_mode = 'PUBLIC' THEN u.profile_photo_url ELSE NULL END AS profile_photo_url,
-      u.bio,
+      -- Show photo if public OR if access is approved
+      CASE 
+        WHEN u.privacy_mode = 'PUBLIC' OR ar.status = 'APPROVED' THEN u.profile_photo_url 
+        ELSE NULL 
+      END AS profile_photo_url,
+      -- Show bio if public OR if access is approved
+      CASE 
+        WHEN u.privacy_mode = 'PUBLIC' OR ar.status = 'APPROVED' THEN u.bio 
+        ELSE NULL 
+      END AS bio,
       u.message,
       u.privacy_mode,
       -- Distance in meters, rounded to 10m for privacy fuzzing
@@ -49,9 +56,11 @@ export async function getProximityFeed(
         ) / 10
       ) * 10 AS distance_meters,
       (s.user_id IS NOT NULL) AS has_active_stories,
-      u.last_active
+      u.last_active,
+      ar.status AS access_status
     FROM users u
     LEFT JOIN active_stories s ON s.user_id = u.id
+    LEFT JOIN access_requests ar ON ar.requester_id = ${params.requesterId} AND ar.target_id = u.id
     WHERE
       u.id != ${params.requesterId}
       AND u.is_banned = false
@@ -85,6 +94,11 @@ export async function getProximityFeed(
     privacyMode: row.privacy_mode as "PUBLIC" | "PRIVATE",
     distanceMeters: parseInt(String(row.distance_meters)),
     hasActiveStories: Boolean(row.has_active_stories),
-    lastActive: (row.last_active as Date).toISOString(),
+    lastActive: row.last_active instanceof Date
+      ? row.last_active.toISOString()
+      : typeof row.last_active === "string"
+      ? new Date(row.last_active).toISOString()
+      : new Date().toISOString(),
+    accessStatus: (row.access_status as "PENDING" | "APPROVED" | "REJECTED" | null) ?? null,
   }));
 }

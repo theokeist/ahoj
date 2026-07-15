@@ -46,6 +46,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
         return reply.status(201).send({
           accessToken,
+          refreshToken,
           user: {
             id: user.id,
             username: user.username,
@@ -101,6 +102,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
         return {
           accessToken,
+          refreshToken,
           user: {
             id: user.id,
             username: user.username,
@@ -123,11 +125,15 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     },
   });
 
-  // POST /auth/refresh — uses httpOnly cookie
-  app.post("/refresh", async (request, reply) => {
-    const token = request.cookies.refresh_token;
+  // POST /auth/refresh — supports httpOnly cookies & mobile JSON storage
+  app.post("/refresh", async (request: any, reply) => {
+    const token =
+      request.cookies.refresh_token ||
+      request.body?.refreshToken ||
+      request.headers["x-refresh-token"];
+
     if (!token) {
-      return reply.status(401).send({ error: "No refresh token" });
+      return reply.status(401).send({ error: "No refresh token provided" });
     }
 
     try {
@@ -148,15 +154,22 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         path: "/auth/refresh",
       });
 
-      return { accessToken: newAccessToken };
+      return {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+      };
     } catch {
       return reply.status(401).send({ error: "Invalid or expired refresh token" });
     }
   });
 
   // POST /auth/logout
-  app.post("/logout", async (request, reply) => {
-    const token = request.cookies.refresh_token;
+  app.post("/logout", async (request: any, reply) => {
+    const token =
+      request.cookies.refresh_token ||
+      request.body?.refreshToken ||
+      request.headers["x-refresh-token"];
+
     if (token) {
       await revokeRefreshToken(token);
     }

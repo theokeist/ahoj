@@ -5,43 +5,60 @@ import {
   TouchableOpacity,
   Dimensions,
   StatusBar,
+  Animated,
 } from "react-native";
 import { router } from "expo-router";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withDelay,
-  withTiming,
-  FadeIn,
-} from "react-native-reanimated";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { colors, typography, spacing, radius } from "../../lib/theme";
 
 const { height } = Dimensions.get("window");
 
 export default function WelcomeScreen() {
-  const logoScale = useSharedValue(0.5);
-  const logoOpacity = useSharedValue(0);
-  const contentTranslate = useSharedValue(60);
-  const contentOpacity = useSharedValue(0);
+  const logoScale = useRef(new Animated.Value(0.5)).current;
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const contentTranslate = useRef(new Animated.Value(60)).current;
+  const contentOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    logoScale.value = withSpring(1, { damping: 12, stiffness: 100 });
-    logoOpacity.value = withTiming(1, { duration: 600 });
-    contentTranslate.value = withDelay(400, withSpring(0, { damping: 15 }));
-    contentOpacity.value = withDelay(400, withTiming(1, { duration: 500 }));
+    Animated.parallel([
+      Animated.spring(logoScale, {
+        toValue: 1,
+        friction: 7,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+      Animated.timing(logoOpacity, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.sequence([
+        Animated.delay(400),
+        Animated.parallel([
+          Animated.spring(contentTranslate, {
+            toValue: 0,
+            friction: 8,
+            useNativeDriver: true,
+          }),
+          Animated.timing(contentOpacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
+    ]).start();
   }, []);
 
-  const logoStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: logoScale.value }],
-    opacity: logoOpacity.value,
-  }));
+  const logoStyle = {
+    transform: [{ scale: logoScale }],
+    opacity: logoOpacity,
+  };
 
-  const contentStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: contentTranslate.value }],
-    opacity: contentOpacity.value,
-  }));
+  const contentStyle = {
+    transform: [{ translateY: contentTranslate }],
+    opacity: contentOpacity,
+  };
 
   return (
     <View style={styles.container}>

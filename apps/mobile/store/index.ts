@@ -1,14 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { MMKV } from "react-native-mmkv";
-
-// MMKV storage for Zustand persistence (faster than AsyncStorage)
-const storage = new MMKV();
-const mmkvStorage = {
-  getItem: (name: string) => storage.getString(name) ?? null,
-  setItem: (name: string, value: string) => storage.set(name, value),
-  removeItem: (name: string) => storage.delete(name),
-};
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type User = {
   id: string;
@@ -22,9 +14,10 @@ type User = {
 type AuthState = {
   user: User | null;
   accessToken: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
-  setAuth: (user: User, accessToken: string) => void;
-  updateToken: (accessToken: string) => void;
+  setAuth: (user: User, accessToken: string, refreshToken: string) => void;
+  updateTokens: (accessToken: string, refreshToken: string) => void;
   logout: () => void;
 };
 
@@ -33,22 +26,25 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       accessToken: null,
+      refreshToken: null,
       isAuthenticated: false,
 
-      setAuth: (user, accessToken) =>
-        set({ user, accessToken, isAuthenticated: true }),
+      setAuth: (user, accessToken, refreshToken) =>
+        set({ user, accessToken, refreshToken, isAuthenticated: true }),
 
-      updateToken: (accessToken) => set({ accessToken }),
+      updateTokens: (accessToken, refreshToken) =>
+        set({ accessToken, refreshToken }),
 
       logout: () =>
-        set({ user: null, accessToken: null, isAuthenticated: false }),
+        set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false }),
     }),
     {
       name: "ahoj-auth",
-      storage: createJSONStorage(() => mmkvStorage),
+      storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
     }
@@ -61,12 +57,50 @@ type LocationState = {
   lat: number | null;
   lng: number | null;
   accuracy: number | null;
+  isGhostMode: boolean;
   setLocation: (lat: number, lng: number, accuracy: number) => void;
+  setGhostMode: (enabled: boolean) => void;
 };
 
-export const useLocationStore = create<LocationState>((set) => ({
-  lat: null,
-  lng: null,
-  accuracy: null,
-  setLocation: (lat, lng, accuracy) => set({ lat, lng, accuracy }),
-}));
+export const useLocationStore = create<LocationState>()(
+  persist(
+    (set) => ({
+      lat: null,
+      lng: null,
+      accuracy: null,
+      isGhostMode: false,
+      setLocation: (lat, lng, accuracy) => set({ lat, lng, accuracy }),
+      setGhostMode: (isGhostMode) => set({ isGhostMode }),
+    }),
+    {
+      name: "ahoj-location",
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        isGhostMode: state.isGhostMode,
+      }),
+    }
+  )
+);
+
+// ─── Settings store ─────────────────────────────────────────────────────────
+
+type SettingsState = {
+  showStoryBar: boolean;
+  setShowStoryBar: (enabled: boolean) => void;
+};
+
+export const useSettingsStore = create<SettingsState>()(
+  persist(
+    (set) => ({
+      showStoryBar: true,
+      setShowStoryBar: (showStoryBar) => set({ showStoryBar }),
+    }),
+    {
+      name: "ahoj-settings",
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        showStoryBar: state.showStoryBar,
+      }),
+    }
+  )
+);

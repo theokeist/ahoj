@@ -7,6 +7,8 @@ import {
   ActivityIndicator,
   TouchableWithoutFeedback,
   StatusBar,
+  Animated,
+  Easing,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -14,14 +16,6 @@ import { useState, useEffect, useRef } from "react";
 import { Image } from "expo-image";
 import { storiesApi, usersApi } from "../../../lib/api";
 import { colors, spacing, typography, radius } from "../../../lib/theme";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  runOnJS,
-  cancelAnimation,
-  LinearTransition,
-} from "react-native-reanimated";
 
 const { width, height } = Dimensions.get("window");
 const STORY_DURATION = 5000; // 5 seconds per story
@@ -30,8 +24,20 @@ export default function StoryViewerScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
 
   const [currentIdx, setCurrentIdx] = useState(0);
-  const progress = useSharedValue(0);
-  const isPaused = useRef(false);
+  const progress = useRef(new Animated.Value(0)).current;
+  const currentProgress = useRef(0);
+  const progressListener = useRef<string | null>(null);
+
+  useEffect(() => {
+    progressListener.current = progress.addListener(({ value }) => {
+      currentProgress.current = value;
+    });
+    return () => {
+      if (progressListener.current) {
+        progress.removeListener(progressListener.current);
+      }
+    };
+  }, []);
 
   // Fetch target user's public info
   const { data: user } = useQuery({
@@ -56,15 +62,20 @@ export default function StoryViewerScreen() {
       viewStoryMutation.mutate(stories[currentIdx].id);
 
       // Start progress animation
-      progress.value = 0;
-      progress.value = withTiming(1, { duration: STORY_DURATION }, (finished) => {
+      progress.setValue(0);
+      Animated.timing(progress, {
+        toValue: 1,
+        duration: STORY_DURATION,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      }).start(({ finished }) => {
         if (finished) {
-          runOnJS(handleNext)();
+          handleNext();
         }
       });
     }
     return () => {
-      cancelAnimation(progress);
+      progress.stopAnimation();
     };
   }, [stories, currentIdx]);
 
@@ -93,27 +104,32 @@ export default function StoryViewerScreen() {
   };
 
   const handlePressIn = () => {
-    isPaused.current = true;
-    cancelAnimation(progress);
+    progress.stopAnimation();
   };
 
   const handlePressOut = () => {
-    isPaused.current = false;
-    // Resume animation from current progress position
-    const remainingTime = STORY_DURATION * (1 - progress.value);
-    progress.value = withTiming(1, { duration: remainingTime }, (finished) => {
+    const remainingTime = STORY_DURATION * (1 - currentProgress.current);
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: remainingTime,
+      easing: Easing.linear,
+      useNativeDriver: false,
+    }).start(({ finished }) => {
       if (finished) {
-        runOnJS(handleNext)();
+        handleNext();
       }
     });
   };
 
-  const progressStyle = (idx: number) => {
-    return useAnimatedStyle(() => {
-      if (idx < currentIdx) return { width: "100%" };
-      if (idx > currentIdx) return { width: "0%" };
-      return { width: `${progress.value * 100}%` };
-    });
+  const getProgressStyle = (idx: number) => {
+    if (idx < currentIdx) return { width: "100%" };
+    if (idx > currentIdx) return { width: "0%" };
+    return {
+      width: progress.interpolate({
+        inputRange: [0, 1],
+        outputRange: ["0%", "100%"]
+      })
+    };
   };
 
   if (isLoading || !stories) {
@@ -124,7 +140,41 @@ export default function StoryViewerScreen() {
     );
   }
 
+  if (stories.length === 0) {
+    return (
+      <View style={styles.center}>
+        <Text style={{ color: "#fff", fontSize: 16 }}>No active stories</Text>
+        <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 20 }}>
+          <Text style={{ color: colors.primary, fontSize: 16 }}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   const currentStory = stories[currentIdx];
+
+  const getOverlayConfig = (url: string) => {
+    try {
+      const parts = url.split("?");
+      if (parts.length < 2) return null;
+      const params: Record<string, string> = {};
+      const pairs = parts[1].split("&");
+      for (const pair of pairs) {
+        const [k, v] = pair.split("=");
+        if (k && v) {
+          params[k] = decodeURIComponent(v);
+        }
+      }
+      return {
+        filter: params.filter || null,
+        text: params.text || null,
+        textColor: params.textColor || "#FFFFFF",
+        emoji: params.emoji || null,
+      };
+    } catch {
+      return null;
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -145,6 +195,43 @@ export default function StoryViewerScreen() {
             />
           )}
 
+          {/* Render filters and sticker overlays */}
+          {(() => {
+            if (!currentStory) return null;
+            const config = getOverlayConfig(currentStory.mediaUrl);
+            if (!config) return null;
+            return (
+              <>
+                {config.filter === "retro" && (
+                  <View style={[styles.filterOverlay, { backgroundColor: "rgba(230, 120, 0, 0.12)" }]} pointerEvents="none" />
+                )}
+                {config.filter === "neon" && (
+                  <View style={[styles.filterOverlay, { backgroundColor: "rgba(200, 0, 200, 0.12)" }]} pointerEvents="none" />
+                )}
+                {config.filter === "moody" && (
+                  <View style={[styles.filterOverlay, { backgroundColor: "rgba(0, 0, 0, 0.35)" }]} pointerEvents="none" />
+                )}
+                {config.filter === "sunset" && (
+                  <View style={[styles.filterOverlay, { backgroundColor: "rgba(255, 100, 0, 0.15)" }]} pointerEvents="none" />
+                )}
+
+                {config.emoji && (
+                  <View style={styles.floatingEmojiContainer}>
+                    <Text style={styles.floatingEmoji}>{config.emoji}</Text>
+                  </View>
+                )}
+
+                {config.text && (
+                  <View style={styles.floatingTextContainer}>
+                    <Text style={[styles.floatingText, { color: config.textColor }]}>
+                      {config.text}
+                    </Text>
+                  </View>
+                )}
+              </>
+            );
+          })()}
+
           {/* Overlay Gradient */}
           <View style={styles.overlay} />
 
@@ -152,7 +239,7 @@ export default function StoryViewerScreen() {
           <View style={styles.progressBarRow}>
             {stories.map((_, idx) => (
               <View key={idx} style={styles.progressBarTrack}>
-                <Animated.View style={[styles.progressBarFill, progressStyle(idx)]} />
+                <Animated.View style={[styles.progressBarFill, getProgressStyle(idx) as any]} />
               </View>
             ))}
           </View>
@@ -268,5 +355,38 @@ const styles = StyleSheet.create({
     fontSize: typography.base,
     textAlign: "center",
     fontStyle: "italic",
+  },
+  filterOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 5,
+  },
+  floatingEmojiContainer: {
+    position: "absolute",
+    top: "30%",
+    alignSelf: "center",
+    zIndex: 10,
+  },
+  floatingEmoji: {
+    fontSize: 72,
+  },
+  floatingTextContainer: {
+    position: "absolute",
+    top: "45%",
+    left: spacing.xl,
+    right: spacing.xl,
+    zIndex: 10,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    alignItems: "center",
+  },
+  floatingText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    textAlign: "center",
+    textShadowColor: "rgba(0,0,0,0.75)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
 });

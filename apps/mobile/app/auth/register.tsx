@@ -9,20 +9,23 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Pressable,
 } from "react-native";
 import { useState } from "react";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { router } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { authApi } from "../../lib/api";
 import { useAuthStore } from "../../store";
 import { colors, typography, spacing, radius } from "../../lib/theme";
-import Animated, { FadeInDown } from "react-native-reanimated";
 
 export default function RegisterScreen() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [dob, setDob] = useState(""); // YYYY-MM-DD format
+  const [dob, setDob] = useState("");
+  const [dobDate, setDobDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const setAuth = useAuthStore((s) => s.setAuth);
 
   const registerMutation = useMutation({
@@ -34,7 +37,7 @@ export default function RegisterScreen() {
         dateOfBirth: dob,
       }),
     onSuccess: (data: any) => {
-      setAuth(data.user, data.accessToken);
+      setAuth(data.user, data.accessToken, data.refreshToken);
       // Proceed to profile setup
       router.replace("/auth/setup");
     },
@@ -45,15 +48,14 @@ export default function RegisterScreen() {
   });
 
   const handleRegister = () => {
-    // Basic date formatting check
+    const normalizedDob = dob || formatDate(dobDate);
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(dob)) {
-      Alert.alert("Invalid date", "Please use YYYY-MM-DD format (e.g. 2005-10-15)");
+    if (!dateRegex.test(normalizedDob)) {
+      Alert.alert("Invalid date", "Please select or enter a valid date in YYYY-MM-DD format.");
       return;
     }
 
-    // Verify age (must be 16+)
-    const birthDate = new Date(dob);
+    const birthDate = new Date(normalizedDob);
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
@@ -66,7 +68,26 @@ export default function RegisterScreen() {
       return;
     }
 
+    setDob(normalizedDob);
     registerMutation.mutate();
+  };
+
+  const formatDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, "0");
+    const day = `${date.getDate()}`.padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const onDateChange = (_event: any, selectedDate?: Date) => {
+    if (Platform.OS === "android") {
+      setShowDatePicker(false);
+    }
+    if (selectedDate) {
+      setDobDate(selectedDate);
+      const formatted = formatDate(selectedDate);
+      setDob(formatted);
+    }
   };
 
   return (
@@ -76,19 +97,16 @@ export default function RegisterScreen() {
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         {/* Header */}
-        <Animated.View entering={FadeInDown.delay(100).duration(500)}>
+        <View>
           <TouchableOpacity onPress={() => router.back()} style={styles.back}>
             <Text style={styles.backText}>← Back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Join ahoj and discover people nearby</Text>
-        </Animated.View>
+        </View>
 
         {/* Form */}
-        <Animated.View
-          entering={FadeInDown.delay(200).duration(500)}
-          style={styles.form}
-        >
+        <View style={styles.form}>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Username</Text>
             <TextInput
@@ -133,17 +151,31 @@ export default function RegisterScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Date of Birth (YYYY-MM-DD)</Text>
+            <Text style={styles.label}>Date of Birth</Text>
+            <Pressable onPress={() => setShowDatePicker(true)} style={styles.input}>
+              <Text style={[styles.inputText, !dob && styles.inputPlaceholder]}>
+                {dob || "Select your birth date"}
+              </Text>
+            </Pressable>
             <TextInput
               style={styles.input}
               value={dob}
-              onChangeText={setDob}
-              placeholder="2005-10-15"
+              onChangeText={(value) => setDob(value.replace(/[^0-9-]/g, ""))}
+              placeholder="YYYY-MM-DD"
               placeholderTextColor={colors.text.tertiary}
               keyboardType="numeric"
               maxLength={10}
               returnKeyType="done"
             />
+            {showDatePicker && (
+              <DateTimePicker
+                value={dobDate}
+                mode="date"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                maximumDate={new Date()}
+                onChange={onDateChange}
+              />
+            )}
             <Text style={styles.helpText}>Must be 16 or older to sign up.</Text>
           </View>
 
@@ -165,18 +197,15 @@ export default function RegisterScreen() {
               <Text style={styles.buttonText}>Continue</Text>
             )}
           </TouchableOpacity>
-        </Animated.View>
+        </View>
 
         {/* Footer */}
-        <Animated.View
-          entering={FadeInDown.delay(300).duration(500)}
-          style={styles.footer}
-        >
+        <View style={styles.footer}>
           <Text style={styles.footerText}>Already have an account? </Text>
           <TouchableOpacity onPress={() => router.push("/auth/login")}>
             <Text style={styles.footerLink}>Sign in</Text>
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -206,6 +235,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: typography.base,
     color: colors.text.primary,
+    justifyContent: "center",
+  },
+  inputText: {
+    color: colors.text.primary,
+    fontSize: typography.base,
+  },
+  inputPlaceholder: {
+    color: colors.text.tertiary,
   },
   helpText: { fontSize: typography.xs, color: colors.text.tertiary },
   button: {

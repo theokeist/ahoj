@@ -2,8 +2,12 @@ import axios from "axios";
 import Constants from "expo-constants";
 import { useAuthStore } from "../store";
 
-const API_URL =
-  Constants.expoConfig?.extra?.API_URL ?? "http://localhost:3000";
+export let API_URL = Constants.expoConfig?.extra?.API_URL ?? "http://localhost:3000";
+
+if (__DEV__ && Constants.expoConfig?.hostUri) {
+  const host = Constants.expoConfig.hostUri.split(":")[0];
+  API_URL = `http://${host}:3000`;
+}
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -30,15 +34,21 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
+      const refreshToken = useAuthStore.getState().refreshToken;
+
+      if (!refreshToken) {
+        useAuthStore.getState().logout();
+        return Promise.reject(error);
+      }
 
       try {
         const { data } = await axios.post(
           `${API_URL}/auth/refresh`,
-          {},
-          { withCredentials: true }
+          { refreshToken },
+          { headers: { "Content-Type": "application/json" } }
         );
 
-        useAuthStore.getState().updateToken(data.accessToken);
+        useAuthStore.getState().updateTokens(data.accessToken, data.refreshToken);
         originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
         return api(originalRequest);
       } catch {
@@ -74,6 +84,8 @@ export const feedApi = {
     limit?: number;
     cursor?: string;
   }) => api.get("/feed", { params }).then((r) => r.data),
+
+  seedDemo: () => api.post("/feed/seed-demo").then((r) => r.data),
 };
 
 export const storiesApi = {
@@ -85,6 +97,23 @@ export const storiesApi = {
 
   uploadStory: (body: { mediaUrl: string; mediaType: "IMAGE" | "VIDEO" }) =>
     api.post("/stories", body).then((r) => r.data),
+
+  uploadStoryFile: (uri: string, fileName?: string, mimeType?: string) => {
+    const formData = new FormData();
+    formData.append("file", {
+      uri,
+      name: fileName ?? "story.jpg",
+      type: mimeType ?? "image/jpeg",
+    } as any);
+
+    return api
+      .post("/stories/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
+      .then((r) => r.data);
+  },
 };
 
 export const usersApi = {
@@ -96,6 +125,8 @@ export const usersApi = {
     api.put("/users/me/message", { message }).then((r) => r.data),
   updateLocation: (lat: number, lng: number) =>
     api.put("/users/me/location", { lat, lng }).then((r) => r.data),
+  registerFcmToken: (fcmToken: string) =>
+    api.post("/users/me/fcm", { fcmToken }).then((r) => r.data),
 };
 
 export const chatsApi = {
@@ -112,8 +143,14 @@ export const chatsApi = {
 
 export const accessRequestsApi = {
   request: (targetId: string) =>
-    api.post(`/access-requests/${targetId}`).then((r) => r.data),
+    api.post(`/access-requests`, { targetId }).then((r) => r.data),
   getIncoming: () => api.get("/access-requests/incoming").then((r) => r.data),
-  respond: (requestId: string, status: "APPROVED" | "DENIED") =>
-    api.put(`/access-requests/${requestId}`, { status }).then((r) => r.data),
+  approve: (requestId: string) =>
+    api.put(`/access-requests/${requestId}/approve`).then((r) => r.data),
+  deny: (requestId: string) =>
+    api.put(`/access-requests/${requestId}/deny`).then((r) => r.data),
+};
+
+export const infoApi = {
+  getAppInfo: () => api.get("/info/app").then((r) => r.data),
 };

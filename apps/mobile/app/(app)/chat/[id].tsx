@@ -14,7 +14,7 @@ import { useLocalSearchParams, router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
-import { chatsApi, usersApi } from "../../../lib/api";
+import { chatsApi, usersApi, API_URL } from "../../../lib/api";
 import { useAuthStore } from "../../../store";
 import { colors, spacing, typography, radius } from "../../../lib/theme";
 import type { ChatMessage } from "@ahoj/shared";
@@ -29,6 +29,8 @@ export default function ChatScreen() {
   const [isTyping, setIsTyping] = useState(false);
   const [partnerTyping, setPartnerTyping] = useState(false);
   const socketRef = useRef<Socket | null>(null);
+  const typingTimeoutRef = useRef<any>(null);
+  const partnerTypingTimeoutRef = useRef<any>(null);
 
   // Get chat history
   const { data: messages = [], isLoading } = useQuery<ChatMessage[]>({
@@ -46,8 +48,12 @@ export default function ChatScreen() {
         newMsg,
         ...(prev || []),
       ]);
-      // Emit via socket
+      // Emit via socket and clear local typing state
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
       socketRef.current?.emit("typing:stop", chatId);
+      setIsTyping(false);
     },
   });
 
@@ -56,7 +62,7 @@ export default function ChatScreen() {
     if (!token) return;
 
     // Connect socket
-    const socket = io("http://localhost:3000", {
+    const socket = io(API_URL, {
       auth: { token },
     });
     socketRef.current = socket;
@@ -79,15 +85,30 @@ export default function ChatScreen() {
     socket.on("user:typing", (data) => {
       if (data.chatId === chatId && data.userId !== user?.id) {
         setPartnerTyping(true);
-        // Clear indicator after 3 seconds of inactivity
-        const timer = setTimeout(() => setPartnerTyping(false), 3000);
-        return () => clearTimeout(timer);
+        if (partnerTypingTimeoutRef.current) {
+          clearTimeout(partnerTypingTimeoutRef.current);
+        }
+        partnerTypingTimeoutRef.current = setTimeout(() => {
+          setPartnerTyping(false);
+        }, 4000);
+      }
+    });
+
+    // Listen for partner typing stopped indicator
+    socket.on("user:typing_stop", (data) => {
+      if (data.chatId === chatId && data.userId !== user?.id) {
+        if (partnerTypingTimeoutRef.current) {
+          clearTimeout(partnerTypingTimeoutRef.current);
+        }
+        setPartnerTyping(false);
       }
     });
 
     return () => {
       socket.emit("chat:leave", chatId);
       socket.disconnect();
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (partnerTypingTimeoutRef.current) clearTimeout(partnerTypingTimeoutRef.current);
     };
   }, [chatId, token]);
 
@@ -98,11 +119,20 @@ export default function ChatScreen() {
 
   const handleTextChange = (text: string) => {
     setMessageText(text);
+
     if (!isTyping) {
       setIsTyping(true);
       socketRef.current?.emit("typing:start", chatId);
-      setTimeout(() => setIsTyping(false), 2000);
     }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      socketRef.current?.emit("typing:stop", chatId);
+      setIsTyping(false);
+    }, 2500);
   };
 
   const renderItem = ({ item }: { item: ChatMessage }) => {

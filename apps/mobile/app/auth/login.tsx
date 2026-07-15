@@ -16,7 +16,6 @@ import { useMutation } from "@tanstack/react-query";
 import { authApi } from "../../lib/api";
 import { useAuthStore } from "../../store";
 import { colors, typography, spacing, radius } from "../../lib/theme";
-import Animated, { FadeInDown } from "react-native-reanimated";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -26,8 +25,8 @@ export default function LoginScreen() {
   const loginMutation = useMutation({
     mutationFn: () => authApi.login({ email, password }),
     onSuccess: (data: any) => {
-      setAuth(data.user, data.accessToken);
-      router.replace("/app/tabs/feed");
+      setAuth(data.user, data.accessToken, data.refreshToken);
+      router.replace("/(app)/tabs/feed");
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.error ?? "Login failed";
@@ -42,19 +41,16 @@ export default function LoginScreen() {
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         {/* Header */}
-        <Animated.View entering={FadeInDown.delay(100).duration(500)}>
+        <View>
           <TouchableOpacity onPress={() => router.back()} style={styles.back}>
             <Text style={styles.backText}>← Back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Welcome back</Text>
           <Text style={styles.subtitle}>Sign in to your ahoj account</Text>
-        </Animated.View>
+        </View>
 
         {/* Form */}
-        <Animated.View
-          entering={FadeInDown.delay(200).duration(500)}
-          style={styles.form}
-        >
+        <View style={styles.form}>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
             <TextInput
@@ -97,18 +93,29 @@ export default function LoginScreen() {
               <Text style={styles.buttonText}>Sign in</Text>
             )}
           </TouchableOpacity>
-        </Animated.View>
+
+          {__DEV__ && (
+            <TouchableOpacity
+              style={{ marginTop: spacing.md, alignItems: "center" }}
+              onPress={() => {
+                setEmail("dev@ahoj.app");
+                setPassword("password123");
+              }}
+            >
+              <Text style={{ color: colors.text.tertiary, fontSize: typography.sm, fontWeight: typography.medium }}>
+                🛠 Auto-fill Dev Credentials
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {/* Footer */}
-        <Animated.View
-          entering={FadeInDown.delay(300).duration(500)}
-          style={styles.footer}
-        >
-          <Text style={styles.footerText}>Don't have an account? </Text>
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>{"Don't have an account? "}</Text>
           <TouchableOpacity onPress={() => router.push("/auth/register")}>
             <Text style={styles.footerLink}>Sign up</Text>
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

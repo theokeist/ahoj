@@ -79,7 +79,7 @@ export function registerSocketHandlers(io: AhojServer, db: DB, redis: Redis) {
     });
 
     socket.on("typing:stop", (chatId) => {
-      // Clients handle timeout for typing indicator removal
+      socket.to(`chat:${chatId}`).emit("user:typing_stop", { chatId, userId });
     });
 
     // ─── Disconnect ─────────────────────────────────────────────────────────

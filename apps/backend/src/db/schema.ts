@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
   uuid,
@@ -61,6 +62,7 @@ export const users = pgTable(
       twitter?: string;
       tiktok?: string;
     }>(),
+    photoAlbum: jsonb("photo_album").$type<string[]>().default(sql`'[]'::jsonb`),
     message: varchar("message", { length: 60 }).notNull(),
     privacyMode: privacyModeEnum("privacy_mode").notNull().default("PUBLIC"),
     /** PostGIS GEOGRAPHY point — updated every 60s */

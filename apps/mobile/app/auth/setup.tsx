@@ -16,12 +16,12 @@ import { useMutation } from "@tanstack/react-query";
 import { usersApi } from "../../lib/api";
 import { useAuthStore } from "../../store";
 import { colors, typography, spacing, radius } from "../../lib/theme";
-import Animated, { FadeInDown } from "react-native-reanimated";
 
 export default function ProfileSetupScreen() {
   const user = useAuthStore((s) => s.user);
   const setAuth = useAuthStore((s) => s.setAuth);
   const accessToken = useAuthStore((s) => s.accessToken);
+  const refreshToken = useAuthStore((s) => s.refreshToken);
 
   const [message, setMessage] = useState("");
   const [bio, setBio] = useState("");
@@ -40,10 +40,10 @@ export default function ProfileSetupScreen() {
       return usersApi.getMe();
     },
     onSuccess: (updatedUser) => {
-      if (accessToken) {
-        setAuth(updatedUser, accessToken);
+      if (accessToken && refreshToken) {
+        setAuth(updatedUser, accessToken, refreshToken);
       }
-      router.replace("/app/tabs/feed");
+      router.replace("/(app)/tabs/feed");
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.error ?? "Failed to save profile";
@@ -70,16 +70,13 @@ export default function ProfileSetupScreen() {
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         {/* Header */}
-        <Animated.View entering={FadeInDown.delay(100).duration(500)}>
+        <View>
           <Text style={styles.title}>Create Your Vibe</Text>
           <Text style={styles.subtitle}>Setup your profile to start discovering</Text>
-        </Animated.View>
+        </View>
 
         {/* Profile Form */}
-        <Animated.View
-          entering={FadeInDown.delay(200).duration(500)}
-          style={styles.form}
-        >
+        <View style={styles.form}>
           {/* Avatar Placeholder */}
           <View style={styles.avatarContainer}>
             <View style={styles.avatarCircle}>
@@ -130,7 +127,7 @@ export default function ProfileSetupScreen() {
                   styles.toggleButton,
                   privacyMode === "PUBLIC" && styles.toggleActive,
                 ]}
-                onPress={() => setDobPrivacy("PUBLIC")}
+                onPress={() => setPrivacyMode("PUBLIC")}
               >
                 <Text
                   style={[
@@ -147,7 +144,7 @@ export default function ProfileSetupScreen() {
                   styles.toggleButton,
                   privacyMode === "PRIVATE" && styles.toggleActive,
                 ]}
-                onPress={() => setDobPrivacy("PRIVATE")}
+                onPress={() => setPrivacyMode("PRIVATE")}
               >
                 <Text
                   style={[
@@ -177,14 +174,10 @@ export default function ProfileSetupScreen() {
               <Text style={styles.buttonText}>Enter ahoj</Text>
             )}
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
-
-  function setDobPrivacy(mode: "PUBLIC" | "PRIVATE") {
-    setPrivacyMode(mode);
-  }
 }
 
 const styles = StyleSheet.create({

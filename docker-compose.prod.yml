@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: ahoj_postgres_prod
+    environment:
+      POSTGRES_USER: ahoj
+      POSTGRES_PASSWORD: ahoj_password
+      POSTGRES_DB: ahoj_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ahoj -d ahoj_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: ahoj_redis_prod
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata_prod:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./apps/backend/Dockerfile
+    container_name: ahoj_backend_prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://ahoj:ahoj_password@postgres:5432/ahoj_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_ACCESS_SECRET=ov03mENNrtDFcjizKIuPR0rhFa043baelqQm8E+2o0EB5w3zcKIV9KmBjhmITITu
+      - JWT_REFRESH_SECRET=5df98d30f9c7b9b0aa054182205045fb056ae811763a1e0b2fa21e92ee546d0f
+      - JWT_ACCESS_EXPIRES_IN=15m
+      - JWT_REFRESH_EXPIRES_IN=30d
+      - STORAGE_PROVIDER=local
+      - ALLOWED_ORIGINS=http://localhost:3001
+    restart: always
+
+  web:
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
+    container_name: ahoj_web_prod
+    depends_on:
+      - backend
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+    restart: always
+
+volumes:
+  pgdata_prod:
+  redisdata_prod:

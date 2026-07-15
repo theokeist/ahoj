@@ -1,7 +1,8 @@
 import type { FastifyPluginAsync } from "fastify";
-import { eq, and, desc, lt } from "drizzle-orm";
-import { chats, chatParticipants, messages } from "../../db/schema.js";
+import { eq, and, desc, lt, ne, inArray } from "drizzle-orm";
+import { chats, chatParticipants, messages, users } from "../../db/schema.js";
 import { verifyAccessToken } from "../auth/auth.service.js";
+import { sendPushNotification } from "../../utils/notifications.js";
 
 async function requireAuth(request: any, reply: any) {
   const authHeader = request.headers.authorization;
@@ -18,18 +19,84 @@ export const chatsRoutes: FastifyPluginAsync = async (app) => {
   // GET /chats — list all conversations for the current user
   app.get("/", { preHandler: requireAuth }, async (request: any) => {
     const userChats = await app.db
-      .select({ chatId: chatParticipants.chatId })
-      .from(chatParticipants)
-      .where(eq(chatParticipants.userId, request.userId));
+      .select({
+        chatId: chats.id,
+        createdAt: chats.createdAt,
+        lastMessageAt: chats.lastMessageAt,
+      })
+      .from(chats)
+      .innerJoin(chatParticipants, eq(chats.id, chatParticipants.chatId))
+      .where(eq(chatParticipants.userId, request.userId))
+      .orderBy(desc(chats.lastMessageAt));
 
-    return userChats.map((c) => c.chatId);
+    const detailedChats = await Promise.all(
+      userChats.map(async (chat) => {
+        const [partner] = await app.db
+          .select({
+            id: users.id,
+            username: users.username,
+            profilePhotoUrl: users.profilePhotoUrl,
+            privacyMode: users.privacyMode,
+          })
+          .from(chatParticipants)
+          .innerJoin(users, eq(chatParticipants.userId, users.id))
+          .where(
+            and(
+              eq(chatParticipants.chatId, chat.chatId),
+              ne(chatParticipants.userId, request.userId)
+            )
+          )
+          .limit(1);
+
+        const [lastMessage] = await app.db
+          .select()
+          .from(messages)
+          .where(eq(messages.chatId, chat.chatId))
+          .orderBy(desc(messages.createdAt))
+          .limit(1);
+
+        return {
+          id: chat.chatId,
+          createdAt: chat.createdAt,
+          lastMessageAt: chat.lastMessageAt,
+          partner: partner || null,
+          lastMessage: lastMessage || null,
+        };
+      })
+    );
+
+    return detailedChats;
   });
 
   // POST /chats — create or get existing chat with another user
   app.post("/", { preHandler: requireAuth }, async (request: any, reply) => {
     const { participantId } = request.body as { participantId: string };
 
-    // Create chat
+    const myChats = await app.db
+      .select({ chatId: chatParticipants.chatId })
+      .from(chatParticipants)
+      .where(eq(chatParticipants.userId, request.userId));
+
+    if (myChats.length > 0) {
+      const sharedChat = await app.db
+        .select({ chatId: chatParticipants.chatId })
+        .from(chatParticipants)
+        .where(
+          and(
+            eq(chatParticipants.userId, participantId),
+            inArray(
+              chatParticipants.chatId,
+              myChats.map((c) => c.chatId)
+            )
+          )
+        )
+        .limit(1);
+
+      if (sharedChat.length > 0) {
+        return reply.send({ id: sharedChat[0].chatId });
+      }
+    }
+
     const [chat] = await app.db.insert(chats).values({}).returning();
 
     await app.db.insert(chatParticipants).values([
@@ -69,8 +136,39 @@ export const chatsRoutes: FastifyPluginAsync = async (app) => {
       .values({ chatId: id, senderId: request.userId, content, type })
       .returning();
 
-    // Emit via Socket.io to chat room
-    // (io instance needs to be shared — add via app.decorate in production)
+    await app.db
+      .update(chats)
+      .set({ lastMessageAt: new Date() })
+      .where(eq(chats.id, id));
+
+    (app as any).io?.to(`chat:${id}`).emit("message:new", message);
+
+    // Send push notification asynchronously to the recipient
+    (async () => {
+      try {
+        const otherParticipants = await app.db
+          .select({ userId: chatParticipants.userId })
+          .from(chatParticipants)
+          .where(and(eq(chatParticipants.chatId, id), ne(chatParticipants.userId, request.userId)));
+
+        const [sender] = await app.db
+          .select({ username: users.username })
+          .from(users)
+          .where(eq(users.id, request.userId))
+          .limit(1);
+
+        if (otherParticipants.length > 0 && sender) {
+          await sendPushNotification(
+            otherParticipants[0].userId,
+            `Nová zpráva od @${sender.username}`,
+            content,
+            { chatId: id, senderId: request.userId }
+          );
+        }
+      } catch (err) {
+        app.log.error(err, "Failed to trigger push notification");
+      }
+    })();
 
     return reply.status(201).send(message);
   });

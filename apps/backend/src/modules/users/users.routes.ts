@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
+import { z } from "zod";
 import { eq, and } from "drizzle-orm";
-import { users } from "../../db/schema.js";
+import { users, accessRequests } from "../../db/schema.js";
 import { UpdateProfileSchema, UpdateMessageSchema, UpdateLocationSchema } from "@ahoj/shared";
 import { verifyAccessToken } from "../auth/auth.service.js";
 import { sql } from "drizzle-orm";
@@ -31,6 +32,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
         bio: users.bio,
         website: users.website,
         socialLinks: users.socialLinks,
+        photoAlbum: users.photoAlbum,
         message: users.message,
         privacyMode: users.privacyMode,
         lastActive: users.lastActive,
@@ -78,6 +80,16 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     return { success: true };
   });
 
+  // POST /users/me/fcm
+  app.post("/me/fcm", { preHandler: requireAuth }, async (request: any, reply) => {
+    const { fcmToken } = z.object({ fcmToken: z.string() }).parse(request.body);
+    await app.db
+      .update(users)
+      .set({ fcmToken, updatedAt: new Date() })
+      .where(eq(users.id, request.userId));
+    return { success: true };
+  });
+
   // GET /users/:id (public profile)
   app.get("/:id", { preHandler: requireAuth }, async (request: any, reply) => {
     const { id } = request.params as { id: string };
@@ -89,6 +101,7 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
         bio: users.bio,
         website: users.website,
         socialLinks: users.socialLinks,
+        photoAlbum: users.photoAlbum,
         message: users.message,
         privacyMode: users.privacyMode,
         lastActive: users.lastActive,
@@ -99,11 +112,32 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
 
     if (!user) return reply.status(404).send({ error: "User not found" });
 
-    // Blur photo for private users
-    if (user.privacyMode === "PRIVATE") {
-      user.profilePhotoUrl = null;
+    // Check if there is an access request between requester and target
+    const [access] = await app.db
+      .select({ status: accessRequests.status })
+      .from(accessRequests)
+      .where(
+        and(
+          eq(accessRequests.requesterId, request.userId),
+          eq(accessRequests.targetId, id)
+        )
+      )
+      .limit(1);
+
+    const accessStatus = access?.status ?? null;
+
+    const responseUser = {
+      ...user,
+      accessStatus,
+    };
+
+    // Hide/blur profile data for private users unless access is approved
+    if (user.privacyMode === "PRIVATE" && accessStatus !== "APPROVED") {
+      responseUser.profilePhotoUrl = null;
+      responseUser.bio = null;
+      responseUser.photoAlbum = [];
     }
 
-    return user;
+    return responseUser;
   });
 };

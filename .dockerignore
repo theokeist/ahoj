@@ -1,0 +1,11 @@
+.git
+.turbo
+node_modules
+**/node_modules
+apps/web/.next
+apps/web/tsconfig.tsbuildinfo
+apps/mobile/.expo
+apps/backend/dist
+packages/shared/dist
+dist
+.next

@@ -83,6 +83,8 @@ export const UpdateProfileSchema = z.object({
     })
     .optional(),
   privacyMode: z.enum(["PUBLIC", "PRIVATE"]).optional(),
+  profilePhotoUrl: z.string().url().optional().or(z.literal("")).nullable(),
+  photoAlbum: z.array(z.string()).optional(),
 });
 
 export const UpdateMessageSchema = z.object({
@@ -120,6 +122,7 @@ export type UserPublic = {
   distanceMeters: number;
   hasActiveStories: boolean;
   lastActive: string; // ISO string
+  accessStatus?: "PENDING" | "APPROVED" | "REJECTED" | null;
 };
 
 export type UserProfile = UserPublic & {
@@ -129,6 +132,7 @@ export type UserProfile = UserPublic & {
     twitter?: string;
     tiktok?: string;
   };
+  photoAlbum: string[] | null;
 };
 
 export type StoryPublic = {
@@ -168,6 +172,7 @@ export type ServerToClientEvents = {
   "access:approved": (data: { requestId: string; userId: string }) => void;
   "access:denied": (data: { requestId: string }) => void;
   "user:typing": (data: { chatId: string; userId: string }) => void;
+  "user:typing_stop": (data: { chatId: string; userId: string }) => void;
 };
 
 export type ClientToServerEvents = {
