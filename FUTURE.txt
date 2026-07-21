@@ -70,13 +70,120 @@ Safety mechanisms for real-life meetups.
 * Community SOS Broadcast: Send anonymous, geolocated alert pings to verified 
   users nearby in case of medical or physical emergencies.
 
-7. 🛍️ PROXIMITY MARKETING & LOCAL COLLABORATIONS (AHOJ FOR BUSINESS)
+7. 🛍️ PROXIMITY COOPERATIONS & MARKETING (AHOJ FOR BUSINESS)
 ------------------------------------------------------------------------
 Monetize and connect users with local venues.
 * Local Flash Deals: Businesses can push short-duration deals to users passing 
   by (e.g., "15% off at bakery Y for the next 45 minutes").
 * Check-In Gamification: Virtual treasure hunts, collecting digital tokens or 
   badges at specific locations to unlock discounts or achievements.
+
+
+========================================================================
+           S E C U R I T Y   &   P R I V A C Y   A S P E C T S
+========================================================================
+
+Because ahoj is a proximity network, it handles highly sensitive spatial telemetry. 
+Standard social security measures are insufficient. We must protect against 
+trilateration, stalking, and data mining.
+
+1. Trilateration Attack Prevention
+------------------------------------------------------------------------
+* The Threat: If the `/feed` endpoint returns precise coordinates of nearby 
+  users (or precise relative distances), an attacker can fetch this feed from 
+  three different mock locations and calculate a user's exact address 
+  (latitude and longitude) down to a specific door.
+* The Fix: 
+  - Never return precise coordinates of other users in the public feed.
+  - Return coordinates snapped to hexagonal discrete areas (using Uber's 
+    H3 spatial index) or round to 3 decimal places (approx. 110-meter error margin).
+  - Only reveal exact coordinates if users are mutually matched/connected and 
+    both have explicitly approved "Precise Location Sharing".
+
+2. Telemetry Rate Limiting & Throttling
+------------------------------------------------------------------------
+* The Threat: Attackers can continuously poll location updates (`PUT /users/me/location`) 
+  to trace a user's motion route in real time.
+* The Fix:
+  - Implement server-side throttling. Reject updates that occur more than once 
+    every 2-3 minutes, unless a user has traveled a significant distance 
+    (e.g., > 100 meters).
+  - Use background geofences rather than continuous location polling to save battery 
+    and prevent granular route logging.
+
+3. Media Metadata Location Leaks (EXIF Stripping)
+------------------------------------------------------------------------
+* The Threat: When a user posts a photo story, the original image file contains 
+  EXIF metadata detailing the exact GPS coordinates and camera details, exposing 
+  where the photo was captured (often home or work).
+* The Fix:
+  - Configure the backend file-upload pipeline to automatically strip all EXIF/GPS 
+    metadata from uploaded images using processing packages like `sharp` or `exiftool` 
+    before storing them.
+
+4. Socket.io & WebSocket Authentication
+------------------------------------------------------------------------
+* The Threat: WebSockets remain open and can bypass standard Express HTTP middleware 
+  checks after initialization if not re-authenticated.
+* The Fix:
+  - Implement token-based socket handshakes. Verify JWT access tokens on the 
+    `connection` event.
+  - Periodically disconnect sockets or force re-authentication when the access token 
+    expires to prevent unauthorized updates from hijacked open sockets.
+
+
+========================================================================
+     P E R F O R M A N C E   &   S C A L A B I L I T Y   A S P E C T S
+================================================================--------
+
+Proximity networks are write-heavy. Every user updates their location frequently 
+as they move, and spatial queries are CPU-intensive. Scaling requires minimizing 
+disk operations and optimizing geospatial geometry calculations.
+
+1. Optimizing Spatial Queries (PostgreSQL + PostGIS)
+------------------------------------------------------------------------
+* The Bottleneck: Running `/feed` executes queries to calculate distances 
+  between the client and all active users. Using non-indexed functions like 
+  `ST_Distance` forces a full table scan.
+* The Fix:
+  - Ensure a spatial index (`GiST`) is configured on the `location` column.
+  - Write queries using indexing-compatible operators like `ST_DWithin` 
+    instead of `ST_DistanceSphere` to leverage the index and skip full scans.
+  - Constrain feed queries using standard bounding boxes (`ST_MakeEnvelope`) before 
+    calculating precise distances.
+
+2. Redis Geospatial Index (Write-Behind Caching)
+------------------------------------------------------------------------
+* The Bottleneck: Frequently writing real-time coordinates directly to the 
+  relational database (PostgreSQL) creates disk I/O bottlenecks when there are 
+  thousands of concurrent active users.
+* The Fix:
+  - Store all active locations exclusively in Redis using a Geospatial Index 
+    (`GEOADD`, `GEORADIUS`).
+  - Read active feeds directly from Redis (in-memory, sub-millisecond speeds).
+  - Only write location updates to PostgreSQL periodically (write-behind cache) 
+    when the user has moved > 100m, or keep location strictly volatile in memory 
+    and store only static profile data in Postgres.
+
+3. Horizontal Scaling for WebSockets (Socket.io Cluster)
+------------------------------------------------------------------------
+* The Bottleneck: Real-time broadcasts (`feed:update`, `message:new`) fail 
+  when users are connected to different Node.js servers in a load-balanced cluster.
+* The Fix:
+  - Configure the `socket.io-redis` adapter. This allows Socket.io nodes 
+    to pass events between each other using Redis Pub/Sub, enabling seamless 
+    horizontal scaling of the WebSocket server layer.
+
+4. Client-side Battery & Data Saving (React Native)
+------------------------------------------------------------------------
+* The Bottleneck: Background tracking drains mobile batteries quickly.
+  Sending failed requests while offline exhausts system resources.
+* The Fix:
+  - Use Adaptive Tracking: Increase location ping intervals when the phone 
+    is stationary (using gyroscope/accelerometer data), and decrease it 
+    when the user is moving fast (driving).
+  - Implement request queuing: Batch telemetry updates locally and sync them 
+    in a single request when the connection status returns to online.
 
 ---
 *ahoj — The Next-Gen Proximity Social Network*
