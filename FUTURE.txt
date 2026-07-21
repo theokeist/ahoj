@@ -1,0 +1,82 @@
+========================================================================
+       A H O J  —  F U T U R E   F E A T U R E S   R O A D M A P
+========================================================================
+
+Ahoj is a proximity-based social network designed to connect people who are 
+physically nearby. Analyzing the current codebase (Fastify + React Native + 
+PostgreSQL/PostGIS + Socket.io), here is a proposal of future features 
+categorized by domain, leveraging the existing proximity infrastructure.
+
+---
+
+1. 🔒 ADVANCED PRIVACY & DISCRETION MODES (GHOST MODE)
+------------------------------------------------------------------------
+Proximity sharing is sensitive. Protecting user privacy is paramount.
+* Ghost Mode (Fuzzy Location): Allows users to share an approximate location 
+  (e.g., rounded to a 500-meter grid or with a randomized offset) rather 
+  than precise coordinate points.
+* Safe Zones (Geofenced Privacy): Configure custom boundaries (e.g., "Home", 
+  "Office", "School") where location sharing is automatically paused or 
+  restricted to "approximate only".
+* Schedule-based Invisible Mode: Set timers or schedules to automatically 
+  go invisible (e.g., between 10:00 PM and 7:00 AM, or during calendar events).
+
+2. 🗺️ INTERACTIVE SPATIAL FEED & HEATMAPS (MAP-FIRST VIEW)
+------------------------------------------------------------------------
+Move from a list-based feed to a highly interactive map interface.
+* Avatar Map: An interactive Mapbox / Google Maps layer displaying nearby 
+  user avatars with spatial clustering (so crowded spaces display aggregate bubbles).
+* Activity Heatmaps: Real-time, anonymous density tracking showing active 
+  social nodes (e.g., busy cafes, student squares, festival stages) without 
+  disclosing individual user profiles, helping users find "where the action is".
+* Location History/Footprints: Private dashboard showing the places you've 
+  visited and where you've crossed paths with friends.
+
+3. ⚡ PROXIMITY-BASED SPONTANEOUS MEETUPS (SPARKS)
+------------------------------------------------------------------------
+Enable immediate real-life interactions.
+* Spontaneous Meetups ("Sparks"): Let users create short-lived (e.g., 1-hour 
+  expiry) announcements like "Looking for 2 people for beach volleyball at 
+  Park X" or "Having coffee at Cafe Nero, join me!". These are displayed on 
+  the map only to users within a 1-2 km radius.
+* Proximity Alerts (Radar): Optional notifications when a starred/close friend 
+  enters a defined boundary (e.g., "Friend X is within 100 meters of you!").
+* Dynamic Icebreakers: Generated chat starters based on overlapping interests 
+  when two users are close or request access.
+
+4. 🎙️ LOCAL SPATIAL AUDIO ROOMS (AHOJ LOUNGES)
+------------------------------------------------------------------------
+Location-locked voice channels.
+* Lounge Rooms: Spatially-locked audio rooms that users can only hear or join 
+  if they are physically in the same geofence (e.g. at a specific stadium, 
+  university hall, or music club).
+* Voice Stories: Short audio clips (like voice notes) pinned to coordinates, 
+  allowing users to "listen to the city's thoughts" as they walk around.
+
+5. 📴 OFFLINE PEER-TO-PEER MESH SOCIAL NETWORK (BLE/WIFI DIRECT)
+------------------------------------------------------------------------
+Make the app work when internet connectivity is dead (festivals, subways).
+* Bluetooth BLE Discoverability: Scan and discover nearby users via Bluetooth 
+  Low Energy without pinging the backend server.
+* Offline Messaging: Relay messages through a local Wi-Fi / Bluetooth mesh network 
+  when cellular signals are congested or unavailable.
+
+6. 🛡️ VERIFICATION & SOCIAL SAFETY NETS (SAFETY RING)
+------------------------------------------------------------------------
+Safety mechanisms for real-life meetups.
+* First-Time Meetup Safe Mode: When meeting a nearby stranger through the app, 
+  shares real-time tracking with selected close friends and triggers a check-in 
+  timer. If not acknowledged, sends alerts.
+* Community SOS Broadcast: Send anonymous, geolocated alert pings to verified 
+  users nearby in case of medical or physical emergencies.
+
+7. 🛍️ PROXIMITY MARKETING & LOCAL COLLABORATIONS (AHOJ FOR BUSINESS)
+------------------------------------------------------------------------
+Monetize and connect users with local venues.
+* Local Flash Deals: Businesses can push short-duration deals to users passing 
+  by (e.g., "15% off at bakery Y for the next 45 minutes").
+* Check-In Gamification: Virtual treasure hunts, collecting digital tokens or 
+  badges at specific locations to unlock discounts or achievements.
+
+---
+*ahoj — The Next-Gen Proximity Social Network*
