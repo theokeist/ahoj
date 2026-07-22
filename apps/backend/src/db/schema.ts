@@ -21,7 +21,7 @@ const geometry = customType<{
   driverData: string;
 }>({
   dataType() {
-    return "geography(POINT, 4326)";
+    return "geography";
   },
 });
 
