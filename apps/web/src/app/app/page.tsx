@@ -22,10 +22,27 @@ import {
   Camera,
   RefreshCw,
   AlertCircle,
+  LayoutGrid,
+  Radio,
+  Image as ImageIcon,
+  CheckCircle2,
 } from "lucide-react";
 import Navigation from "../../components/Navigation";
 import { webApi } from "../../lib/api";
 import { MOCK_NEARBY_USERS } from "../../lib/mockData";
+
+const STORY_FILTERS = [
+  { id: "none", name: "Original 📷" },
+  { id: "beauty", name: "Beauty Glow 💄" },
+  { id: "bokeh", name: "Portrait Bokeh 🤖" },
+  { id: "greenscreen", name: "Green Screen 🌿" },
+  { id: "cyber", name: "Cyberpunk ⚡" },
+  { id: "retro", name: "Retro 📻" },
+  { id: "neon", name: "Neon 🌅" },
+  { id: "noir", name: "Noir B&W 🖤" },
+];
+
+const EMOJI_STICKERS = ["📍 Brno", "⚡ Spark", "🔥 Hot", "☕ Coffee", "🏔️ Trip", "🎧 Vibe", "🎉 Party"];
 
 export default function FullWebAppDashboard() {
   const router = useRouter();
@@ -38,6 +55,7 @@ export default function FullWebAppDashboard() {
   const [activeTab, setActiveTab] = useState<"feed" | "sparks" | "chats" | "profile" | "requests">("feed");
   const [radiusKm, setRadiusKm] = useState<number>(2);
   const [isGhostMode, setIsGhostMode] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<"grid" | "radar">("grid");
 
   // Data States
   const [nearbyUsers, setNearbyUsers] = useState<any[]>([]);
@@ -50,7 +68,6 @@ export default function FullWebAppDashboard() {
   const [activeChatUser, setActiveChatUser] = useState<any | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [typedMessage, setTypedMessage] = useState<string>("");
-  const [isTyping, setIsTyping] = useState<boolean>(false);
   const socketRef = useRef<Socket | null>(null);
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
@@ -61,10 +78,12 @@ export default function FullWebAppDashboard() {
   const [newSparkTitle, setNewSparkTitle] = useState<string>("");
   const [newSparkCategory, setNewSparkCategory] = useState<string>("COFFEE");
 
-  // Story Creator Modal
+  // Story Creator Media Editor Modal
   const [isAddStoryOpen, setIsAddStoryOpen] = useState<boolean>(false);
-  const [storyMediaUrl, setStoryMediaUrl] = useState<string>("");
+  const [storyMediaUrl, setStoryMediaUrl] = useState<string>("https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&q=80&w=600");
   const [storyCaption, setStoryCaption] = useState<string>("");
+  const [storyFilter, setStoryFilter] = useState<string>("none");
+  const [storySticker, setStorySticker] = useState<string | null>(null);
 
   // Location Coordinates (Default Brno)
   const [coords, setCoords] = useState<{ lat: number; lng: number }>({ lat: 49.1951, lng: 16.6079 });
@@ -78,7 +97,6 @@ export default function FullWebAppDashboard() {
       return;
     }
 
-    // Validate token with backend /auth/me
     webApi
       .getMe()
       .then((res) => {
@@ -92,15 +110,12 @@ export default function FullWebAppDashboard() {
         router.replace("/login");
       });
 
-    // Request browser Geolocation if permitted
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         },
-        () => {
-          // Use default coordinates if denied
-        }
+        () => {}
       );
     }
   }, [router]);
@@ -145,9 +160,10 @@ export default function FullWebAppDashboard() {
     }
   }, [isAuthenticated, radiusKm, coords]);
 
-  // Setup Real-Time Socket.io Connection
+  // Real-Time Socket.io Connection
   useEffect(() => {
     if (!isAuthenticated) return;
+
     const token = localStorage.getItem("accessToken");
     const socket = io("http://localhost:3000", {
       auth: { token },
@@ -156,8 +172,8 @@ export default function FullWebAppDashboard() {
 
     socketRef.current = socket;
 
-    socket.on("new_message", (msg: any) => {
-      if (activeChatUser && (msg.senderId === activeChatUser.id || msg.receiverId === activeChatUser.id)) {
+    socket.on("message:new", (msg: any) => {
+      if (activeChatUser && msg.senderId === activeChatUser.id) {
         setMessages((prev) => [...prev, msg]);
       }
     });
@@ -167,26 +183,7 @@ export default function FullWebAppDashboard() {
     };
   }, [isAuthenticated, activeChatUser]);
 
-  // Load Chat Messages when Chat Partner Changes
-  useEffect(() => {
-    if (activeChatUser) {
-      webApi
-        .getMessages(activeChatUser.id)
-        .then((res) => setMessages(res.messages))
-        .catch(() => {
-          setMessages([
-            { id: "m1", senderId: activeChatUser.id, text: "Ahoj! Down to grab coffee nearby?", createdAt: new Date().toISOString() },
-          ]);
-        });
-    }
-  }, [activeChatUser]);
-
-  // Scroll Chat to Bottom
-  useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
-
-  // Story Autoplay Timer
+  // Story Progress Timer
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (selectedStoryUser) {
@@ -194,6 +191,7 @@ export default function FullWebAppDashboard() {
       timer = setInterval(() => {
         setStoryProgress((prev) => {
           if (prev >= 100) {
+            clearInterval(timer);
             setSelectedStoryUser(null);
             return 0;
           }
@@ -210,7 +208,6 @@ export default function FullWebAppDashboard() {
     const text = typedMessage.trim();
     setTypedMessage("");
 
-    // Optimistic UI update
     const tempMsg = {
       id: Date.now().toString(),
       senderId: myUser?.id || "me",
@@ -223,7 +220,7 @@ export default function FullWebAppDashboard() {
     try {
       await webApi.sendMessage(activeChatUser.id, text);
     } catch {
-      // Message saved locally
+      // Message saved
     }
   };
 
@@ -255,12 +252,33 @@ export default function FullWebAppDashboard() {
     }
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === "string") {
+          setStoryMediaUrl(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handlePublishStory = async () => {
     if (!storyMediaUrl.trim()) return;
+
+    const params = new URLSearchParams();
+    if (storyFilter !== "none") params.append("filter", storyFilter);
+    if (storyCaption.trim()) params.append("text", storyCaption.trim());
+    if (storySticker) params.append("sticker", storySticker);
+
+    const queryString = params.toString();
+    const finalUrl = queryString ? `${storyMediaUrl}?${queryString}` : storyMediaUrl;
+
     try {
-      await webApi.uploadStory(storyMediaUrl, storyCaption);
+      await webApi.uploadStory(finalUrl, storyCaption);
       setIsAddStoryOpen(false);
-      setStoryMediaUrl("");
       setStoryCaption("");
       loadAppData();
     } catch {
@@ -286,19 +304,12 @@ export default function FullWebAppDashboard() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    setIsAuthenticated(false);
-    router.replace("/login");
-  };
-
-  // Loading Shield
   if (isAuthenticated === null) {
     return (
-      <div className="min-h-screen bg-[#0C0C0C] text-white flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 rounded-full border-2 border-[#00F2FE] border-t-transparent animate-spin mx-auto" />
-          <p className="text-xs font-semibold text-[#00F2FE]">Verifying Session...</p>
+      <div className="min-h-screen bg-[#0C0C0C] flex items-center justify-center text-white">
+        <div className="flex flex-col items-center gap-3">
+          <RefreshCw className="w-8 h-8 text-[#00F2FE] animate-spin" />
+          <span className="text-xs text-white/60 font-semibold tracking-wider uppercase">Loading ahoj Dashboard...</span>
         </div>
       </div>
     );
@@ -308,115 +319,144 @@ export default function FullWebAppDashboard() {
     <div className="min-h-screen bg-[#0C0C0C] text-white flex flex-col font-sans">
       <Navigation />
 
-      {/* Main Authenticated Dashboard Grid */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 pt-24 pb-8 flex flex-col lg:flex-row gap-8 items-start justify-center">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Left Desktop Sidebar — Profile, Radius & Controls */}
-        <div className="hidden lg:flex flex-col w-80 shrink-0 gap-6 glass-panel p-6 rounded-3xl">
-          <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#00F2FE]/10 border border-[#00F2FE]/30 flex items-center justify-center overflow-hidden">
-              <img
-                src={myUser?.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=dev_user"}
-                alt="Avatar"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-white text-base truncate">@{myUser?.username || "dev_user"}</h3>
-              <p className="text-xs text-[#00F2FE] font-medium flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-[#00F2FE] animate-pulse" /> Online • Brno Radar
-              </p>
-            </div>
-          </div>
-
-          {/* Proximity Radius Slider */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs font-semibold">
-              <span className="text-white/60">Search Radius</span>
-              <span className="text-[#00F2FE]">{radiusKm} km</span>
-            </div>
-            <input
-              type="range"
-              min="0.5"
-              max="5"
-              step="0.5"
-              value={radiusKm}
-              onChange={(e) => setRadiusKm(parseFloat(e.target.value))}
-              className="w-full accent-[#00F2FE] cursor-pointer"
-            />
-          </div>
-
-          {/* Ghost Mode Toggle */}
-          <div className="flex items-center justify-between p-3 rounded-2xl bg-white/[0.03] border border-white/10">
-            <div className="flex items-center gap-2">
-              <Ghost className="w-4 h-4 text-[#FF6B6B]" />
+        {/* LEFT SIDEBAR: PROFILE & CONTROL CENTER */}
+        <div className="lg:col-span-3 space-y-6">
+          <div className="glass-panel p-5 rounded-3xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="relative w-14 h-14 rounded-2xl bg-white/5 border border-[#00F2FE]/40 p-0.5">
+                <img
+                  src={myUser?.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=dev_user"}
+                  alt="My avatar"
+                  className="w-full h-full rounded-xl object-cover"
+                />
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#10B981] border-2 border-[#0C0C0C]" />
+              </div>
               <div>
-                <div className="text-xs font-bold text-white">Ghost Mode</div>
-                <div className="text-[10px] text-white/40">Fuzz telemetry on radar</div>
+                <h3 className="font-bold text-base text-white">@{myUser?.username || "dev_user"}</h3>
+                <span className="text-xs text-[#00F2FE] font-medium flex items-center gap-1">
+                  <Shield className="w-3 h-3" /> Proximity Verified
+                </span>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsGhostMode(!isGhostMode)}
-              className={`w-11 h-6 rounded-full p-1 transition-colors ${
-                isGhostMode ? "bg-[#FF6B6B]" : "bg-white/20"
-              }`}
-            >
-              <div className={`w-4 h-4 rounded-full bg-white transition-transform ${isGhostMode ? "translate-x-5" : "translate-x-0"}`} />
-            </button>
+
+            <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-xs space-y-1">
+              <span className="text-white/40 font-semibold uppercase text-[10px]">Status Message</span>
+              <p className="text-white/90 italic">&quot;{myUser?.message || "Ahoj! Exploring nearby spots 📍"}&quot;</p>
+            </div>
+
+            <div className="space-y-2 pt-2 border-t border-white/10">
+              <div className="flex justify-between items-center text-xs font-semibold text-white/70">
+                <span>Radar Radius</span>
+                <span className="text-[#00F2FE] font-bold">{radiusKm} km</span>
+              </div>
+              <input
+                type="range"
+                min="0.5"
+                max="10"
+                step="0.5"
+                value={radiusKm}
+                onChange={(e) => setRadiusKm(parseFloat(e.target.value))}
+                className="w-full accent-[#00F2FE] bg-white/10 h-1.5 rounded-lg cursor-pointer"
+              />
+            </div>
           </div>
 
-          {/* Story Access Requests Quick Button */}
-          {incomingRequests.length > 0 && (
+          <div className="glass-panel p-3 rounded-3xl space-y-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab("feed")}
+              className={`w-full px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between transition-all ${
+                activeTab === "feed" ? "bg-[#00F2FE] text-black shadow-[0_0_20px_rgba(0,242,254,0.3)]" : "text-white/70 hover:bg-white/5"
+              }`}
+            >
+              <span className="flex items-center gap-2.5"><Compass className="w-4 h-4" /> Nearby Radar</span>
+              <span className="text-[10px] opacity-80">{nearbyUsers.length}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("sparks")}
+              className={`w-full px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between transition-all ${
+                activeTab === "sparks" ? "bg-[#00F2FE] text-black shadow-[0_0_20px_rgba(0,242,254,0.3)]" : "text-white/70 hover:bg-white/5"
+              }`}
+            >
+              <span className="flex items-center gap-2.5"><Flame className="w-4 h-4" /> Sparks Meetups</span>
+              <span className="text-[10px] opacity-80">{sparks.length}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("chats")}
+              className={`w-full px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between transition-all ${
+                activeTab === "chats" ? "bg-[#00F2FE] text-black shadow-[0_0_20px_rgba(0,242,254,0.3)]" : "text-white/70 hover:bg-white/5"
+              }`}
+            >
+              <span className="flex items-center gap-2.5"><MessageSquare className="w-4 h-4" /> E2EE Messages</span>
+              <span className="text-[10px] opacity-80">{conversations.length}</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setActiveTab("requests")}
-              className="p-3 rounded-2xl bg-[#00F2FE]/10 border border-[#00F2FE]/30 flex items-center justify-between text-left"
-            >
-              <div className="flex items-center gap-2">
-                <Lock className="w-4 h-4 text-[#00F2FE]" />
-                <span className="text-xs font-bold text-white">Access Requests</span>
-              </div>
-              <span className="px-2 py-0.5 rounded-full bg-[#00F2FE] text-black text-[10px] font-black">
-                {incomingRequests.length}
-              </span>
-            </button>
-          )}
-
-          {/* Logout Button */}
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="w-full py-3 rounded-xl bg-white/5 hover:bg-red-500/20 hover:border-red-500/40 text-red-400 font-bold text-xs flex items-center justify-center gap-2 border border-white/10 transition-all"
-          >
-            <LogOut className="w-4 h-4" /> Log out of ahoj
-          </button>
-        </div>
-
-        {/* Center Mobile-First Frame Container */}
-        <div className="w-full max-w-md mx-auto flex-1 flex flex-col bg-[#121212] border border-white/10 rounded-[36px] overflow-hidden shadow-2xl min-h-[720px] relative">
-          
-          {/* App Shell Top Navigation */}
-          <div className="h-16 px-5 border-b border-white/10 flex items-center justify-between bg-[#121212]/90 backdrop-blur-md sticky top-0 z-20">
-            <span className="text-xl font-black text-[#00F2FE] tracking-tighter">/A\ ahoj</span>
-            <span className="text-sm font-bold capitalize text-white">{activeTab}</span>
-            <button
-              type="button"
-              onClick={() => setIsGhostMode(!isGhostMode)}
-              className={`w-8 h-8 rounded-full flex items-center justify-center border ${
-                isGhostMode ? "border-[#FF6B6B] bg-[#FF6B6B]/20 text-[#FF6B6B]" : "border-white/10 bg-white/5 text-white/60"
+              className={`w-full px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between transition-all ${
+                activeTab === "requests" ? "bg-[#00F2FE] text-black shadow-[0_0_20px_rgba(0,242,254,0.3)]" : "text-white/70 hover:bg-white/5"
               }`}
             >
-              <Ghost className="w-4 h-4" />
+              <span className="flex items-center gap-2.5"><Lock className="w-4 h-4" /> Access Requests</span>
+              {incomingRequests.length > 0 && (
+                <span className="w-4 h-4 rounded-full bg-[#FF6B6B] text-black text-[9px] font-bold flex items-center justify-center">
+                  {incomingRequests.length}
+                </span>
+              )}
             </button>
           </div>
+        </div>
 
-          {/* Ghost Mode Active Banner */}
-          {isGhostMode && (
-            <div className="bg-[#FF6B6B]/15 border-b border-[#FF6B6B]/30 px-4 py-2 text-center text-xs font-semibold text-[#FF6B6B] flex items-center justify-center gap-1.5">
-              <span>👻 Ghost Mode Active — Hidden on radar feed</span>
+        {/* MAIN FEED & CHAT CANVAS */}
+        <div className="lg:col-span-9 flex flex-col bg-[#121212] rounded-3xl border border-white/10 overflow-hidden min-h-[650px] relative">
+          
+          {/* Header Bar */}
+          <div className="h-16 px-5 border-b border-white/10 flex items-center justify-between bg-[#121212]/90 backdrop-blur-md sticky top-0 z-20">
+            <span className="text-xl font-black text-[#00F2FE] tracking-tighter">/A\ ahoj</span>
+            <span className="text-sm font-bold capitalize text-white flex items-center gap-2">
+              {activeTab}
+            </span>
+            <div className="flex items-center gap-2">
+              {activeTab === "feed" && (
+                <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("grid")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 ${
+                      viewMode === "grid" ? "bg-[#00F2FE] text-black" : "text-white/60"
+                    }`}
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" /> Grid
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("radar")}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 ${
+                      viewMode === "radar" ? "bg-[#00F2FE] text-black" : "text-white/60"
+                    }`}
+                  >
+                    <Radio className="w-3.5 h-3.5" /> Radar Ring
+                  </button>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsGhostMode(!isGhostMode)}
+                className={`w-8 h-8 rounded-full flex items-center justify-center border ${
+                  isGhostMode ? "border-[#FF6B6B] bg-[#FF6B6B]/20 text-[#FF6B6B]" : "border-white/10 bg-white/5 text-white/60"
+                }`}
+              >
+                <Ghost className="w-4 h-4" />
+              </button>
             </div>
-          )}
+          </div>
 
           {/* TAB 1: RADAR / PROXIMITY FEED */}
           {activeTab === "feed" && (
@@ -425,22 +465,21 @@ export default function FullWebAppDashboard() {
               {/* 24h Story Bar */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center text-xs font-bold text-white/60">
-                  <span>24h Stories</span>
+                  <span>24h Active Stories</span>
                   <button
                     type="button"
                     onClick={() => setIsAddStoryOpen(true)}
-                    className="text-[#00F2FE] hover:underline flex items-center gap-1"
+                    className="text-[#00F2FE] hover:underline flex items-center gap-1 cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5" /> Post Story
+                    <Plus className="w-3.5 h-3.5" /> Post 24h Story
                   </button>
                 </div>
 
                 <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
-                  {/* Create My Story Button */}
                   <button
                     type="button"
                     onClick={() => setIsAddStoryOpen(true)}
-                    className="flex flex-col items-center gap-1 shrink-0 group"
+                    className="flex flex-col items-center gap-1 shrink-0 group cursor-pointer"
                   >
                     <div className="w-14 h-14 rounded-full border-2 border-[#00F2FE] p-0.5 relative bg-white/5">
                       <img
@@ -453,334 +492,244 @@ export default function FullWebAppDashboard() {
                     <span className="text-[10px] text-white/70 font-medium">Add Story</span>
                   </button>
 
-                  {/* Nearby User Stories */}
                   {nearbyUsers.map((user) => (
                     <button
                       key={user.id}
                       type="button"
                       onClick={() => setSelectedStoryUser(user)}
-                      className="flex flex-col items-center gap-1 shrink-0 group"
+                      className="flex flex-col items-center gap-1 shrink-0 group cursor-pointer"
                     >
-                      <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-[#00F2FE] to-[#FF6B6B] p-0.5 relative">
+                      <div className="w-14 h-14 rounded-full border-2 border-[#00F2FE] p-0.5 bg-white/5">
                         <img
-                          src={user.avatarUrl || user.profilePhotoUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=" + user.username}
+                          src={user.avatarUrl || "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&q=80&w=600"}
                           alt={user.username}
                           className="w-full h-full rounded-full object-cover"
                         />
                       </div>
-                      <span className="text-[10px] text-white/70 font-medium truncate w-14 text-center">@{user.username}</span>
+                      <span className="text-[10px] text-white/90 font-medium max-w-[56px] truncate">@{user.username}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Nearby People List */}
-              <div className="space-y-3 pt-2">
-                <div className="flex justify-between items-center text-xs font-bold text-white/60">
-                  <span>Nearby People ({nearbyUsers.length})</span>
-                  <span>&le; {radiusKm} km</span>
-                </div>
-
-                {nearbyUsers.map((user) => (
-                  <div
-                    key={user.id}
-                    className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-between gap-3 hover:border-[#00F2FE]/40 transition-all"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-12 h-12 rounded-full overflow-hidden border border-white/10 bg-white/5 relative shrink-0">
+              {/* Feed Grid View vs Radar View */}
+              {viewMode === "grid" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {nearbyUsers.map((user) => (
+                    <div key={user.id} className="glass-panel p-4 rounded-2xl space-y-3 relative group">
+                      <div className="flex items-center gap-3">
                         <img
-                          src={user.avatarUrl || user.profilePhotoUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=" + user.username}
+                          src={user.avatarUrl || "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&q=80&w=600"}
                           alt={user.username}
-                          className="w-full h-full object-cover"
+                          className="w-12 h-12 rounded-xl object-cover border border-white/10"
                         />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-sm text-white truncate">@{user.username}</span>
+                        <div>
+                          <h4 className="font-bold text-sm text-white">@{user.username}</h4>
+                          <span className="text-[10px] text-[#00F2FE] font-bold">
+                            {user.distanceMeters ? `${user.distanceMeters}m away` : "Nearby"}
+                          </span>
                         </div>
-                        <p className="text-xs text-white/60 truncate">{user.message || user.bio || "Exploring nearby!"}</p>
                       </div>
+                      <p className="text-xs text-white/70 italic bg-white/5 p-2.5 rounded-xl border border-white/5">
+                        &quot;{user.message || "Ahoj!"}&quot;
+                      </p>
                     </div>
-
-                    <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      <span className="text-[10px] text-[#00F2FE] font-mono">~{user.distanceMeters || 150}m</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveChatUser(user);
-                          setActiveTab("chats");
-                        }}
-                        className="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-[10px] font-bold text-white border border-white/10"
-                      >
-                        Chat
-                      </button>
-                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="relative w-full h-[450px] bg-gradient-to-br from-[#0C0C0C] via-[#0A192F] to-[#052930] rounded-3xl border border-white/10 flex items-center justify-center overflow-hidden">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,242,254,0.12)_0,transparent_70%)]" />
+                  <div className="absolute inset-0 rounded-full border border-[#00F2FE]/20 animate-radar" />
+                  <div className="absolute w-[300px] h-[300px] rounded-full border border-[#00F2FE]/30 animate-pulse" />
+                  <div className="w-16 h-16 rounded-full bg-[#00F2FE]/20 border-2 border-[#00F2FE] flex items-center justify-center shadow-[0_0_20px_rgba(0,242,254,0.5)] z-10">
+                    <span className="text-xs font-bold text-[#00F2FE]">You</span>
                   </div>
-                ))}
-              </div>
+
+                  {nearbyUsers.map((user, idx) => {
+                    const angle = (idx / nearbyUsers.length) * 2 * Math.PI;
+                    const dist = 80 + (idx % 3) * 50;
+                    const x = Math.cos(angle) * dist;
+                    const y = Math.sin(angle) * dist;
+
+                    return (
+                      <div
+                        key={user.id}
+                        style={{ transform: `translate(${x}px, ${y}px)` }}
+                        className="absolute z-20 flex flex-col items-center gap-1 group cursor-pointer"
+                        onClick={() => setSelectedStoryUser(user)}
+                      >
+                        <img
+                          src={user.avatarUrl || "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&q=80&w=600"}
+                          alt={user.username}
+                          className="w-10 h-10 rounded-full border-2 border-[#00F2FE] object-cover shadow-lg"
+                        />
+                        <span className="text-[9px] bg-black/80 text-white font-bold px-1.5 py-0.5 rounded-full border border-white/20">
+                          @{user.username}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
-          {/* TAB 2: SPARKS */}
+          {/* TAB 2: SPARKS MEETUPS */}
           {activeTab === "sparks" && (
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="font-bold text-base text-white">⚡ Nearby Sparks</h3>
-                  <p className="text-xs text-white/50">Spontaneous 2-hour meetups around you</p>
-                </div>
+                <span className="text-xs font-bold text-white/60">Spontaneous Meetups (2h Expiry)</span>
                 <button
                   type="button"
                   onClick={() => setIsCreateSparkOpen(true)}
-                  className="px-3 py-1.5 rounded-xl bg-[#00F2FE] text-black text-xs font-bold flex items-center gap-1 shadow-[0_0_15px_rgba(0,242,254,0.3)]"
+                  className="px-3 py-1.5 rounded-xl bg-[#00F2FE] text-black font-bold text-xs flex items-center gap-1"
                 >
-                  <Plus className="w-4 h-4" /> Create
+                  <Plus className="w-3.5 h-3.5" /> Create Spark
                 </button>
               </div>
 
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {sparks.map((spark) => (
-                  <div key={spark.id} className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 space-y-2">
+                  <div key={spark.id} className="glass-panel p-4 rounded-2xl space-y-2 border border-[#00F2FE]/30">
                     <div className="flex justify-between items-start">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10">
-                          <img
-                            src={spark.userAvatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=" + spark.username}
-                            alt="Avatar"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div>
-                          <span className="text-xs font-bold text-white">@{spark.username}</span>
-                          <span className="text-[10px] text-white/40 block">{spark.createdAt}</span>
-                        </div>
-                      </div>
-                      <span className="px-2 py-0.5 rounded-md bg-[#00F2FE]/15 border border-[#00F2FE]/30 text-[10px] font-bold text-[#00F2FE]">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#00F2FE]/20 text-[#00F2FE]">
                         {spark.category}
                       </span>
+                      <span className="text-[10px] text-white/50">2h active</span>
                     </div>
                     <h4 className="font-bold text-sm text-white">{spark.title}</h4>
-                    {spark.description && <p className="text-xs text-white/70">{spark.description}</p>}
+                    <span className="text-xs text-white/60">By @{spark.username}</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* TAB 3: CHATS */}
+          {/* TAB 3: E2EE CHATS */}
           {activeTab === "chats" && (
-            <div className="flex-1 flex flex-col overflow-hidden">
-              {activeChatUser ? (
-                <div className="flex-1 flex flex-col">
-                  <div className="p-3 bg-white/[0.03] border-b border-white/10 flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => setActiveChatUser(null)}
-                      className="text-xs text-[#00F2FE] font-bold"
-                    >
-                      &larr; Back
-                    </button>
-                    <span className="text-sm font-bold text-white">@{activeChatUser.username}</span>
-                    <div className="w-4" />
-                  </div>
+            <div className="flex-1 flex overflow-hidden">
+              <div className="w-1/3 border-r border-white/10 overflow-y-auto p-3 space-y-2">
+                {conversations.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setActiveChatUser(c)}
+                    className={`w-full p-3 rounded-2xl text-left flex items-center gap-3 transition-all ${
+                      activeChatUser?.id === c.id ? "bg-white/10 border border-[#00F2FE]/40" : "hover:bg-white/5"
+                    }`}
+                  >
+                    <img src={c.avatarUrl} alt={c.username} className="w-10 h-10 rounded-full object-cover" />
+                    <div>
+                      <h4 className="font-bold text-xs text-white">@{c.username}</h4>
+                      <p className="text-[10px] text-white/50 truncate">E2EE Signal Protected</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
 
-                  <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                    {messages.map((msg) => {
-                      const isMe = msg.senderId === myUser?.id || msg.sender === "me";
-                      return (
+              <div className="w-2/3 flex flex-col bg-black/40">
+                {activeChatUser ? (
+                  <>
+                    <div className="p-3 border-b border-white/10 flex items-center justify-between bg-white/5">
+                      <span className="font-bold text-xs text-white">@{activeChatUser.username}</span>
+                      <span className="text-[10px] text-[#10B981] font-semibold flex items-center gap-1">
+                        <Shield className="w-3 h-3" /> Signal E2EE
+                      </span>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                      {messages.map((m) => (
                         <div
-                          key={msg.id}
-                          className={`max-w-[80%] p-3 rounded-2xl text-xs ${
-                            isMe
-                              ? "bg-[#00F2FE] text-black font-medium ml-auto rounded-tr-none"
-                              : "bg-white/10 text-white mr-auto rounded-tl-none border border-white/10"
-                          }`}
+                          key={m.id}
+                          className={`flex ${m.senderId === myUser?.id ? "justify-end" : "justify-start"}`}
                         >
-                          <p>{msg.text}</p>
+                          <div
+                            className={`max-w-[70%] px-3.5 py-2 rounded-2xl text-xs font-medium ${
+                              m.senderId === myUser?.id
+                                ? "bg-[#00F2FE] text-black font-semibold"
+                                : "bg-white/10 text-white"
+                            }`}
+                          >
+                            {m.text}
+                          </div>
                         </div>
-                      );
-                    })}
-                    <div ref={chatBottomRef} />
+                      ))}
+                    </div>
+                    <div className="p-3 border-t border-white/10 flex gap-2">
+                      <input
+                        type="text"
+                        value={typedMessage}
+                        onChange={(e) => setTypedMessage(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                        placeholder="Type E2EE message..."
+                        className="flex-1 glass-input px-4 py-2 rounded-xl text-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSendMessage}
+                        className="px-4 py-2 rounded-xl bg-[#00F2FE] text-black font-bold text-xs"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center text-white/40 text-xs">
+                    <MessageSquare className="w-8 h-8 mb-2" /> Select a chat to start messaging
                   </div>
-
-                  <div className="p-3 border-t border-white/10 bg-[#121212] flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={typedMessage}
-                      onChange={(e) => setTypedMessage(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                      placeholder="Type a message..."
-                      className="flex-1 glass-input px-4 py-2.5 rounded-full text-xs"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleSendMessage}
-                      className="w-9 h-9 rounded-full bg-[#00F2FE] text-black flex items-center justify-center font-bold shrink-0"
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  <div className="text-xs font-bold text-white/60">Active Conversations</div>
-                  {nearbyUsers.map((user) => (
-                    <button
-                      key={user.id}
-                      type="button"
-                      onClick={() => setActiveChatUser(user)}
-                      className="w-full p-3 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-[#00F2FE]/40 flex items-center justify-between text-left transition-all"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10">
-                          <img
-                            src={user.avatarUrl || user.profilePhotoUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=" + user.username}
-                            alt={user.username}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div>
-                          <div className="font-bold text-xs text-white">@{user.username}</div>
-                          <div className="text-[11px] text-white/50 line-clamp-1">{user.message || "Tap to chat"}</div>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-white/30" />
-                    </button>
-                  ))}
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
 
           {/* TAB 4: ACCESS REQUESTS */}
           {activeTab === "requests" && (
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              <div className="text-xs font-bold text-white/60">Story Access Requests</div>
-              {incomingRequests.length === 0 ? (
-                <div className="text-center py-12 text-xs text-white/40">No pending access requests 🌟</div>
-              ) : (
-                incomingRequests.map((req) => (
-                  <div key={req.id} className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10">
-                        <img
-                          src={req.requester?.profilePhotoUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=" + req.requester?.username}
-                          alt="Avatar"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <span className="font-bold text-xs text-white">@{req.requester?.username}</span>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleApproveRequest(req.id)}
-                        className="px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500 text-emerald-400 text-xs font-bold"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDenyRequest(req.id)}
-                        className="px-3 py-1 rounded-xl bg-red-500/20 border border-red-500 text-red-400 text-xs font-bold"
-                      >
-                        Deny
-                      </button>
-                    </div>
+              <span className="text-xs font-bold text-white/60">Pending Story & Profile Access Requests</span>
+              {incomingRequests.map((req) => (
+                <div key={req.id} className="glass-panel p-4 rounded-2xl flex items-center justify-between">
+                  <div>
+                    <h4 className="font-bold text-sm text-white">@{req.requesterUsername}</h4>
+                    <span className="text-xs text-white/50">Wants to unlock your 24h stories</span>
                   </div>
-                ))
-              )}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleApproveRequest(req.id)}
+                      className="px-3 py-1.5 rounded-xl bg-[#10B981] text-black font-bold text-xs"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDenyRequest(req.id)}
+                      className="px-3 py-1.5 rounded-xl bg-white/10 text-white font-bold text-xs"
+                    >
+                      Deny
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
-
-          {/* TAB 5: PROFILE */}
-          {activeTab === "profile" && (
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/10">
-                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#00F2FE] p-0.5">
-                  <img
-                    src={myUser?.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=dev_user"}
-                    alt="Avatar"
-                    className="w-full h-full rounded-full object-cover"
-                  />
-                </div>
-                <div>
-                  <h3 className="font-bold text-base text-white">@{myUser?.username || "dev_user"}</h3>
-                  <p className="text-xs text-white/60">{myUser?.email || "dev@ahoj.app"}</p>
-                </div>
-              </div>
-
-              {/* Logout Button */}
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="w-full py-3 rounded-2xl bg-red-500/20 border border-red-500 text-red-400 font-bold text-xs"
-              >
-                Log Out
-              </button>
-            </div>
-          )}
-
-          {/* Bottom Tab Bar */}
-          <div className="h-16 border-t border-white/10 bg-[#121212] flex items-center justify-around px-2 z-20">
-            <button
-              type="button"
-              onClick={() => setActiveTab("feed")}
-              className={`flex flex-col items-center gap-1 ${activeTab === "feed" ? "text-[#00F2FE]" : "text-white/40"}`}
-            >
-              <Compass className="w-5 h-5" />
-              <span className="text-[10px] font-bold">Radar</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("sparks")}
-              className={`flex flex-col items-center gap-1 ${activeTab === "sparks" ? "text-[#00F2FE]" : "text-white/40"}`}
-            >
-              <Sparkles className="w-5 h-5" />
-              <span className="text-[10px] font-bold">Sparks</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("chats")}
-              className={`flex flex-col items-center gap-1 ${activeTab === "chats" ? "text-[#00F2FE]" : "text-white/40"}`}
-            >
-              <MessageSquare className="w-5 h-5" />
-              <span className="text-[10px] font-bold">Chats</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("profile")}
-              className={`flex flex-col items-center gap-1 ${activeTab === "profile" ? "text-[#00F2FE]" : "text-white/40"}`}
-            >
-              <User className="w-5 h-5" />
-              <span className="text-[10px] font-bold">Profile</span>
-            </button>
-          </div>
         </div>
       </main>
 
-      {/* Story Viewer Modal */}
+      {/* STORY VIEWER MODAL */}
       {selectedStoryUser && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-md">
-          <div className="w-full max-w-[360px] aspect-[9/16] bg-black rounded-3xl overflow-hidden relative flex flex-col border border-white/10">
-            <div className="absolute top-4 left-4 right-4 h-1 bg-white/20 rounded-full overflow-hidden z-30">
-              <div className="h-full bg-[#00F2FE] transition-all duration-100 ease-linear" style={{ width: `${storyProgress}%` }} />
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-sm h-[550px] bg-black rounded-3xl overflow-hidden border border-white/20">
+            <div className="absolute top-3 left-3 right-3 h-1 bg-white/20 rounded-full z-20 overflow-hidden">
+              <div style={{ width: `${storyProgress}%` }} className="h-full bg-white transition-all duration-100" />
             </div>
-            <div className="absolute top-7 left-4 right-4 z-30 flex items-center justify-between">
+
+            <div className="absolute top-6 left-4 right-4 flex justify-between items-center z-20">
               <div className="flex items-center gap-2">
-                <img
-                  src={selectedStoryUser.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=" + selectedStoryUser.username}
-                  alt="Avatar"
-                  className="w-7 h-7 rounded-full object-cover"
-                />
+                <img src={selectedStoryUser.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-full object-cover" />
                 <span className="text-white text-xs font-bold">@{selectedStoryUser.username}</span>
               </div>
               <button type="button" onClick={() => setSelectedStoryUser(null)} className="text-white text-sm font-bold">✕</button>
             </div>
+
             <img
               src={selectedStoryUser.stories?.[0] || selectedStoryUser.avatarUrl || "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&q=80&w=600"}
               alt="Story"
@@ -790,40 +739,134 @@ export default function FullWebAppDashboard() {
         </div>
       )}
 
-      {/* Add Story Modal */}
+      {/* WEB STORY CREATOR MEDIA EDITOR MODAL */}
       {isAddStoryOpen && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-sm glass-panel p-6 rounded-3xl space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="font-bold text-base text-white">🎬 Post 24h Story</h3>
-              <button type="button" onClick={() => setIsAddStoryOpen(false)} className="text-white/60 hover:text-white">✕</button>
+        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg glass-panel p-6 rounded-3xl space-y-4 border border-white/20">
+            <div className="flex justify-between items-center border-b border-white/10 pb-3">
+              <h3 className="font-bold text-base text-white flex items-center gap-2">
+                <Camera className="w-5 h-5 text-[#00F2FE]" /> Story Media Editor
+              </h3>
+              <button type="button" onClick={() => setIsAddStoryOpen(false)} className="text-white/60 hover:text-white font-bold">✕</button>
             </div>
-            <input
-              type="text"
-              value={storyMediaUrl}
-              onChange={(e) => setStoryMediaUrl(e.target.value)}
-              placeholder="Image URL (e.g. https://...)"
-              className="w-full glass-input px-4 py-2.5 rounded-xl text-xs"
-            />
-            <input
-              type="text"
-              value={storyCaption}
-              onChange={(e) => setStoryCaption(e.target.value)}
-              placeholder="Caption (Optional)"
-              className="w-full glass-input px-4 py-2.5 rounded-xl text-xs"
-            />
+
+            {/* Preview Box with Filter Tint & EXIF Badge */}
+            <div className="relative w-full h-56 rounded-2xl overflow-hidden bg-black border border-white/10 flex items-center justify-center">
+              <img src={storyMediaUrl} alt="Story preview" className="w-full h-full object-cover" />
+              
+              {/* Filter Tint Overlays */}
+              {storyFilter === "beauty" && <div className="absolute inset-0 bg-[#FFDCE6]/15 pointer-events-none" />}
+              {storyFilter === "bokeh" && <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px] pointer-events-none" />}
+              {storyFilter === "greenscreen" && <div className="absolute inset-0 bg-[#10B981]/20 pointer-events-none" />}
+              {storyFilter === "cyber" && <div className="absolute inset-0 bg-[#00F2FE]/20 pointer-events-none" />}
+              {storyFilter === "retro" && <div className="absolute inset-0 bg-[#E67800]/15 pointer-events-none" />}
+              {storyFilter === "neon" && <div className="absolute inset-0 bg-[#FF6B6B]/20 pointer-events-none" />}
+              {storyFilter === "noir" && <div className="absolute inset-0 bg-black/50 grayscale pointer-events-none" />}
+
+              {/* Floating Sticker */}
+              {storySticker && (
+                <div className="absolute top-4 bg-[#00F2FE]/20 border border-[#00F2FE] px-3 py-1 rounded-full text-xs font-bold text-white shadow-lg">
+                  {storySticker}
+                </div>
+              )}
+
+              {/* Floating Caption */}
+              {storyCaption && (
+                <div className="absolute bottom-4 bg-black/70 border border-white/20 px-4 py-1.5 rounded-xl text-xs font-bold text-white text-center max-w-[80%]">
+                  {storyCaption}
+                </div>
+              )}
+
+              {/* EXIF Security Badge */}
+              <div className="absolute top-3 left-3 bg-[#10B981]/20 border border-[#10B981] px-2.5 py-0.5 rounded-full text-[9px] font-bold text-[#10B981] flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" /> EXIF Clean (GPS Privacy)
+              </div>
+            </div>
+
+            {/* Inputs & File Upload */}
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={storyMediaUrl}
+                  onChange={(e) => setStoryMediaUrl(e.target.value)}
+                  placeholder="Image URL or upload below..."
+                  className="flex-1 glass-input px-3.5 py-2 rounded-xl text-xs"
+                />
+                <label className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold cursor-pointer flex items-center gap-1 border border-white/10">
+                  <ImageIcon className="w-3.5 h-3.5" /> Upload File
+                  <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                </label>
+              </div>
+
+              <input
+                type="text"
+                value={storyCaption}
+                onChange={(e) => setStoryCaption(e.target.value)}
+                placeholder="Story caption text..."
+                className="w-full glass-input px-3.5 py-2 rounded-xl text-xs"
+              />
+
+              {/* Filter Selector */}
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-[#00F2FE] uppercase tracking-wider">Effects & Filters</span>
+                <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                  {STORY_FILTERS.map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setStoryFilter(f.id)}
+                      className={`px-3 py-1 rounded-full text-[11px] font-semibold shrink-0 border transition-all ${
+                        storyFilter === f.id ? "bg-[#00F2FE] text-black border-[#00F2FE] font-bold" : "bg-white/5 border-white/10 text-white/70"
+                      }`}
+                    >
+                      {f.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sticker Selector */}
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-[#00F2FE] uppercase tracking-wider">Stickers & Overlays</span>
+                <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                  <button
+                    type="button"
+                    onClick={() => setStorySticker(null)}
+                    className={`px-3 py-1 rounded-full text-[11px] font-semibold shrink-0 border ${
+                      !storySticker ? "bg-[#00F2FE] text-black border-[#00F2FE]" : "bg-white/5 border-white/10 text-white/70"
+                    }`}
+                  >
+                    ✕ None
+                  </button>
+                  {EMOJI_STICKERS.map((stk) => (
+                    <button
+                      key={stk}
+                      type="button"
+                      onClick={() => setStorySticker(stk)}
+                      className={`px-3 py-1 rounded-full text-[11px] font-semibold shrink-0 border ${
+                        storySticker === stk ? "bg-[#00F2FE] text-black border-[#00F2FE]" : "bg-white/5 border-white/10 text-white/70"
+                      }`}
+                    >
+                      {stk}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <button
               type="button"
               onClick={handlePublishStory}
-              className="w-full py-3 rounded-xl bg-[#00F2FE] text-black font-bold text-xs"
+              className="w-full py-3 rounded-xl bg-[#00F2FE] text-black font-bold text-xs shadow-[0_0_20px_rgba(0,242,254,0.4)]"
             >
-              Publish Story
+              Publish to 24h Stories ⚡
             </button>
           </div>
         </div>
       )}
 
-      {/* Create Spark Modal */}
+      {/* CREATE SPARK MODAL */}
       {isCreateSparkOpen && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-sm glass-panel p-6 rounded-3xl space-y-4">
@@ -835,7 +878,7 @@ export default function FullWebAppDashboard() {
               type="text"
               value={newSparkTitle}
               onChange={(e) => setNewSparkTitle(e.target.value)}
-              placeholder="What are you up to?"
+              placeholder="What are you up to? (e.g. Coffee @ Main Square)"
               className="w-full glass-input px-4 py-2.5 rounded-xl text-xs"
             />
             <button
