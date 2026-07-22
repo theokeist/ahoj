@@ -160,6 +160,7 @@ eas build:configure
 
 | Date | Changed By | Description of Change |
 | :--- | :--- | :--- |
+| **2026-07-22** | Antigravity AI | Added App Settings Page inside WebApp (`/app`), profile/bio/status/avatar management, privacy mode selectors (Public/Ghost/Private), and luxury dark glassmorphic radial background glow aesthetics. |
 | **2026-07-22** | Antigravity AI | Completed `/goal` execution: automatic token refresh interceptor, AntD context-aware message wrappers, 0 TypeScript/build errors across all monorepo packages. |
 | **2026-07-22** | Antigravity AI | Added 1:1 Web Story Media Editor with live filter previews, image file upload, and Distance Radar Ring view to Web App (`/app`). |
 | **2026-07-22** | Antigravity AI | Fixed Sparks DB enum casting (`::spark_category`), parsed/rendered filters & text in story viewer, and structured mobile camera editor into 3-part layout with AntD outline icons and right-aligned toolbar. |
