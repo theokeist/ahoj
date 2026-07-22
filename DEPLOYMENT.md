@@ -160,4 +160,5 @@ eas build:configure
 
 | Date | Changed By | Description of Change |
 | :--- | :--- | :--- |
+| **2026-07-22** | Antigravity AI | Enforced `/app` Web Auth Guard (`localStorage.getItem("accessToken")`), 1:1 Fastify API integration, Socket.io real-time chat, Sparks meetups, and Expo Go SDK 53 notification import workaround. |
 | **2026-07-22** | Antigravity AI | Initial creation of unified single-source `DEPLOYMENT.md` capturing 3rd party OAuth keys, PostGIS steps, Docker setup, and EAS Android/iOS release needs. |
