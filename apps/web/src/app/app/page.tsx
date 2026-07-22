@@ -32,7 +32,6 @@ import {
   Key,
   Globe,
   Save,
-  Moon,
   Zap,
 } from "lucide-react";
 import { webApi } from "../../lib/api";
@@ -385,234 +384,217 @@ export default function FullWebAppDashboard() {
 
   if (isAuthenticated === null) {
     return (
-      <div className="min-h-screen bg-[#0C0C0C] flex items-center justify-center text-white">
-        <div className="flex flex-col items-center gap-3">
-          <RefreshCw className="w-8 h-8 text-[#00F2FE] animate-spin" />
-          <span className="text-xs text-white/60 font-semibold tracking-wider uppercase">Loading ahoj Dashboard...</span>
+      <div className="page-shell" style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-md)' }}>
+          <RefreshCw style={{ width: 32, height: 32, color: 'var(--color-primary)', animation: 'spin 1s linear infinite' }} />
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Loading ahoj Dashboard...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0C0C0C] text-white flex flex-col font-sans relative overflow-x-hidden">
-      
-      {/* Dynamic Ambient Background Radial Glows */}
-      <div className="fixed top-[-15%] left-[-10%] w-[600px] h-[600px] bg-[#00F2FE]/10 rounded-full blur-[180px] pointer-events-none z-0" />
-      <div className="fixed bottom-[-15%] right-[-10%] w-[600px] h-[600px] bg-[#7B2FE7]/15 rounded-full blur-[180px] pointer-events-none z-0" />
+    <div className="page-shell" style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', position: 'relative', overflowX: 'hidden' }}>
 
-      {/* AUTHENTICATED APP HEADER (NON-OVERLAPPING) */}
-      <header className="sticky top-0 z-40 bg-[#0C0C0C]/85 backdrop-blur-xl border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2 group select-none">
-              <span className="text-2xl font-black text-[#00F2FE] tracking-tighter group-hover:scale-105 transition-transform">/A\</span>
-              <span className="text-lg font-bold tracking-tight text-white group-hover:text-[#00F2FE] transition-colors">ahoj</span>
+      {/* AUTHENTICATED APP HEADER — Mobile Volcanic Theme via CSS variables */}
+      <header style={{ position: 'sticky', top: 0, zIndex: 40, backgroundColor: 'var(--bg-primary)', borderBottom: '1px solid var(--border-light)' }}>
+        <div className="content-max" style={{ padding: '0 var(--space-lg)', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+            <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', textDecoration: 'none' }}>
+              <span style={{ fontSize: 'var(--text-xl)', fontWeight: 900, color: 'var(--color-primary)', letterSpacing: '-0.04em' }}>/A\</span>
+              <span style={{ fontSize: 'var(--text-md)', fontWeight: 700, color: 'var(--text-primary)' }}>ahoj</span>
             </Link>
-            <span className="text-[10px] bg-[#00F2FE]/15 text-[#00F2FE] font-bold px-2.5 py-0.5 rounded-full border border-[#00F2FE]/30 hidden sm:inline-flex items-center gap-1">
-              <Zap className="w-3 h-3" /> Web App Dashboard
+            <span className="badge-brand" style={{ fontSize: 'var(--text-xs)' }}>
+              <Zap style={{ width: 12, height: 12 }} /> Web App
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
             <button
               type="button"
               onClick={() => setActiveTab("settings")}
-              className={`p-2.5 rounded-xl border transition-all flex items-center gap-2 cursor-pointer ${
-                activeTab === "settings"
-                  ? "bg-[#00F2FE] text-black border-[#00F2FE] font-bold shadow-[0_0_15px_rgba(0,242,254,0.4)]"
-                  : "bg-white/5 text-white/70 hover:text-white border-white/10 hover:border-white/20"
-              }`}
+              style={{
+                padding: '8px var(--space-md)',
+                borderRadius: 'var(--radius-md)',
+                border: activeTab === 'settings' ? '1px solid var(--color-primary)' : '1px solid var(--border-light)',
+                background: activeTab === 'settings' ? 'var(--color-primary)' : 'var(--bg-secondary)',
+                color: activeTab === 'settings' ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                display: 'flex', alignItems: 'center', gap: 'var(--space-xs)',
+                cursor: 'pointer', fontWeight: 600, fontSize: 'var(--text-xs)',
+                transition: 'all 0.15s ease',
+              }}
               title="App Settings"
             >
-              <Settings className="w-4 h-4" />
-              <span className="text-xs font-semibold hidden md:inline-block">Settings</span>
+              <Settings style={{ width: 14, height: 14 }} />
+              <span>Settings</span>
             </button>
 
-            <div className="flex items-center gap-2.5 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 backdrop-blur-md">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '6px var(--space-sm)' }}>
               <img
                 src={myUser?.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=dev_user"}
                 alt="My profile"
-                className="w-6 h-6 rounded-full object-cover border border-[#00F2FE]/40"
+                style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--color-primary)' }}
               />
-              <span className="text-xs font-bold text-white hidden sm:inline-block">@{myUser?.username || "dev_user"}</span>
+              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--text-primary)' }}>@{myUser?.username || "dev_user"}</span>
             </div>
 
             <button
               type="button"
               onClick={handleLogout}
-              className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border border-white/10 transition-all cursor-pointer"
+              style={{
+                padding: 8,
+                borderRadius: 'var(--radius-md)',
+                backgroundColor: 'var(--bg-secondary)',
+                color: 'var(--text-tertiary)',
+                border: '1px solid var(--border-light)',
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'color 0.15s ease',
+              }}
               title="Sign Out"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut style={{ width: 16, height: 16 }} />
             </button>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10">
-        
-        {/* LEFT SIDEBAR: PROFILE & CONTROL CENTER */}
-        <div className="lg:col-span-3 space-y-6">
-          <div className="glass-panel p-5 rounded-3xl space-y-4 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:border-[#00F2FE]/30 transition-all duration-300">
-            <div className="flex items-center gap-3">
-              <div className="relative w-14 h-14 rounded-2xl bg-white/5 border border-[#00F2FE]/50 p-0.5 shadow-[0_0_15px_rgba(0,242,254,0.2)]">
+      <main className="content-max" style={{ flex: 1, width: '100%', padding: 'var(--space-lg)', display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-lg)', position: 'relative', zIndex: 10 }} >
+
+        {/* LEFT SIDEBAR */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
+          {/* Profile Card */}
+          <div className="glass-panel" style={{ padding: 'var(--space-lg)', borderRadius: 'var(--radius-xl)', display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+              <div style={{ position: 'relative', width: 52, height: 52, borderRadius: 'var(--radius-lg)', border: '2px solid var(--color-primary)', padding: 2, backgroundColor: 'var(--bg-card)' }}>
                 <img
                   src={myUser?.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=dev_user"}
                   alt="My avatar"
-                  className="w-full h-full rounded-xl object-cover"
+                  style={{ width: '100%', height: '100%', borderRadius: 'var(--radius-md)', objectFit: 'cover' }}
                 />
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#10B981] border-2 border-[#0C0C0C]" />
+                <div style={{ position: 'absolute', bottom: -3, right: -3, width: 14, height: 14, borderRadius: '50%', backgroundColor: 'var(--color-success)', border: '2px solid var(--bg-primary)' }} />
               </div>
               <div>
-                <h3 className="font-bold text-base text-white">@{myUser?.username || "dev_user"}</h3>
-                <span className="text-xs text-[#00F2FE] font-medium flex items-center gap-1">
-                  <Shield className="w-3 h-3" /> Proximity Verified
+                <h3 style={{ fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--text-primary)', margin: 0 }}>@{myUser?.username || "dev_user"}</h3>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-primary)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Shield style={{ width: 12, height: 12 }} /> Proximity Verified
                 </span>
               </div>
             </div>
 
-            <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-xs space-y-1 backdrop-blur-md">
-              <span className="text-white/40 font-semibold uppercase text-[10px]">Status Message</span>
-              <p className="text-white/90 italic">&quot;{myUser?.message || "Ahoj! Exploring nearby spots 📍"}&quot;</p>
+            <div style={{ padding: 'var(--space-sm)', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-light)' }}>
+              <span style={{ fontSize: 10, color: 'var(--text-disabled)', fontWeight: 600, textTransform: 'uppercase' }}>Status</span>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-primary)', fontStyle: 'italic', margin: '2px 0 0' }}>&quot;{myUser?.message || "Ahoj! Exploring nearby spots 📍"}&quot;</p>
             </div>
 
-            <div className="space-y-2 pt-2 border-t border-white/10">
-              <div className="flex justify-between items-center text-xs font-semibold text-white/70">
+            <div style={{ paddingTop: 'var(--space-sm)', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)' }}>
                 <span>Radar Radius</span>
-                <span className="text-[#00F2FE] font-bold">{radiusKm} km</span>
+                <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>{radiusKm} km</span>
               </div>
               <input
-                type="range"
-                min="0.5"
-                max="10"
-                step="0.5"
-                value={radiusKm}
+                type="range" min="0.5" max="10" step="0.5" value={radiusKm}
                 onChange={(e) => setRadiusKm(parseFloat(e.target.value))}
-                className="w-full accent-[#00F2FE] bg-white/10 h-1.5 rounded-lg cursor-pointer"
+                style={{ width: '100%', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
               />
             </div>
           </div>
 
-          <div className="glass-panel p-3 rounded-3xl space-y-1.5 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-            <button
-              type="button"
-              onClick={() => setActiveTab("feed")}
-              className={`w-full px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
-                activeTab === "feed"
-                  ? "bg-[#00F2FE] text-black shadow-[0_0_20px_rgba(0,242,254,0.35)] scale-[1.01]"
-                  : "text-white/70 hover:text-white hover:bg-white/5"
-              }`}
-            >
-              <span className="flex items-center gap-2.5"><Compass className="w-4 h-4" /> Nearby Radar</span>
-              <span className="text-[10px] opacity-80 font-mono px-2 py-0.5 rounded-full bg-black/20">{(nearbyUsers || []).length}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("sparks")}
-              className={`w-full px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
-                activeTab === "sparks"
-                  ? "bg-[#00F2FE] text-black shadow-[0_0_20px_rgba(0,242,254,0.35)] scale-[1.01]"
-                  : "text-white/70 hover:text-white hover:bg-white/5"
-              }`}
-            >
-              <span className="flex items-center gap-2.5"><Flame className="w-4 h-4" /> Sparks Meetups</span>
-              <span className="text-[10px] opacity-80 font-mono px-2 py-0.5 rounded-full bg-black/20">{(sparks || []).length}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("chats")}
-              className={`w-full px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
-                activeTab === "chats"
-                  ? "bg-[#00F2FE] text-black shadow-[0_0_20px_rgba(0,242,254,0.35)] scale-[1.01]"
-                  : "text-white/70 hover:text-white hover:bg-white/5"
-              }`}
-            >
-              <span className="flex items-center gap-2.5"><MessageSquare className="w-4 h-4" /> E2EE Messages</span>
-              <span className="text-[10px] opacity-80 font-mono px-2 py-0.5 rounded-full bg-black/20">{(conversations || []).length}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("requests")}
-              className={`w-full px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
-                activeTab === "requests"
-                  ? "bg-[#00F2FE] text-black shadow-[0_0_20px_rgba(0,242,254,0.35)] scale-[1.01]"
-                  : "text-white/70 hover:text-white hover:bg-white/5"
-              }`}
-            >
-              <span className="flex items-center gap-2.5"><Lock className="w-4 h-4" /> Access Requests</span>
-              {(incomingRequests?.length || 0) > 0 && (
-                <span className="w-4 h-4 rounded-full bg-[#FF6B6B] text-black text-[9px] font-bold flex items-center justify-center animate-pulse">
-                  {incomingRequests.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("settings")}
-              className={`w-full px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
-                activeTab === "settings"
-                  ? "bg-[#00F2FE] text-black shadow-[0_0_20px_rgba(0,242,254,0.35)] scale-[1.01]"
-                  : "text-white/70 hover:text-white hover:bg-white/5"
-              }`}
-            >
-              <span className="flex items-center gap-2.5"><Settings className="w-4 h-4" /> App Settings</span>
-              <ChevronRight className="w-3.5 h-3.5 opacity-60" />
-            </button>
+          {/* Navigation Menu */}
+          <div className="glass-panel" style={{ padding: 'var(--space-sm)', borderRadius: 'var(--radius-xl)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {[
+              { id: 'feed', label: 'Nearby Radar', icon: <Compass style={{ width: 15, height: 15 }} />, count: (nearbyUsers || []).length },
+              { id: 'sparks', label: 'Sparks Meetups', icon: <Flame style={{ width: 15, height: 15 }} />, count: (sparks || []).length },
+              { id: 'chats', label: 'E2EE Messages', icon: <MessageSquare style={{ width: 15, height: 15 }} />, count: (conversations || []).length },
+              { id: 'requests', label: 'Access Requests', icon: <Lock style={{ width: 15, height: 15 }} />, count: incomingRequests?.length || 0 },
+              { id: 'settings', label: 'App Settings', icon: <Settings style={{ width: 15, height: 15 }} />, count: null },
+            ].map(({ id, label, icon, count }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setActiveTab(id as any)}
+                style={{
+                  width: '100%',
+                  padding: '10px var(--space-md)',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  border: 'none',
+                  transition: 'all 0.15s ease',
+                  background: activeTab === id ? 'var(--color-primary)' : 'transparent',
+                  color: activeTab === id ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>{icon} {label}</span>
+                {count !== null && count > 0 && (
+                  <span style={{
+                    fontSize: 10, fontFamily: 'monospace',
+                    padding: '1px 7px',
+                    borderRadius: 'var(--radius-full)',
+                    backgroundColor: id === 'requests' ? 'var(--color-accent)' : 'rgba(0,0,0,0.3)',
+                    color: id === 'requests' ? 'var(--bg-primary)' : 'inherit',
+                  }}>{count}</span>
+                )}
+                {count === null && <ChevronRight style={{ width: 13, height: 13, opacity: 0.5 }} />}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* MAIN FEED & CHAT CANVAS */}
-        <div className="lg:col-span-9 flex flex-col bg-[#121212]/90 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden min-h-[650px] relative shadow-[0_12px_40px_rgba(0,0,0,0.6)]">
-          
-          {/* Dashboard Control Bar */}
-          <div className="h-14 px-5 border-b border-white/10 flex items-center justify-between bg-[#121212]/95 backdrop-blur-md sticky top-0 z-20">
-            <span className="text-sm font-bold capitalize text-white flex items-center gap-2">
-              {activeTab === "feed" && <Compass className="w-4 h-4 text-[#00F2FE]" />}
-              {activeTab === "sparks" && <Flame className="w-4 h-4 text-[#00F2FE]" />}
-              {activeTab === "chats" && <MessageSquare className="w-4 h-4 text-[#00F2FE]" />}
-              {activeTab === "requests" && <Lock className="w-4 h-4 text-[#00F2FE]" />}
-              {activeTab === "settings" && <Settings className="w-4 h-4 text-[#00F2FE]" />}
-              {activeTab === "settings" ? "App Settings & Profile Customization" : activeTab}
+        {/* MAIN CANVAS */}
+        <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-light)', overflow: 'hidden', minHeight: 650, position: 'relative' }}>
+
+          {/* Control Bar */}
+          <div style={{ height: 56, padding: '0 var(--space-lg)', borderBottom: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'var(--bg-secondary)', position: 'sticky', top: 0, zIndex: 20 }}>
+            <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', textTransform: 'capitalize' }}>
+              {activeTab === 'feed' && <Compass style={{ width: 15, height: 15, color: 'var(--color-primary)' }} />}
+              {activeTab === 'sparks' && <Flame style={{ width: 15, height: 15, color: 'var(--color-primary)' }} />}
+              {activeTab === 'chats' && <MessageSquare style={{ width: 15, height: 15, color: 'var(--color-primary)' }} />}
+              {activeTab === 'requests' && <Lock style={{ width: 15, height: 15, color: 'var(--color-primary)' }} />}
+              {activeTab === 'settings' && <Settings style={{ width: 15, height: 15, color: 'var(--color-primary)' }} />}
+              {activeTab === 'settings' ? 'App Settings & Profile' : activeTab}
             </span>
 
-            <div className="flex items-center gap-2">
-              {activeTab === "feed" && (
-                <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("grid")}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
-                      viewMode === "grid" ? "bg-[#00F2FE] text-black font-bold shadow-[0_0_10px_rgba(0,242,254,0.3)]" : "text-white/60 hover:text-white"
-                    }`}
-                  >
-                    <LayoutGrid className="w-3.5 h-3.5" /> Grid
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("radar")}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
-                      viewMode === "radar" ? "bg-[#00F2FE] text-black font-bold shadow-[0_0_10px_rgba(0,242,254,0.3)]" : "text-white/60 hover:text-white"
-                    }`}
-                  >
-                    <Radio className="w-3.5 h-3.5" /> Radar Ring
-                  </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+              {activeTab === 'feed' && (
+                <div style={{ display: 'flex', backgroundColor: 'var(--bg-card)', padding: 3, borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                  {(['grid', 'radar'] as const).map((mode) => (
+                    <button key={mode} type="button" onClick={() => setViewMode(mode)}
+                      style={{
+                        padding: '4px 10px', borderRadius: 'var(--radius-sm)',
+                        fontSize: 'var(--text-xs)', fontWeight: 600,
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        cursor: 'pointer', border: 'none',
+                        background: viewMode === mode ? 'var(--color-primary)' : 'transparent',
+                        color: viewMode === mode ? 'var(--bg-primary)' : 'var(--text-tertiary)',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {mode === 'grid' ? <LayoutGrid style={{ width: 13, height: 13 }} /> : <Radio style={{ width: 13, height: 13 }} />}
+                      {mode === 'grid' ? 'Grid' : 'Radar'}
+                    </button>
+                  ))}
                 </div>
               )}
 
               <button
                 type="button"
                 onClick={() => setIsGhostMode(!isGhostMode)}
-                className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all cursor-pointer ${
-                  isGhostMode ? "border-[#FF6B6B] bg-[#FF6B6B]/20 text-[#FF6B6B] shadow-[0_0_12px_rgba(255,107,107,0.4)]" : "border-white/10 bg-white/5 text-white/60 hover:text-white"
-                }`}
-                title={isGhostMode ? "Ghost Mode Active (Stealth Mode)" : "Toggle Ghost Mode"}
+                style={{
+                  width: 32, height: 32, borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: isGhostMode ? '1px solid var(--color-accent)' : '1px solid var(--border-light)',
+                  backgroundColor: isGhostMode ? 'rgba(255,107,107,0.15)' : 'var(--bg-card)',
+                  color: isGhostMode ? 'var(--color-accent)' : 'var(--text-tertiary)',
+                  cursor: 'pointer', transition: 'all 0.15s ease',
+                }}
+                title={isGhostMode ? 'Ghost Mode Active' : 'Toggle Ghost Mode'}
               >
-                <Ghost className="w-4 h-4" />
+                <Ghost style={{ width: 14, height: 14 }} />
               </button>
             </div>
           </div>
@@ -621,7 +603,7 @@ export default function FullWebAppDashboard() {
           {activeTab === "feed" && (
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scrollbar-none">
               
-              {/* 24h Story Bar */}
+              {/* 24h Story Bar — Dual Story Ring Gradient (Mobile standard: #00F2FE -> #FF6B6B) */}
               <div className="space-y-3">
                 <div className="flex justify-between items-center text-xs font-bold text-white/70">
                   <span className="flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5 text-[#00F2FE]" /> 24h Active Stories</span>
@@ -640,13 +622,13 @@ export default function FullWebAppDashboard() {
                     onClick={() => setIsAddStoryOpen(true)}
                     className="flex flex-col items-center gap-1.5 shrink-0 group cursor-pointer"
                   >
-                    <div className="w-14 h-14 rounded-full border-2 border-[#00F2FE] p-0.5 relative bg-white/5 group-hover:scale-105 transition-transform shadow-[0_0_15px_rgba(0,242,254,0.3)]">
+                    <div className="w-14 h-14 rounded-full p-[2px] story-ring-gradient relative bg-white/5 group-hover:scale-105 transition-transform">
                       <img
                         src={myUser?.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=dev_user"}
                         alt="My story"
                         className="w-full h-full rounded-full object-cover"
                       />
-                      <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-[#00F2FE] text-black text-xs font-bold flex items-center justify-center">+</div>
+                      <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-[#00F2FE] text-[#0C0C0C] text-xs font-bold flex items-center justify-center">+</div>
                     </div>
                     <span className="text-[10px] text-white/70 font-medium">Add Story</span>
                   </button>
@@ -658,7 +640,7 @@ export default function FullWebAppDashboard() {
                       onClick={() => setSelectedStoryUser(user)}
                       className="flex flex-col items-center gap-1.5 shrink-0 group cursor-pointer"
                     >
-                      <div className="w-14 h-14 rounded-full border-2 border-[#00F2FE] p-0.5 bg-white/5 group-hover:scale-105 transition-transform shadow-[0_0_12px_rgba(0,242,254,0.2)]">
+                      <div className="w-14 h-14 rounded-full p-[2px] story-ring-gradient bg-white/5 group-hover:scale-105 transition-transform">
                         <img
                           src={user.avatarUrl || "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&q=80&w=600"}
                           alt={user.username}
@@ -677,7 +659,7 @@ export default function FullWebAppDashboard() {
                   {(nearbyUsers || []).map((user) => (
                     <div
                       key={user.id}
-                      className="glass-panel p-4 rounded-2xl space-y-3 relative group border border-white/10 hover:border-[#00F2FE]/40 transition-all duration-300 hover:-translate-y-1 shadow-[0_8px_25px_rgba(0,0,0,0.3)]"
+                      className="glass-panel p-4 rounded-2xl space-y-3 relative group border border-white/10 hover:border-[#00F2FE]/40 transition-all duration-300"
                     >
                       <div className="flex items-center gap-3">
                         <img
@@ -699,11 +681,11 @@ export default function FullWebAppDashboard() {
                   ))}
                 </div>
               ) : (
-                <div className="relative w-full h-[480px] bg-gradient-to-br from-[#0C0C0C] via-[#0A192F] to-[#052930] rounded-3xl border border-white/10 flex items-center justify-center overflow-hidden shadow-[inset_0_0_50px_rgba(0,0,0,0.8)]">
+                <div className="relative w-full h-[480px] bg-[#0C0C0C] rounded-3xl border border-white/10 flex items-center justify-center overflow-hidden">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,242,254,0.12)_0,transparent_70%)]" />
                   <div className="absolute inset-0 rounded-full border border-[#00F2FE]/20 animate-radar pointer-events-none" />
                   <div className="absolute w-[300px] h-[300px] rounded-full border border-[#00F2FE]/30 animate-pulse pointer-events-none" />
-                  <div className="w-16 h-16 rounded-full bg-[#00F2FE]/20 border-2 border-[#00F2FE] flex items-center justify-center shadow-[0_0_25px_rgba(0,242,254,0.6)] z-10">
+                  <div className="w-16 h-16 rounded-full bg-[#00F2FE]/20 border-2 border-[#00F2FE] flex items-center justify-center z-10">
                     <span className="text-xs font-bold text-[#00F2FE]">You</span>
                   </div>
 
@@ -723,9 +705,9 @@ export default function FullWebAppDashboard() {
                         <img
                           src={user.avatarUrl || "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&q=80&w=600"}
                           alt={user.username}
-                          className="w-11 h-11 rounded-full border-2 border-[#00F2FE] object-cover shadow-[0_0_15px_rgba(0,242,254,0.4)]"
+                          className="w-11 h-11 rounded-full border-2 border-[#00F2FE] object-cover"
                         />
-                        <span className="text-[9px] bg-black/80 text-white font-bold px-2 py-0.5 rounded-full border border-white/20 shadow-md">
+                        <span className="text-[9px] bg-black/80 text-white font-bold px-2 py-0.5 rounded-full border border-white/20">
                           @{user.username}
                         </span>
                       </div>
@@ -746,7 +728,7 @@ export default function FullWebAppDashboard() {
                 <button
                   type="button"
                   onClick={() => setIsCreateSparkOpen(true)}
-                  className="px-3.5 py-2 rounded-xl bg-[#00F2FE] hover:bg-[#00DCE6] text-black font-bold text-xs flex items-center gap-1 cursor-pointer transition-all shadow-[0_0_15px_rgba(0,242,254,0.3)]"
+                  className="px-3.5 py-2 rounded-xl bg-[#00F2FE] hover:bg-[#00DCE6] text-[#0C0C0C] font-bold text-xs flex items-center gap-1 cursor-pointer transition-all"
                 >
                   <Plus className="w-3.5 h-3.5" /> Create Spark
                 </button>
@@ -754,7 +736,7 @@ export default function FullWebAppDashboard() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {(sparks || []).map((spark) => (
-                  <div key={spark.id} className="glass-panel p-4 rounded-2xl space-y-2 border border-[#00F2FE]/30 hover:border-[#00F2FE] transition-all shadow-[0_4px_20px_rgba(0,242,254,0.15)]">
+                  <div key={spark.id} className="glass-panel p-4 rounded-2xl space-y-2 border border-[#00F2FE]/30 hover:border-[#00F2FE] transition-all">
                     <div className="flex justify-between items-start">
                       <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#00F2FE]/20 text-[#00F2FE] border border-[#00F2FE]/30">
                         {spark.category}
@@ -779,7 +761,7 @@ export default function FullWebAppDashboard() {
                     type="button"
                     onClick={() => setActiveChatUser(c)}
                     className={`w-full p-3 rounded-2xl text-left flex items-center gap-3 transition-all cursor-pointer ${
-                      activeChatUser?.id === c.id ? "bg-white/10 border border-[#00F2FE]/50 shadow-[0_0_15px_rgba(0,242,254,0.2)]" : "hover:bg-white/5"
+                      activeChatUser?.id === c.id ? "bg-white/10 border border-[#00F2FE]/50" : "hover:bg-white/5"
                     }`}
                   >
                     <img src={c.avatarUrl} alt={c.username} className="w-10 h-10 rounded-full object-cover border border-white/10" />
@@ -798,7 +780,7 @@ export default function FullWebAppDashboard() {
                   <>
                     <div className="p-3.5 border-b border-white/10 flex items-center justify-between bg-white/5">
                       <span className="font-bold text-xs text-white">@{activeChatUser.username}</span>
-                      <span className="text-[10px] text-[#10B981] font-semibold flex items-center gap-1 bg-[#10B981]/15 px-2.5 py-0.5 rounded-full border border-[#10B981]/30">
+                      <span className="text-[10px] text-[#4CAF50] font-semibold flex items-center gap-1 bg-[#4CAF50]/15 px-2.5 py-0.5 rounded-full border border-[#4CAF50]/30">
                         <Shield className="w-3 h-3" /> Signal E2EE Active
                       </span>
                     </div>
@@ -811,7 +793,7 @@ export default function FullWebAppDashboard() {
                           <div
                             className={`max-w-[70%] px-3.5 py-2 rounded-2xl text-xs font-medium ${
                               m.senderId === myUser?.id
-                                ? "bg-[#00F2FE] text-black font-semibold shadow-[0_0_15px_rgba(0,242,254,0.3)]"
+                                ? "bg-[#00F2FE] text-[#0C0C0C] font-semibold"
                                 : "bg-white/10 text-white border border-white/10"
                             }`}
                           >
@@ -832,7 +814,7 @@ export default function FullWebAppDashboard() {
                       <button
                         type="button"
                         onClick={handleSendMessage}
-                        className="px-4 py-2 rounded-xl bg-[#00F2FE] text-black font-bold text-xs cursor-pointer hover:bg-[#00DCE6] transition-all"
+                        className="px-4 py-2 rounded-xl bg-[#00F2FE] text-[#0C0C0C] font-bold text-xs cursor-pointer hover:bg-[#00DCE6] transition-all"
                       >
                         <Send className="w-3.5 h-3.5" />
                       </button>
@@ -862,7 +844,7 @@ export default function FullWebAppDashboard() {
                       <button
                         type="button"
                         onClick={() => handleApproveRequest(req.id)}
-                        className="px-3.5 py-1.5 rounded-xl bg-[#10B981] hover:bg-[#059669] text-black font-bold text-xs cursor-pointer transition-all"
+                        className="px-3.5 py-1.5 rounded-xl bg-[#4CAF50] text-[#0C0C0C] font-bold text-xs cursor-pointer transition-all"
                       >
                         Approve
                       </button>
@@ -890,7 +872,7 @@ export default function FullWebAppDashboard() {
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scrollbar-none">
               
               {settingsSaveSuccess && (
-                <div className="p-3.5 rounded-2xl bg-[#10B981]/20 border border-[#10B981] text-[#10B981] text-xs font-bold flex items-center gap-2 animate-fadeIn">
+                <div className="p-3.5 rounded-2xl bg-[#4CAF50]/20 border border-[#4CAF50] text-[#4CAF50] text-xs font-bold flex items-center gap-2 animate-fadeIn">
                   <CheckCircle2 className="w-4 h-4" /> Settings updated successfully!
                 </div>
               )}
@@ -968,8 +950,8 @@ export default function FullWebAppDashboard() {
                         onClick={() => setSettingsForm({ ...settingsForm, privacyMode: mode.id })}
                         className={`p-3 rounded-2xl text-left border transition-all cursor-pointer ${
                           settingsForm.privacyMode === mode.id
-                            ? "bg-[#00F2FE] text-black border-[#00F2FE] font-bold shadow-[0_0_15px_rgba(0,242,254,0.3)]"
-                            : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"
+                            ? "bg-[#00F2FE] text-[#0C0C0C] border-[#00F2FE] font-bold"
+                            : "bg-[#121212] border-white/10 text-white/70 hover:bg-white/10"
                         }`}
                       >
                         <div className="text-xs font-bold">{mode.label}</div>
@@ -981,7 +963,7 @@ export default function FullWebAppDashboard() {
 
                 <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs text-white/70">
                   <span>EXIF Privacy Protection</span>
-                  <span className="text-[#10B981] font-bold flex items-center gap-1 bg-[#10B981]/15 px-2.5 py-0.5 rounded-full border border-[#10B981]/30">
+                  <span className="text-[#4CAF50] font-bold flex items-center gap-1 bg-[#4CAF50]/15 px-2.5 py-0.5 rounded-full border border-[#4CAF50]/30">
                     <CheckCircle2 className="w-3 h-3" /> GPS Cleared
                   </span>
                 </div>
@@ -993,12 +975,12 @@ export default function FullWebAppDashboard() {
                   <Key className="w-4 h-4" /> Security & E2EE Signal Keys
                 </h3>
 
-                <div className="flex items-center justify-between text-xs p-3 rounded-2xl bg-white/5 border border-white/10">
+                <div className="flex items-center justify-between text-xs p-3 rounded-2xl bg-[#121212] border border-white/10">
                   <div>
                     <div className="font-bold text-white">Signal E2EE Double Ratchet</div>
                     <div className="text-[10px] text-white/50">End-to-End Encrypted key exchange enabled</div>
                   </div>
-                  <span className="text-[10px] bg-[#10B981]/20 text-[#10B981] font-bold px-2.5 py-0.5 rounded-full border border-[#10B981]/40">
+                  <span className="text-[10px] bg-[#4CAF50]/20 text-[#4CAF50] font-bold px-2.5 py-0.5 rounded-full border border-[#4CAF50]/40">
                     Active
                   </span>
                 </div>
@@ -1010,7 +992,7 @@ export default function FullWebAppDashboard() {
                   type="button"
                   onClick={handleSaveSettings}
                   disabled={isSavingSettings}
-                  className="px-6 py-3 rounded-2xl bg-[#00F2FE] hover:bg-[#00DCE6] text-black font-bold text-xs flex items-center gap-2 shadow-[0_0_20px_rgba(0,242,254,0.4)] transition-all cursor-pointer"
+                  className="px-6 py-3 rounded-2xl bg-[#00F2FE] hover:bg-[#00DCE6] text-[#0C0C0C] font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
                 >
                   {isSavingSettings ? (
                     <RefreshCw className="w-4 h-4 animate-spin" />
@@ -1030,7 +1012,7 @@ export default function FullWebAppDashboard() {
       {/* STORY VIEWER MODAL */}
       {selectedStoryUser && (
         <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-          <div className="relative w-full max-w-sm h-[550px] bg-black rounded-3xl overflow-hidden border border-white/20 shadow-[0_0_50px_rgba(0,0,0,0.9)]">
+          <div className="relative w-full max-w-sm h-[550px] bg-black rounded-3xl overflow-hidden border border-white/20">
             <div className="absolute top-3 left-3 right-3 h-1 bg-white/20 rounded-full z-20 overflow-hidden">
               <div style={{ width: `${storyProgress}%` }} className="h-full bg-white transition-all duration-100" />
             </div>
@@ -1055,7 +1037,7 @@ export default function FullWebAppDashboard() {
       {/* WEB STORY CREATOR MEDIA EDITOR MODAL */}
       {isAddStoryOpen && (
         <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg glass-panel p-6 rounded-3xl space-y-4 border border-white/20 shadow-[0_0_50px_rgba(0,0,0,0.9)]">
+          <div className="w-full max-w-lg glass-panel p-6 rounded-3xl space-y-4 border border-white/20">
             <div className="flex justify-between items-center border-b border-white/10 pb-3">
               <h3 className="font-bold text-base text-white flex items-center gap-2">
                 <Camera className="w-5 h-5 text-[#00F2FE]" /> Story Media Editor
@@ -1070,9 +1052,9 @@ export default function FullWebAppDashboard() {
               {/* Filter Tint Overlays */}
               {storyFilter === "beauty" && <div className="absolute inset-0 bg-[#FFDCE6]/15 pointer-events-none" />}
               {storyFilter === "bokeh" && <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px] pointer-events-none" />}
-              {storyFilter === "greenscreen" && <div className="absolute inset-0 bg-[#10B981]/20 pointer-events-none" />}
+              {storyFilter === "greenscreen" && <div className="absolute inset-0 bg-[#4CAF50]/20 pointer-events-none" />}
               {storyFilter === "cyber" && <div className="absolute inset-0 bg-[#00F2FE]/20 pointer-events-none" />}
-              {storyFilter === "retro" && <div className="absolute inset-0 bg-[#E67800]/15 pointer-events-none" />}
+              {storyFilter === "retro" && <div className="absolute inset-0 bg-[#FF9800]/15 pointer-events-none" />}
               {storyFilter === "neon" && <div className="absolute inset-0 bg-[#FF6B6B]/20 pointer-events-none" />}
               {storyFilter === "noir" && <div className="absolute inset-0 bg-black/50 grayscale pointer-events-none" />}
 
@@ -1091,7 +1073,7 @@ export default function FullWebAppDashboard() {
               )}
 
               {/* EXIF Security Badge */}
-              <div className="absolute top-3 left-3 bg-[#10B981]/20 border border-[#10B981] px-2.5 py-0.5 rounded-full text-[9px] font-bold text-[#10B981] flex items-center gap-1">
+              <div className="absolute top-3 left-3 bg-[#4CAF50]/20 border border-[#4CAF50] px-2.5 py-0.5 rounded-full text-[9px] font-bold text-[#4CAF50] flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3" /> EXIF Clean (GPS Privacy)
               </div>
             </div>
@@ -1171,7 +1153,7 @@ export default function FullWebAppDashboard() {
             <button
               type="button"
               onClick={handlePublishStory}
-              className="w-full py-3 rounded-xl bg-[#00F2FE] text-[#0C0C0C] font-bold text-xs shadow-[0_0_20px_rgba(0,242,254,0.4)] cursor-pointer"
+              className="w-full py-3 rounded-xl bg-[#00F2FE] text-[#0C0C0C] font-bold text-xs cursor-pointer"
             >
               Publish to 24h Stories ⚡
             </button>

@@ -3,10 +3,19 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Form, Input, Button, App, Divider } from "antd";
-import { UserOutlined, LockOutlined, GlobalOutlined, ThunderboltOutlined } from "@ant-design/icons";
+import {
+  UserOutlined,
+  LockOutlined,
+  GlobalOutlined,
+  ThunderboltOutlined,
+} from "@ant-design/icons";
 import { ThemeProvider } from "../../components/ThemeProvider";
 import { OAuthProviderGrid, type OAuthProviderKey } from "../../components/OAuthProviderGrid";
 
+/**
+ * LoginPage — all colors/spacing/radius use CSS variables from globals.css
+ * Strictly aligned to mobile theme.ts tokens
+ */
 function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
@@ -20,10 +29,8 @@ function LoginForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Login failed");
-
       message.success(`Welcome back, ${data.user.username}!`);
       localStorage.setItem("accessToken", data.accessToken);
       window.location.href = "/app";
@@ -35,40 +42,26 @@ function LoginForm() {
   };
 
   const handleInstantDemoLogin = async () => {
-    form.setFieldsValue({
-      email: "dev@ahoj.app",
-      password: "password123",
-    });
+    form.setFieldsValue({ email: "dev@ahoj.app", password: "password123" });
     handleEmailLogin({ email: "dev@ahoj.app", password: "password123" });
   };
 
   const handleOAuthLogin = async (provider: OAuthProviderKey) => {
     setLoading(true);
     message.loading({ content: `Connecting to ${provider.toUpperCase()}...`, key: "oauth" });
-
     const mockProviderId = `${provider}_user_${Math.floor(100000 + Math.random() * 900000)}`;
     const mockUsername = `${provider}_user`;
     const mockEmail = provider === "wechat" ? null : `${mockUsername}@example.com`;
     const mockBio = provider === "line" ? "Exploring nearby spots on ahoj 📍" : null;
     const mockAvatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${mockUsername}`;
-
     try {
       const res = await fetch("http://localhost:3000/auth/oauth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          provider,
-          providerUserId: mockProviderId,
-          email: mockEmail,
-          username: mockUsername,
-          avatarUrl: mockAvatarUrl,
-          bio: mockBio,
-        }),
+        body: JSON.stringify({ provider, providerUserId: mockProviderId, email: mockEmail, username: mockUsername, avatarUrl: mockAvatarUrl, bio: mockBio }),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "OAuth sign-in failed");
-
       message.success({ content: `Signed in via ${provider.toUpperCase()} as @${data.user.username}!`, key: "oauth" });
       localStorage.setItem("accessToken", data.accessToken);
       window.location.href = "/app";
@@ -80,115 +73,216 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#0C0C0C] text-white">
-      {/* Left Side: Dynamic Visual Radar Atmosphere */}
-      <div className="hidden lg:flex lg:w-3/5 relative overflow-hidden bg-gradient-to-br from-[#0C0C0C] via-[#0A192F] to-[#052930] items-center justify-center p-12 border-r border-white/10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,242,254,0.12)_0,transparent_70%)] pointer-events-none" />
+    <div
+      style={{
+        minHeight: "100dvh",
+        width: "100%",
+        display: "flex",
+        backgroundColor: "var(--bg-primary)",
+        color: "var(--text-primary)",
+      }}
+    >
+      {/* ── Left: Radar Atmosphere ─────────────────────────────── */}
+      <div
+        style={{
+          display: "none",
+          flex: "0 0 60%",
+          position: "relative",
+          overflow: "hidden",
+          background: "linear-gradient(135deg, var(--bg-primary) 0%, #0A192F 60%, #052930 100%)",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "var(--space-xxl)",
+          borderRight: "1px solid var(--border-light)",
+        }}
+        className="lg:flex"
+      >
+        {/* Radial glow */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "radial-gradient(circle at center, rgba(0,242,254,0.12) 0, transparent 70%)",
+            pointerEvents: "none",
+          }}
+        />
 
-        {/* Radar Circles */}
-        <div className="relative w-96 h-96 flex items-center justify-center">
-          <div className="absolute inset-0 rounded-full border border-[#00F2FE]/20 animate-radar" />
-          <div className="absolute w-72 h-72 rounded-full border border-[#00F2FE]/30 animate-pulse" />
-          <div className="absolute w-48 h-48 rounded-full border border-[#00F2FE]/40" />
-          <div className="w-24 h-24 rounded-full bg-[#00F2FE]/10 border border-[#00F2FE] flex items-center justify-center shadow-[0_0_30px_rgba(0,242,254,0.4)]">
-            <span className="text-2xl font-bold text-[#00F2FE]">/A\</span>
+        {/* Radar rings */}
+        <div style={{ position: "relative", width: 320, height: 320, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div
+            className="animate-radar"
+            style={{
+              position: "absolute",
+              inset: 0,
+              borderRadius: "50%",
+              border: "1px solid rgba(0,242,254,0.20)",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              width: 240,
+              height: 240,
+              borderRadius: "50%",
+              border: "1px solid rgba(0,242,254,0.30)",
+              animation: "pulse 2s cubic-bezier(0.4,0,0.6,1) infinite",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              width: 160,
+              height: 160,
+              borderRadius: "50%",
+              border: "1px solid rgba(0,242,254,0.40)",
+            }}
+          />
+          <div
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: "50%",
+              backgroundColor: "rgba(0,242,254,0.10)",
+              border: "1px solid var(--color-primary)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 0 30px rgba(0,242,254,0.40)",
+            }}
+          >
+            <span style={{ fontSize: "var(--text-lg)", fontWeight: 900, color: "var(--color-primary)" }}>/A\</span>
           </div>
         </div>
 
-        <div className="absolute bottom-12 left-12 right-12 text-left z-10 glass-panel p-6 rounded-2xl">
-          <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
-            <GlobalOutlined className="text-[#00F2FE]" /> Global Proximity Network
+        {/* Bottom info panel */}
+        <div
+          className="glass-panel"
+          style={{
+            position: "absolute",
+            bottom: "var(--space-xxl)",
+            left: "var(--space-xxl)",
+            right: "var(--space-xxl)",
+            borderRadius: "var(--radius-xl)",
+            padding: "var(--space-lg)",
+            zIndex: 10,
+          }}
+        >
+          <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-primary)", marginBottom: "var(--space-sm)" }}>
+            <GlobalOutlined style={{ color: "var(--color-primary)", marginRight: "var(--space-sm)" }} />
+            Global Proximity Network
           </h2>
-          <p className="text-sm text-white/70">
-            Discover people, spontaneous meetups, and real-time stories happening right next to you. Supported with global OAuth access across US, EU, RU, and Asia.
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)", margin: 0 }}>
+            Discover people, spontaneous meetups, and real-time stories happening right next to you.
           </p>
         </div>
       </div>
 
-      {/* Right Side: Glassmorphic Auth Form */}
-      <div className="w-full lg:w-2/5 flex items-center justify-center p-6 sm:p-12 relative">
-        <div className="w-full max-w-md space-y-6">
-          <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[#00F2FE]/10 border border-[#00F2FE]/30 text-[#00F2FE] font-bold text-xl mb-2">
+      {/* ── Right: Auth Form ───────────────────────────────────── */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "var(--space-xl)",
+        }}
+      >
+        <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: "var(--space-lg)" }}>
+
+          {/* Logo Header */}
+          <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-sm)" }}>
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: "var(--radius-lg)",
+                backgroundColor: "rgba(0,242,254,0.10)",
+                border: "1px solid var(--border)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "var(--text-md)",
+                fontWeight: 900,
+                color: "var(--color-primary)",
+              }}
+            >
               /A\
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-white">
-              Sign in to ahoj
-            </h1>
-            <p className="text-sm text-white/50">
-              Use 1-click Demo Login or enter your credentials below
+            <h1 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Sign in to ahoj</h1>
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-tertiary)", margin: 0 }}>
+              Use 1-click Demo Login or enter your credentials
             </p>
           </div>
 
-          {/* Instant Demo Login Button */}
+          {/* Demo Login CTA */}
           <button
             type="button"
             onClick={handleInstantDemoLogin}
             disabled={loading}
-            className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#00F2FE] to-[#00DCE6] text-black font-bold text-sm flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(0,242,254,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+            className="btn-primary"
+            style={{ width: "100%", padding: "var(--space-md)", fontSize: "var(--text-sm)", borderRadius: "var(--radius-lg)" }}
           >
-            <ThunderboltOutlined className="text-lg" />
+            <ThunderboltOutlined style={{ fontSize: 16 }} />
             ⚡ Instant Demo Sign-In (@dev_user)
           </button>
 
-          {/* Glass Container */}
-          <div className="glass-panel p-6 sm:p-8 rounded-2xl space-y-6">
-            <Form
-              form={form}
-              layout="vertical"
-              onFinish={handleEmailLogin}
-              requiredMark={false}
-            >
+          {/* Glass Form Container */}
+          <div
+            className="glass-panel"
+            style={{
+              borderRadius: "var(--radius-xl)",
+              padding: "var(--space-xl)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-md)",
+            }}
+          >
+            <Form form={form} layout="vertical" onFinish={handleEmailLogin} requiredMark={false}>
               <Form.Item
                 name="email"
                 rules={[
                   { required: true, message: "Please input your email!" },
                   { type: "email", message: "Please enter a valid email!" },
                 ]}
+                style={{ marginBottom: "var(--space-md)" }}
               >
                 <Input
-                  prefix={<UserOutlined className="text-white/40" />}
+                  prefix={<UserOutlined style={{ color: "var(--text-disabled)" }} />}
                   placeholder="Email address"
-                  className="glass-input"
+                  size="large"
                 />
               </Form.Item>
 
               <Form.Item
                 name="password"
                 rules={[{ required: true, message: "Please input your password!" }]}
+                style={{ marginBottom: "var(--space-md)" }}
               >
                 <Input.Password
-                  prefix={<LockOutlined className="text-white/40" />}
+                  prefix={<LockOutlined style={{ color: "var(--text-disabled)" }} />}
                   placeholder="Password"
-                  className="glass-input"
+                  size="large"
                 />
               </Form.Item>
 
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={loading}
-                block
-                className="bg-white/10 hover:bg-white/20 text-white font-semibold h-11 border border-white/10"
-              >
+              <Button type="primary" htmlType="submit" loading={loading} block size="large">
                 Sign In with Email
               </Button>
             </Form>
 
-            <Divider className="border-white/10 text-white/40 text-xs">
-              Or continue with Global OAuth
+            <Divider style={{ margin: "var(--space-sm) 0" }}>
+              <span style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)" }}>Or continue with Global OAuth</span>
             </Divider>
 
-            {/* OAuth Provider Grid */}
-            <OAuthProviderGrid
-              onSelectProvider={handleOAuthLogin}
-              loading={loading}
-            />
+            <OAuthProviderGrid onSelectProvider={handleOAuthLogin} loading={loading} />
           </div>
 
-          <p className="text-center text-xs text-white/50">
+          <p style={{ textAlign: "center", fontSize: "var(--text-xs)", color: "var(--text-tertiary)", margin: 0 }}>
             Don&apos;t have an account?{" "}
-            <Link href="/register" className="text-[#00F2FE] hover:underline font-medium">
+            <Link
+              href="/register"
+              style={{ color: "var(--color-primary)", textDecoration: "none", fontWeight: 600 }}
+            >
               Create one now
             </Link>
           </p>

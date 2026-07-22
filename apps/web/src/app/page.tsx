@@ -2,137 +2,318 @@
 
 import React from "react";
 import Link from "next/link";
-import { Compass, Shield, Flame, Sparkles, ArrowRight, Globe, Zap } from "lucide-react";
+import { Compass, Shield, Flame, Sparkles, ArrowRight } from "lucide-react";
 import Navigation from "../components/Navigation";
 import { MOCK_NEARBY_USERS } from "../lib/mockData";
 
+/**
+ * Landing Page — strictly uses CSS variables from globals.css
+ * No raw hex values; all colors reference mobile theme tokens
+ */
 export default function WelcomingLandingPage() {
   return (
-    <div className="min-h-screen bg-[#0C0C0C] text-white flex flex-col font-sans relative overflow-hidden">
-      {/* Dynamic Background Glows */}
-      <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-[#00F2FE]/15 rounded-full blur-[180px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-[#7B2FE7]/20 rounded-full blur-[180px] pointer-events-none" />
+    <div className="page-shell" style={{ display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
 
-      {/* Global Navigation */}
+      {/* Atmospheric background glows (mobile primary + accent colors) */}
+      <div style={{
+        position: "absolute", top: "-10%", left: "-10%",
+        width: 600, height: 600,
+        borderRadius: "50%",
+        background: "rgba(0,242,254,0.12)",  /* colors.primary at 12% */
+        filter: "blur(120px)",
+        pointerEvents: "none",
+      }} />
+      <div style={{
+        position: "absolute", bottom: "-10%", right: "-10%",
+        width: 600, height: 600,
+        borderRadius: "50%",
+        background: "rgba(255,107,107,0.10)", /* colors.accent at 10% */
+        filter: "blur(120px)",
+        pointerEvents: "none",
+      }} />
+
       <Navigation />
 
-      {/* Hero Presentation Section */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 pt-32 pb-20 relative z-10 space-y-24">
-        <div className="grid lg:grid-cols-12 gap-12 items-center">
-          
-          {/* Left Column: Welcoming Text & Actions */}
-          <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#00F2FE]/10 border border-[#00F2FE]/30 text-xs font-bold text-[#00F2FE]">
-              <Sparkles className="w-3.5 h-3.5" /> Next-Gen Proximity Social Network
+      <main style={{
+        flex: 1,
+        maxWidth: "80rem",
+        width: "100%",
+        margin: "0 auto",
+        padding: "8rem var(--space-xl) var(--space-xxl)",
+        position: "relative",
+        zIndex: 10,
+      }}>
+
+        {/* Hero Section */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "var(--space-xxl)", alignItems: "center" }} className="lg:grid-cols-hero">
+
+          {/* Left: Text & CTAs */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-lg)" }}>
+
+            {/* Pill badge */}
+            <div style={{ display: "inline-flex", alignSelf: "flex-start" }}>
+              <span className="badge-brand" style={{ fontSize: "var(--text-xs)" }}>
+                <Sparkles style={{ width: 12, height: 12 }} />
+                Next-Gen Proximity Social Network
+              </span>
             </div>
 
-            <h1 className="text-5xl sm:text-7xl font-black tracking-tight leading-none bg-gradient-to-r from-white via-zinc-100 to-[#00F2FE] bg-clip-text text-transparent">
+            {/* Hero headline */}
+            <h1 style={{
+              fontSize: "clamp(2.5rem, 6vw, var(--text-hero))",
+              fontWeight: 900,
+              lineHeight: 1.05,
+              letterSpacing: "-0.04em",
+              margin: 0,
+              background: "linear-gradient(135deg, var(--text-primary) 0%, var(--color-primary-light) 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}>
               Spoj se s lidmi,<br />kteří jsou blízko.
             </h1>
 
-            <p className="text-white/70 text-base sm:text-lg leading-relaxed max-w-2xl">
-              <strong>ahoj</strong> je hyperlokální sociální síť stavící na reálné blízkosti. Zjisti, kdo je v tvém dosahu, prohlížej si mizející příběhy a začni chatovat jen s lidmi v tvém okolí.
+            {/* Subtext */}
+            <p style={{
+              fontSize: "var(--text-md)",
+              color: "var(--text-secondary)",
+              lineHeight: 1.6,
+              margin: 0,
+              maxWidth: "38rem",
+            }}>
+              <strong style={{ color: "var(--text-primary)" }}>ahoj</strong> je hyperlokální sociální síť stavící na reálné blízkosti.
+              Zjisti, kdo je v tvém dosahu, prohlížej si mizející příběhy a začni chatovat jen s lidmi v tvém okolí.
             </p>
 
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
+            {/* CTA buttons */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-md)", paddingTop: "var(--space-sm)" }}>
               <Link
                 href="/app"
-                className="px-8 py-4 rounded-2xl bg-[#00F2FE] hover:bg-[#00DCE6] text-black font-bold text-sm flex items-center gap-2 shadow-[0_0_25px_rgba(0,242,254,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="btn-primary"
+                style={{
+                  padding: "var(--space-md) var(--space-xl)",
+                  fontSize: "var(--text-base)",
+                  borderRadius: "var(--radius-xl)",
+                  textDecoration: "none",
+                  boxShadow: "var(--glow-primary-strong)",
+                }}
               >
-                Launch Web App <ArrowRight className="w-4 h-4" />
+                Launch Web App <ArrowRight style={{ width: 16, height: 16 }} />
               </Link>
+
               <Link
                 href="/login"
-                className="px-8 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-semibold text-sm border border-white/10 hover:border-[#00F2FE]/40 transition-all"
+                className="btn-ghost"
+                style={{
+                  padding: "var(--space-md) var(--space-xl)",
+                  fontSize: "var(--text-base)",
+                  borderRadius: "var(--radius-xl)",
+                  textDecoration: "none",
+                }}
               >
                 Sign In / Register
-              </Link>
-              <Link
-                href="/about"
-                className="px-6 py-4 rounded-2xl text-white/60 hover:text-white text-sm font-semibold transition-colors"
-              >
-                About & Tech
               </Link>
             </div>
           </div>
 
-          {/* Right Column: Interactive Animated Radar Device Mockup */}
-          <div className="lg:col-span-5 flex justify-center">
-            <div className="w-[320px] h-[620px] rounded-[44px] border-[8px] border-white/10 bg-[#121212] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] p-4 overflow-hidden relative flex flex-col">
-              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-32 h-5 bg-white/10 rounded-full z-20" />
+          {/* Right: Phone Mockup */}
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <div style={{
+              width: 280,
+              height: 560,
+              borderRadius: 40,
+              border: "7px solid var(--border-light)",
+              backgroundColor: "var(--bg-secondary)",
+              boxShadow: "0 25px 60px -15px rgba(0,0,0,0.9)",
+              padding: "var(--space-sm)",
+              overflow: "hidden",
+              position: "relative",
+              display: "flex",
+              flexDirection: "column",
+            }}>
+              {/* Notch */}
+              <div style={{
+                position: "absolute", top: 8, left: "50%", transform: "translateX(-50%)",
+                width: 100, height: 16,
+                backgroundColor: "rgba(255,255,255,0.08)",
+                borderRadius: "var(--radius-full)",
+                zIndex: 20,
+              }} />
 
               {/* Simulated App Header */}
-              <div className="flex items-center justify-between pt-5 pb-3 border-b border-white/10 px-2">
-                <span className="text-lg font-black text-[#00F2FE]">/A\</span>
-                <span className="text-xs font-bold text-white">Live Radar</span>
-                <span className="text-[10px] text-[#00F2FE] font-semibold flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-[#00F2FE] animate-pulse" /> Active
+              <div style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "var(--space-lg) var(--space-sm) var(--space-sm)",
+                borderBottom: "1px solid var(--border-light)",
+                marginTop: "var(--space-md)",
+              }}>
+                <span style={{ fontSize: "var(--text-lg)", fontWeight: 900, color: "var(--color-primary)" }}>/A\</span>
+                <span style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--text-primary)" }}>Live Radar</span>
+                <span style={{ fontSize: 10, color: "var(--color-primary)", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "var(--color-primary)", display: "inline-block" }} />
+                  Active
                 </span>
               </div>
 
-              {/* Radar Feed Items */}
-              <div className="flex-1 overflow-y-auto pt-3 space-y-3 px-1">
+              {/* Nearby Feed */}
+              <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-sm)", display: "flex", flexDirection: "column", gap: "var(--space-sm)" }}>
                 {MOCK_NEARBY_USERS.map((user) => (
-                  <div key={user.id} className="p-3 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden border border-[#00F2FE]/40 shrink-0">
-                      <img src={user.avatarUrl} alt={user.username} className="w-full h-full object-cover" />
+                  <div
+                    key={user.id}
+                    style={{
+                      padding: "var(--space-sm) var(--space-sm)",
+                      borderRadius: "var(--radius-lg)",
+                      backgroundColor: "var(--bg-card)",
+                      border: "1px solid var(--border-light)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "var(--space-sm)",
+                    }}
+                  >
+                    <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", border: "1px solid var(--border)", flexShrink: 0 }}>
+                      <img src={user.avatarUrl} alt={user.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-xs text-white truncate">@{user.username}</div>
-                      <div className="text-[10px] text-white/50 truncate">{user.message}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>@{user.username}</div>
+                      <div style={{ fontSize: 10, color: "var(--text-tertiary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.message}</div>
                     </div>
-                    <span className="text-[10px] font-mono text-[#00F2FE]">~{user.distanceMeters}m</span>
+                    <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--color-primary)", flexShrink: 0 }}>~{user.distanceMeters}m</span>
                   </div>
                 ))}
               </div>
 
-              {/* Simulated Bottom Navigation */}
-              <div className="h-12 border-t border-white/10 flex items-center justify-around text-xs text-white/40 pt-1">
-                <span className="text-[#00F2FE] font-bold">🌍 Radar</span>
+              {/* Simulated Bottom Nav */}
+              <div style={{
+                height: 44,
+                borderTop: "1px solid var(--border-light)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-around",
+                fontSize: 11,
+                color: "var(--text-tertiary)",
+              }}>
+                <span style={{ color: "var(--color-primary)", fontWeight: 700 }}>🌍 Radar</span>
                 <span>⚡ Sparks</span>
                 <span>💬 Chat</span>
               </div>
             </div>
           </div>
-
         </div>
 
-        {/* Feature Cards Grid */}
-        <section className="grid md:grid-cols-3 gap-8 pt-12 border-t border-white/10">
-          <div className="glass-panel p-8 rounded-3xl space-y-4 border border-white/10 hover:border-[#00F2FE]/40 transition-all">
-            <div className="w-12 h-12 rounded-2xl bg-[#00F2FE]/10 border border-[#00F2FE]/30 flex items-center justify-center text-[#00F2FE]">
-              <Compass className="w-6 h-6" />
+        {/* Feature Cards */}
+        <section style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+          gap: "var(--space-xl)",
+          paddingTop: "var(--space-xxl)",
+          borderTop: "1px solid var(--border-light)",
+          marginTop: "var(--space-xxl)",
+        }}>
+
+          {/* Proximity Radar */}
+          <div
+            className="glass-panel"
+            style={{
+              borderRadius: "var(--radius-xl)",
+              padding: "var(--space-xl)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-md)",
+              border: "1px solid var(--border-light)",
+              transition: "border-color 0.2s ease",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-light)"; }}
+          >
+            <div style={{
+              width: 44, height: 44,
+              borderRadius: "var(--radius-md)",
+              backgroundColor: "rgba(0,242,254,0.10)",
+              border: "1px solid var(--border)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "var(--color-primary)",
+            }}>
+              <Compass style={{ width: 22, height: 22 }} />
             </div>
-            <h3 className="text-xl font-bold text-white">Proximity Radar</h3>
-            <p className="text-xs text-white/70 leading-relaxed">
-              Objevuj lidi v reálném čase podle své aktuální polohy. Změň dosah vyhledávání od 500 metrů do 5 kilometrů a prozkoumej své okolí.
+            <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Proximity Radar</h3>
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
+              Objevuj lidi v reálném čase podle své aktuální polohy. Změň dosah vyhledávání od 500 metrů do 5 kilometrů.
             </p>
           </div>
 
-          <div className="glass-panel p-8 rounded-3xl space-y-4 border border-white/10 hover:border-[#00F2FE]/40 transition-all">
-            <div className="w-12 h-12 rounded-2xl bg-[#FF6B6B]/10 border border-[#FF6B6B]/30 flex items-center justify-center text-[#FF6B6B]">
-              <Shield className="w-6 h-6" />
+          {/* Privacy Protection */}
+          <div
+            className="glass-panel"
+            style={{
+              borderRadius: "var(--radius-xl)",
+              padding: "var(--space-xl)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-md)",
+              border: "1px solid var(--border-light)",
+              transition: "border-color 0.2s ease",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(255,107,107,0.4)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-light)"; }}
+          >
+            <div style={{
+              width: 44, height: 44,
+              borderRadius: "var(--radius-md)",
+              backgroundColor: "rgba(255,107,107,0.10)",
+              border: "1px solid rgba(255,107,107,0.30)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "var(--color-accent)",
+            }}>
+              <Shield style={{ width: 22, height: 22 }} />
             </div>
-            <h3 className="text-xl font-bold text-white">Ochrana soukromí</h3>
-            <p className="text-xs text-white/70 leading-relaxed">
-              Granulární soukromí. Soukromé účty jsou ve feedu rozmazané a vyžadují schválení žádosti o přístup. Nebo zapni Ghost Mode a staň se neviditelným.
+            <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Ochrana soukromí</h3>
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
+              Granulární soukromí. Soukromé účty jsou ve feedu rozmazané a vyžadují schválení. Nebo zapni Ghost Mode.
             </p>
           </div>
 
-          <div className="glass-panel p-8 rounded-3xl space-y-4 border border-white/10 hover:border-[#00F2FE]/40 transition-all">
-            <div className="w-12 h-12 rounded-2xl bg-amber-400/10 border border-amber-400/30 flex items-center justify-center text-amber-400">
-              <Flame className="w-6 h-6" />
+          {/* Disappearing Stories */}
+          <div
+            className="glass-panel"
+            style={{
+              borderRadius: "var(--radius-xl)",
+              padding: "var(--space-xl)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-md)",
+              border: "1px solid var(--border-light)",
+              transition: "border-color 0.2s ease",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(255,179,71,0.4)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-light)"; }}
+          >
+            <div style={{
+              width: 44, height: 44,
+              borderRadius: "var(--radius-md)",
+              backgroundColor: "rgba(255,179,71,0.10)",
+              border: "1px solid rgba(255,179,71,0.30)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "var(--color-accent-alt)",
+            }}>
+              <Flame style={{ width: 22, height: 22 }} />
             </div>
-            <h3 className="text-xl font-bold text-white">Mizející příběhy</h3>
-            <p className="text-xs text-white/70 leading-relaxed">
-              Příběhy mizí po 24 hodinách. Sdílej bez obav z permanentní digitální stopy jen to, co tě baví a co děláš právě v tuto chvíli.
+            <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Mizející příběhy</h3>
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
+              Příběhy mizí po 24 hodinách. Sdílej bez obav z permanentní digitální stopy jen to, co tě baví právě teď.
             </p>
           </div>
+
         </section>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 py-8 text-center text-xs text-white/40">
+      <footer style={{
+        borderTop: "1px solid var(--border-light)",
+        padding: "var(--space-xl)",
+        textAlign: "center",
+        fontSize: "var(--text-xs)",
+        color: "var(--text-tertiary)",
+      }}>
         ahoj app v0.1.0 • Made with 💜 in Brno
       </footer>
     </div>

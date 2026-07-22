@@ -2,122 +2,164 @@
 
 import React from "react";
 import Link from "next/link";
-import { Compass, Shield, Flame, Sparkles, Globe, Lock, ArrowRight, Server, Smartphone, Zap } from "lucide-react";
+import {
+  Compass, Shield, Flame, Sparkles, ArrowRight,
+  Globe, Server, Smartphone, Zap
+} from "lucide-react";
 import Navigation from "../../components/Navigation";
 
+/**
+ * About Page — strictly uses CSS variables from globals.css (mobile theme tokens)
+ */
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-[#0C0C0C] text-white flex flex-col font-sans relative overflow-hidden">
-      {/* Background Glows */}
-      <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-[#00F2FE]/10 rounded-full blur-[160px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-[#7B2FE7]/15 rounded-full blur-[160px] pointer-events-none" />
+    <div className="page-shell" style={{ display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
+
+      {/* Background glows — mobile primary + accent */}
+      <div style={{
+        position: "absolute", top: "-10%", left: "-10%",
+        width: 600, height: 600, borderRadius: "50%",
+        background: "rgba(0,242,254,0.10)",
+        filter: "blur(140px)", pointerEvents: "none",
+      }} />
+      <div style={{
+        position: "absolute", bottom: "-10%", right: "-10%",
+        width: 600, height: 600, borderRadius: "50%",
+        background: "rgba(255,107,107,0.08)",
+        filter: "blur(140px)", pointerEvents: "none",
+      }} />
 
       <Navigation />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 pt-32 pb-24 relative z-10 space-y-20">
-        
-        {/* Presentation Header */}
-        <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#00F2FE]/10 border border-[#00F2FE]/30 text-xs font-bold text-[#00F2FE]">
-            <Sparkles className="w-3.5 h-3.5" /> Next-Gen Proximity Network
-          </div>
-          <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight">
-            About <span className="text-[#00F2FE]">ahoj</span>
+      <main style={{
+        flex: 1,
+        maxWidth: "80rem",
+        width: "100%",
+        margin: "0 auto",
+        padding: "8rem var(--space-xl) var(--space-xxl)",
+        position: "relative",
+        zIndex: 10,
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-xxl)",
+      }}>
+
+        {/* Header */}
+        <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-md)", maxWidth: "44rem", margin: "0 auto" }}>
+          <span className="badge-brand">
+            <Sparkles style={{ width: 13, height: 13 }} /> Next-Gen Proximity Network
+          </span>
+          <h1 style={{
+            fontSize: "clamp(2rem, 5vw, var(--text-hero))",
+            fontWeight: 900,
+            letterSpacing: "-0.04em",
+            lineHeight: 1.05,
+            margin: 0,
+            color: "var(--text-primary)",
+          }}>
+            About <span style={{ color: "var(--color-primary)" }}>ahoj</span>
           </h1>
-          <p className="text-white/70 text-base sm:text-lg leading-relaxed">
-            <strong>ahoj</strong> is a hyper-local social network built on physical proximity. Connect with people right around you, join spontaneous 2-hour meetups, and share expiring stories without permanent digital footprints.
+          <p style={{ fontSize: "var(--text-md)", color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
+            <strong style={{ color: "var(--text-primary)" }}>ahoj</strong> is a hyper-local social network built on physical proximity.
+            Connect with people right around you, join spontaneous 2-hour meetups, and share expiring stories without permanent digital footprints.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-            <Link
-              href="/app"
-              className="px-6 py-3.5 rounded-2xl bg-[#00F2FE] hover:bg-[#00DCE6] text-black font-bold text-sm flex items-center gap-2 shadow-[0_0_20px_rgba(0,242,254,0.3)] transition-all"
-            >
-              Launch Web App <ArrowRight className="w-4 h-4" />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-md)", justifyContent: "center" }}>
+            <Link href="/app" className="btn-primary" style={{ padding: "var(--space-md) var(--space-xl)", fontSize: "var(--text-base)", borderRadius: "var(--radius-xl)", textDecoration: "none" }}>
+              Launch Web App <ArrowRight style={{ width: 16, height: 16 }} />
             </Link>
-            <Link
-              href="/register"
-              className="px-6 py-3.5 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-semibold text-sm border border-white/10 transition-all"
-            >
+            <Link href="/register" className="btn-ghost" style={{ padding: "var(--space-md) var(--space-xl)", fontSize: "var(--text-base)", borderRadius: "var(--radius-xl)", textDecoration: "none" }}>
               Create Free Account
             </Link>
           </div>
         </div>
 
-        {/* Feature Grid */}
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="glass-panel p-8 rounded-3xl space-y-4 border border-white/10 hover:border-[#00F2FE]/40 transition-all">
-            <div className="w-12 h-12 rounded-2xl bg-[#00F2FE]/10 border border-[#00F2FE]/30 flex items-center justify-center text-[#00F2FE]">
-              <Compass className="w-6 h-6" />
+        {/* Feature Cards */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--space-xl)" }}>
+
+          <div
+            className="glass-panel"
+            style={{ padding: "var(--space-xl)", borderRadius: "var(--radius-xl)", display: "flex", flexDirection: "column", gap: "var(--space-md)", border: "1px solid var(--border-light)", transition: "border-color 0.2s ease" }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-light)"; }}
+          >
+            <div style={{ width: 44, height: 44, borderRadius: "var(--radius-md)", backgroundColor: "rgba(0,242,254,0.10)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-primary)" }}>
+              <Compass style={{ width: 22, height: 22 }} />
             </div>
-            <h3 className="text-xl font-bold text-white">PostGIS Proximity Radar</h3>
-            <p className="text-xs text-white/70 leading-relaxed">
-              Calculates real-time distance using PostGIS geography queries (<span className="font-mono text-[#00F2FE]">ST_DWithin</span>). Never exposes exact GPS coordinates to protect user safety.
+            <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>PostGIS Proximity Radar</h3>
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
+              Calculates real-time distance using PostGIS geography queries (<span style={{ fontFamily: "monospace", color: "var(--color-primary)" }}>ST_DWithin</span>). Never exposes exact GPS coordinates.
             </p>
           </div>
 
-          <div className="glass-panel p-8 rounded-3xl space-y-4 border border-white/10 hover:border-[#00F2FE]/40 transition-all">
-            <div className="w-12 h-12 rounded-2xl bg-[#FF6B6B]/10 border border-[#FF6B6B]/30 flex items-center justify-center text-[#FF6B6B]">
-              <Shield className="w-6 h-6" />
+          <div
+            className="glass-panel"
+            style={{ padding: "var(--space-xl)", borderRadius: "var(--radius-xl)", display: "flex", flexDirection: "column", gap: "var(--space-md)", border: "1px solid var(--border-light)", transition: "border-color 0.2s ease" }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(255,107,107,0.4)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-light)"; }}
+          >
+            <div style={{ width: 44, height: 44, borderRadius: "var(--radius-md)", backgroundColor: "rgba(255,107,107,0.10)", border: "1px solid rgba(255,107,107,0.30)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-accent)" }}>
+              <Shield style={{ width: 22, height: 22 }} />
             </div>
-            <h3 className="text-xl font-bold text-white">Ghost Mode & Safe Zones</h3>
-            <p className="text-xs text-white/70 leading-relaxed">
-              Granular privacy controls. Switch to Ghost Mode to fuzz your location coordinate telemetry or hide completely from nearby feed scans.
+            <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Ghost Mode & Safe Zones</h3>
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
+              Granular privacy controls. Switch to Ghost Mode to fuzz your location telemetry or hide completely from nearby feed scans.
             </p>
           </div>
 
-          <div className="glass-panel p-8 rounded-3xl space-y-4 border border-white/10 hover:border-[#00F2FE]/40 transition-all">
-            <div className="w-12 h-12 rounded-2xl bg-amber-400/10 border border-amber-400/30 flex items-center justify-center text-amber-400">
-              <Flame className="w-6 h-6" />
+          <div
+            className="glass-panel"
+            style={{ padding: "var(--space-xl)", borderRadius: "var(--radius-xl)", display: "flex", flexDirection: "column", gap: "var(--space-md)", border: "1px solid var(--border-light)", transition: "border-color 0.2s ease" }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(255,179,71,0.4)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-light)"; }}
+          >
+            <div style={{ width: 44, height: 44, borderRadius: "var(--radius-md)", backgroundColor: "rgba(255,179,71,0.10)", border: "1px solid rgba(255,179,71,0.30)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-accent-alt)" }}>
+              <Flame style={{ width: 22, height: 22 }} />
             </div>
-            <h3 className="text-xl font-bold text-white">24h Expiring Stories</h3>
-            <p className="text-xs text-white/70 leading-relaxed">
+            <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>24h Expiring Stories</h3>
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
               Ephemeral media sharing. Upload photo/video stories pinned to your current location that automatically expire after 24 hours.
             </p>
           </div>
         </div>
 
-        {/* Tech Stack Specs */}
-        <div className="glass-panel p-8 sm:p-12 rounded-3xl space-y-8 border border-white/10">
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold text-white">Architecture & Technology Stack</h2>
-            <p className="text-xs text-white/60">Built as a modern high-performance pnpm monorepo</p>
+        {/* Tech Stack */}
+        <div className="glass-panel" style={{ padding: "var(--space-xxl)", borderRadius: "var(--radius-xl)", border: "1px solid var(--border-light)", display: "flex", flexDirection: "column", gap: "var(--space-xl)" }}>
+          <div style={{ textAlign: "center" }}>
+            <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 700, color: "var(--text-primary)", margin: "0 0 var(--space-xs)" }}>Architecture & Technology Stack</h2>
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-tertiary)", margin: 0 }}>Built as a modern high-performance pnpm monorepo</p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2">
-              <div className="text-xs font-bold text-[#00F2FE] uppercase tracking-wider flex items-center gap-1.5">
-                <Globe className="w-4 h-4" /> Web Frontend
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "var(--space-md)" }}>
+            {[
+              { icon: <Globe style={{ width: 15, height: 15 }} />, label: "Web Frontend", desc: "Next.js 16 (Turbopack), Tailwind CSS v4, Ant Design v5 glassmorphic theme." },
+              { icon: <Smartphone style={{ width: 15, height: 15 }} />, label: "Mobile App", desc: "Expo React Native, Expo Router, React Query, Zustand state manager." },
+              { icon: <Server style={{ width: 15, height: 15 }} />, label: "Backend Server", desc: "Fastify Node server, Socket.io real-time WebSocket, Drizzle ORM." },
+              { icon: <Zap style={{ width: 15, height: 15 }} />, label: "Database & Cache", desc: "PostgreSQL 16 with PostGIS extension, Redis 7 spatial index & pub/sub." },
+            ].map(({ icon, label, desc }) => (
+              <div
+                key={label}
+                style={{
+                  padding: "var(--space-md)",
+                  borderRadius: "var(--radius-md)",
+                  backgroundColor: "var(--bg-card)",
+                  border: "1px solid var(--border-light)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-sm)",
+                }}
+              >
+                <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--color-primary)", textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 6 }}>
+                  {icon} {label}
+                </div>
+                <p style={{ fontSize: "var(--text-xs)", color: "var(--text-secondary)", margin: 0, lineHeight: 1.5 }}>{desc}</p>
               </div>
-              <p className="text-xs text-white/80">Next.js 16 (Turbopack), Tailwind CSS v4, Ant Design v5 glassmorphic theme.</p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2">
-              <div className="text-xs font-bold text-[#00F2FE] uppercase tracking-wider flex items-center gap-1.5">
-                <Smartphone className="w-4 h-4" /> Mobile App
-              </div>
-              <p className="text-xs text-white/80">Expo React Native, Expo Router, React Query, Zustand state manager.</p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2">
-              <div className="text-xs font-bold text-[#00F2FE] uppercase tracking-wider flex items-center gap-1.5">
-                <Server className="w-4 h-4" /> Backend Server
-              </div>
-              <p className="text-xs text-white/80">Fastify Node server, Socket.io real-time WebSocket server, Drizzle ORM.</p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2">
-              <div className="text-xs font-bold text-[#00F2FE] uppercase tracking-wider flex items-center gap-1.5">
-                <Zap className="w-4 h-4" /> Database & Cache
-              </div>
-              <p className="text-xs text-white/80">PostgreSQL 16 with PostGIS extension, Redis 7 spatial index & pub/sub.</p>
-            </div>
+            ))}
           </div>
         </div>
 
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-white/10 py-8 text-center text-xs text-white/40">
+      <footer style={{ borderTop: "1px solid var(--border-light)", padding: "var(--space-xl)", textAlign: "center", fontSize: "var(--text-xs)", color: "var(--text-tertiary)" }}>
         ahoj app v0.1.0 • Made with 💜 in Brno
       </footer>
     </div>

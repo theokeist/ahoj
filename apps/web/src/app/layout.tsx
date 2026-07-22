@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Outfit } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "../components/ThemeProvider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+/**
+ * Outfit — primary font matching mobile app fontFamily token
+ * apps/mobile/lib/theme.ts → fontFamily: "'Outfit', 'Inter', system-ui, -apple-system, sans-serif"
+ */
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "900"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -24,11 +25,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col bg-[#0C0C0C] text-white">
+    <html lang="en" className={`${outfit.variable} h-full`}>
+      <body className="page-shell flex flex-col min-h-full">
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

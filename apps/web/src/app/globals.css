@@ -1,83 +1,382 @@
 @import "tailwindcss";
 
-@theme {
-  --color-brand-primary: #00F2FE;
-  --color-brand-hover: #00DCE6;
-  --color-brand-dark: #0C0C0C;
-  --color-brand-surface: #121212;
-  --color-brand-glass: rgba(255, 255, 255, 0.04);
-  --color-brand-border: rgba(255, 255, 255, 0.08);
+/*
+ * ╔══════════════════════════════════════════════════════════════╗
+ * ║  ahoj Design System — STRICT Mobile Theme Token Alignment   ║
+ * ║  Source: apps/mobile/lib/theme.ts                           ║
+ * ║  DO NOT use raw hex values — always use CSS variables below ║
+ * ╚══════════════════════════════════════════════════════════════╝
+ *
+ * MOBILE TOKEN REFERENCE:
+ *   colors.background.primary   = #0C0C0C  (Volcanic dark — main bg)
+ *   colors.background.secondary = #121212  (Surface card)
+ *   colors.background.card      = rgba(255,255,255,0.04)
+ *   colors.background.overlay   = rgba(12,12,12,0.85)
+ *   colors.primary              = #00F2FE  (Electric Teal)
+ *   colors.primaryDark          = #00DCE6
+ *   colors.primaryLight         = #70F7FF
+ *   colors.accent               = #FF6B6B  (Coral)
+ *   colors.accentAlt            = #FFB347  (Amber)
+ *   colors.storyRing            = [#00F2FE, #FF6B6B]
+ *   colors.text.primary         = #FFFFFF
+ *   colors.text.secondary       = rgba(255,255,255,0.7)
+ *   colors.text.tertiary        = rgba(255,255,255,0.4)
+ *   colors.text.disabled        = rgba(255,255,255,0.25)
+ *   colors.border               = rgba(0,242,254,0.3)
+ *   colors.borderLight          = rgba(255,255,255,0.1)
+ *   colors.glass                = rgba(255,255,255,0.03)
+ *   colors.success              = #4CAF50
+ *   colors.warning              = #FF9800
+ *   colors.error                = #F44336
+ *   colors.online               = #00F2FE
+ *
+ *   spacing: xs=4 sm=8 md=16 lg=24 xl=32 xxl=48
+ *   radius:  sm=8 md=12 lg=16 xl=24 full=999
+ *   typography.xs=11 sm=13 base=15 md=17 lg=20 xl=24 xxl=32 hero=40
+ */
+
+/* ── CSS Custom Properties (Single Source of Truth) ─────────────── */
+:root {
+  /* Backgrounds */
+  --bg-primary:   #0C0C0C;
+  --bg-secondary: #121212;
+  --bg-card:      rgba(255, 255, 255, 0.04);
+  --bg-overlay:   rgba(12, 12, 12, 0.85);
+
+  /* Brand Colors */
+  --color-primary:       #00F2FE;
+  --color-primary-dark:  #00DCE6;
+  --color-primary-light: #70F7FF;
+
+  /* Accent */
+  --color-accent:     #FF6B6B;
+  --color-accent-alt: #FFB347;
+
+  /* Text */
+  --text-primary:   #FFFFFF;
+  --text-secondary: rgba(255, 255, 255, 0.70);
+  --text-tertiary:  rgba(255, 255, 255, 0.40);
+  --text-disabled:  rgba(255, 255, 255, 0.25);
+
+  /* Borders */
+  --border:       rgba(0, 242, 254, 0.30);
+  --border-light: rgba(255, 255, 255, 0.10);
+  --glass:        rgba(255, 255, 255, 0.03);
+
+  /* Status */
+  --color-success: #4CAF50;
+  --color-warning: #FF9800;
+  --color-error:   #F44336;
+  --color-online:  #00F2FE;
+
+  /* Spacing (mobile tokens) */
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  16px;
+  --space-lg:  24px;
+  --space-xl:  32px;
+  --space-xxl: 48px;
+
+  /* Border Radius (mobile tokens) */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   24px;
+  --radius-full: 9999px;
+
+  /* Typography sizes (px, matching mobile) */
+  --text-xs:   11px;
+  --text-sm:   13px;
+  --text-base: 15px;
+  --text-md:   17px;
+  --text-lg:   20px;
+  --text-xl:   24px;
+  --text-xxl:  32px;
+  --text-hero: 40px;
+
+  /* Shadows / Glow */
+  --glow-primary: 0 0 12px rgba(0, 242, 254, 0.40);
+  --glow-primary-strong: 0 0 25px rgba(0, 242, 254, 0.50);
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.30);
 }
 
-:root {
-  --background: #0C0C0C;
-  --foreground: #FFFFFF;
-  --primary: #00F2FE;
-  --primary-hover: #00DCE6;
-  --card-bg: rgba(255, 255, 255, 0.03);
-  --card-border: rgba(255, 255, 255, 0.08);
+/* ── Base Styles ─────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
+  min-height: 100%;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: var(--text-base);
   overflow-x: hidden;
 }
 
-/* Glassmorphism utilities */
+/* ── Typography Utilities ────────────────────────────────────────── */
+.t-primary   { color: var(--text-primary); }
+.t-secondary { color: var(--text-secondary); }
+.t-tertiary  { color: var(--text-tertiary); }
+.t-disabled  { color: var(--text-disabled); }
+.t-brand     { color: var(--color-primary); }
+.t-accent    { color: var(--color-accent); }
+.t-success   { color: var(--color-success); }
+.t-warning   { color: var(--color-warning); }
+.t-error     { color: var(--color-error); }
+
+/* ── Background Utilities ────────────────────────────────────────── */
+.bg-page     { background-color: var(--bg-primary); }
+.bg-surface  { background-color: var(--bg-secondary); }
+.bg-card-el  { background-color: var(--bg-card); }
+.bg-overlay  { background-color: var(--bg-overlay); }
+.bg-brand    { background-color: var(--color-primary); }
+.bg-accent   { background-color: var(--color-accent); }
+
+/* ── Border Utilities ────────────────────────────────────────────── */
+.border-brand { border-color: var(--border); }
+.border-light { border-color: var(--border-light); }
+
+/* ── Glassmorphism Components ────────────────────────────────────── */
+
+/* Card (matches mobile colors.background.secondary + border) */
+.glass-card {
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+/* Subtle card — borderLight, no glow */
 .glass-panel {
-  background: rgba(18, 18, 18, 0.75);
+  background: var(--bg-secondary);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-card);
 }
 
+/* Active / selected variant */
+.glass-panel-active {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.20);
+}
+
+/* Input fields */
 .glass-input {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  transition: all 0.2s ease-in-out;
-}
-
-.glass-input:focus {
-  border-color: #00F2FE;
-  box-shadow: 0 0 12px rgba(0, 242, 254, 0.25);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   outline: none;
 }
 
-/* Pulsing radar effect */
+.glass-input::placeholder {
+  color: var(--text-disabled);
+}
+
+.glass-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: var(--glow-primary);
+}
+
+/* ── Brand Buttons ───────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--color-primary);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  box-shadow: var(--glow-primary);
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.btn-primary:hover  { background: var(--color-primary-dark); transform: scale(1.02); }
+.btn-primary:active { transform: scale(0.98); }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-ghost:hover { background: rgba(255,255,255,0.08); border-color: var(--border); }
+
+/* ── Section Labels (matching mobile sectionTitle) ───────────────── */
+.section-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── Status Badge ────────────────────────────────────────────────── */
+.badge-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  background: rgba(0, 242, 254, 0.15);
+  color: var(--color-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.badge-success {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  background: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border: 1px solid rgba(76, 175, 80, 0.30);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.badge-accent {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  background: rgba(255, 107, 107, 0.15);
+  color: var(--color-accent);
+  border: 1px solid rgba(255, 107, 107, 0.30);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+/* ── Story Ring Gradient (mobile storyRing: [#00F2FE, #FF6B6B]) ── */
+.story-ring-gradient {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+}
+
+/* ── Nav Tab Active ──────────────────────────────────────────────── */
+.nav-tab {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.nav-tab:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+
+.nav-tab-active {
+  background: var(--color-primary);
+  color: var(--bg-primary);
+}
+
+/* ── Divider ─────────────────────────────────────────────────────── */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border-light);
+  margin: var(--space-md) 0;
+}
+
+/* ── Animations ──────────────────────────────────────────────────── */
+
+/* Radar pulse — used on radar circles */
 @keyframes radar-pulse {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.4);
-  }
-  70% {
-    transform: scale(1.05);
-    box-shadow: 0 0 0 20px rgba(0, 242, 254, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(0, 242, 254, 0);
-  }
+  0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0,242,254,0.40); }
+  70%  { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(0,242,254,0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0,242,254,0); }
 }
 
 .animate-radar {
   animation: radar-pulse 3s infinite ease-in-out;
 }
 
-/* Customized scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
+/* Brand spin */
+@keyframes spin-brand {
+  to { transform: rotate(360deg); }
 }
-::-webkit-scrollbar-track {
-  background: #0C0C0C;
+.animate-spin-brand {
+  animation: spin-brand 1s linear infinite;
 }
+
+/* Subtle fade-in for success toasts */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.25s ease forwards;
+}
+
+/* ── Scrollbar (matching mobile dark scrollbar) ──────────────────── */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.15);
   border-radius: 3px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #00F2FE;
+::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
+
+.scrollbar-none                       { scrollbar-width: none; }
+.scrollbar-none::-webkit-scrollbar    { display: none; }
+
+/* ── App Shell Helpers ───────────────────────────────────────────── */
+.page-shell {
+  min-height: 100dvh;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.content-max {
+  max-width: 80rem;   /* 1280px */
+  margin-inline: auto;
+}
+
+/* ── Focus visible ───────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
