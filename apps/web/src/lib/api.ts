@@ -72,6 +72,9 @@ export const webApi = {
     apiFetch<any>("/users/me", { method: "PUT", body: JSON.stringify(body) }),
   updateMessage: (message: string) =>
     apiFetch<{ message: string }>("/users/me/message", { method: "PUT", body: JSON.stringify({ message }) }),
+  getSettings: () => apiFetch<any>("/users/me/settings"),
+  updateSettings: (settings: any) =>
+    apiFetch<any>("/users/me/settings", { method: "PUT", body: JSON.stringify(settings) }),
 
   // Feed & Nearby
   getNearbyUsers: (lat: number, lng: number, radius: number) =>

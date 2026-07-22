@@ -1,8 +1,8 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { eq, and } from "drizzle-orm";
-import { users, accessRequests } from "../../db/schema.js";
-import { UpdateProfileSchema, UpdateMessageSchema, UpdateLocationSchema } from "@ahoj/shared";
+import { users, accessRequests, userSettings } from "../../db/schema.js";
+import { UpdateProfileSchema, UpdateMessageSchema, UpdateLocationSchema, UpdateUserSettingsSchema } from "@ahoj/shared";
 import { verifyAccessToken } from "../auth/auth.service.js";
 import { sql } from "drizzle-orm";
 
@@ -46,6 +46,68 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     return user;
   });
 
+  // GET /users/me/settings
+  app.get("/me/settings", { preHandler: requireAuth }, async (request: any, reply) => {
+    let [settings] = await app.db
+      .select()
+      .from(userSettings)
+      .where(eq(userSettings.userId, request.userId))
+      .limit(1);
+
+    if (!settings) {
+      // Create default settings row
+      [settings] = await app.db
+        .insert(userSettings)
+        .values({
+          userId: request.userId,
+        })
+        .onConflictDoNothing()
+        .returning();
+
+      if (!settings) {
+        [settings] = await app.db
+          .select()
+          .from(userSettings)
+          .where(eq(userSettings.userId, request.userId))
+          .limit(1);
+      }
+    }
+
+    return settings;
+  });
+
+  // PUT /users/me/settings (Immediate Save)
+  app.put("/me/settings", { preHandler: requireAuth }, async (request: any, reply) => {
+    const body = UpdateUserSettingsSchema.parse(request.body);
+
+    // Upsert into user_settings
+    const [updatedSettings] = await app.db
+      .insert(userSettings)
+      .values({
+        userId: request.userId,
+        ...body,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: userSettings.userId,
+        set: {
+          ...body,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+
+    // If privacyMode was updated, sync to users table as well
+    if (body.privacyMode) {
+      await app.db
+        .update(users)
+        .set({ privacyMode: body.privacyMode, updatedAt: new Date() })
+        .where(eq(users.id, request.userId));
+    }
+
+    return updatedSettings;
+  });
+
   // PUT /users/me
   app.put("/me", { preHandler: requireAuth }, async (request: any, reply) => {
     const body = UpdateProfileSchema.parse(request.body);
@@ -54,6 +116,21 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
       .set({ ...body, updatedAt: new Date() })
       .where(eq(users.id, request.userId))
       .returning();
+
+    // Sync privacyMode if updated
+    if (body.privacyMode) {
+      await app.db
+        .insert(userSettings)
+        .values({
+          userId: request.userId,
+          privacyMode: body.privacyMode,
+        })
+        .onConflictDoUpdate({
+          target: userSettings.userId,
+          set: { privacyMode: body.privacyMode, updatedAt: new Date() },
+        });
+    }
+
     return updated;
   });
 

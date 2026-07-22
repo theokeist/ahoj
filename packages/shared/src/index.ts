@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export * from "./i18n";
+
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 export const PrivacyMode = {
@@ -146,6 +148,37 @@ export const CreateSparkSchema = z.object({
   lng: z.number().min(-180).max(180),
   category: z.enum(["COFFEE", "SPORTS", "PARTY", "STUDY", "MEETUP", "OTHER"]).default("MEETUP"),
 });
+
+export const UserSettingsSchema = z.object({
+  privacyMode: z.enum(["PUBLIC", "PRIVATE", "GHOST"]).default("PUBLIC"),
+  ghostFuzzRadiusMeters: z.number().min(50).max(1000).default(300),
+  allowDirectMessages: z.enum(["EVERYONE", "APPROVED", "NOBODY"]).default("EVERYONE"),
+  showDistanceToOthers: z.boolean().default(true),
+  notifications: z.object({
+    pushEnabled: z.boolean().default(true),
+    nearbyUsersAlert: z.boolean().default(true),
+    sparksAlert: z.boolean().default(true),
+    messagesAlert: z.boolean().default(true),
+    accessRequestAlert: z.boolean().default(true),
+    soundEnabled: z.boolean().default(true),
+  }).default({
+    pushEnabled: true,
+    nearbyUsersAlert: true,
+    sparksAlert: true,
+    messagesAlert: true,
+    accessRequestAlert: true,
+    soundEnabled: true,
+  }),
+  language: z.enum(["cs", "en", "de", "sk", "pl", "uk", "ru", "zh", "ja"]).default("cs"),
+  distanceUnit: z.enum(["metric", "imperial"]).default("metric"),
+  autoPlayVideos: z.enum(["always", "wifi", "never"]).default("wifi"),
+  mediaUploadQuality: z.enum(["high", "standard", "saver"]).default("high"),
+});
+
+export const UpdateUserSettingsSchema = UserSettingsSchema.partial();
+
+export type UserSettingsType = z.infer<typeof UserSettingsSchema>;
+export type UpdateUserSettingsType = z.infer<typeof UpdateUserSettingsSchema>;
 
 // ─── Response Types ───────────────────────────────────────────────────────────
 

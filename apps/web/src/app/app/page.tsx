@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { webApi } from "../../lib/api";
 import { MOCK_NEARBY_USERS } from "../../lib/mockData";
+import { TRANSLATIONS, type SupportedLanguage } from "@ahoj/shared";
 
 const STORY_FILTERS = [
   { id: "none", name: "Original 📷" },
@@ -53,6 +54,25 @@ const EMOJI_STICKERS = ["📍 Brno", "⚡ Spark", "🔥 Hot", "☕ Coffee", "�
 export default function FullWebAppDashboard() {
   const router = useRouter();
 
+  // Language & i18n
+  const [language, setLanguage] = useState<SupportedLanguage>("cs");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("ahoj-lang") as SupportedLanguage;
+    if (saved && TRANSLATIONS[saved]) {
+      setLanguage(saved);
+    }
+    const handleLangChange = (e: any) => {
+      if (e.detail && TRANSLATIONS[e.detail as SupportedLanguage]) {
+        setLanguage(e.detail as SupportedLanguage);
+      }
+    };
+    window.addEventListener("ahoj-lang-change", handleLangChange);
+    return () => window.removeEventListener("ahoj-lang-change", handleLangChange);
+  }, []);
+
+  const t = TRANSLATIONS[language] ?? TRANSLATIONS.cs;
+
   // Auth Guard & Current User State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [myUser, setMyUser] = useState<any>(null);
@@ -63,17 +83,29 @@ export default function FullWebAppDashboard() {
   const [isGhostMode, setIsGhostMode] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<"grid" | "radar">("grid");
 
-  // Settings State
+  // Detailed Settings State
   const [settingsForm, setSettingsForm] = useState({
     username: "",
     bio: "",
     message: "",
     avatarUrl: "",
     privacyMode: "PUBLIC",
-    distanceUnit: "km",
-    notificationsEnabled: true,
+    ghostFuzzRadiusMeters: 300,
+    allowDirectMessages: "EVERYONE",
+    showDistanceToOthers: true,
+    notifications: {
+      pushEnabled: true,
+      nearbyUsersAlert: true,
+      sparksAlert: true,
+      messagesAlert: true,
+      accessRequestAlert: true,
+      soundEnabled: true,
+    },
+    language: "cs" as SupportedLanguage,
+    distanceUnit: "metric",
+    autoPlayVideos: "wifi",
+    mediaUploadQuality: "high",
   });
-  const [isSavingSettings, setIsSavingSettings] = useState<boolean>(false);
   const [settingsSaveSuccess, setSettingsSaveSuccess] = useState<boolean>(false);
 
   // Data States
@@ -98,15 +130,14 @@ export default function FullWebAppDashboard() {
 
   // Story Creator Media Editor Modal
   const [isAddStoryOpen, setIsAddStoryOpen] = useState<boolean>(false);
-  const [storyMediaUrl, setStoryMediaUrl] = useState<string>("https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&q=80&w=600");
-  const [storyCaption, setStoryCaption] = useState<string>("");
-  const [storyFilter, setStoryFilter] = useState<string>("none");
-  const [storySticker, setStorySticker] = useState<string | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState<string>("none");
+  const [addedStickers, setAddedStickers] = useState<string[]>([]);
+  const [isUploadingStory, setIsUploadingStory] = useState<boolean>(false);
 
-  // Location Coordinates (Default Brno)
-  const [coords, setCoords] = useState<{ lat: number; lng: number }>({ lat: 49.1951, lng: 16.6079 });
+  // User GPS Location
+  const [coords, setCoords] = useState<{ lat: number; lng: number }>({ lat: 49.1951, lng: 16.6068 });
 
-  // Check Authentication on Mount
+  // Initial Auth & Settings Fetch
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
     if (!token) {
@@ -120,16 +151,38 @@ export default function FullWebAppDashboard() {
       .then((res) => {
         setMyUser(res.user);
         setIsGhostMode(res.user.privacyMode === "GHOST");
-        setSettingsForm({
+        setSettingsForm((prev) => ({
+          ...prev,
           username: res.user.username || "",
           bio: res.user.bio || "",
           message: res.user.message || "",
           avatarUrl: res.user.profilePhotoUrl || res.user.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=dev_user",
           privacyMode: res.user.privacyMode || "PUBLIC",
-          distanceUnit: "km",
-          notificationsEnabled: true,
-        });
+        }));
         setIsAuthenticated(true);
+
+        // Fetch DB user settings
+        return webApi.getSettings();
+      })
+      .then((settings) => {
+        if (settings) {
+          setSettingsForm((prev) => ({
+            ...prev,
+            privacyMode: settings.privacyMode ?? prev.privacyMode,
+            ghostFuzzRadiusMeters: settings.ghostFuzzRadiusMeters ?? 300,
+            allowDirectMessages: settings.allowDirectMessages ?? "EVERYONE",
+            showDistanceToOthers: settings.showDistanceToOthers ?? true,
+            notifications: settings.notifications ?? prev.notifications,
+            language: settings.language ?? prev.language,
+            distanceUnit: settings.distanceUnit ?? "metric",
+            autoPlayVideos: settings.autoPlayVideos ?? "wifi",
+            mediaUploadQuality: settings.mediaUploadQuality ?? "high",
+          }));
+          if (settings.language && TRANSLATIONS[settings.language as SupportedLanguage]) {
+            setLanguage(settings.language as SupportedLanguage);
+            localStorage.setItem("ahoj-lang", settings.language);
+          }
+        }
       })
       .catch(() => {
         localStorage.removeItem("accessToken");
@@ -146,6 +199,65 @@ export default function FullWebAppDashboard() {
       );
     }
   }, [router]);
+
+  // Immediate Setting Save Handler
+  const handleImmediateSettingChange = async (key: string, value: any) => {
+    let updated: typeof settingsForm;
+    if (key.startsWith("notifications.")) {
+      const subKey = key.split(".")[1];
+      updated = {
+        ...settingsForm,
+        notifications: {
+          ...settingsForm.notifications,
+          [subKey]: value,
+        },
+      };
+    } else {
+      updated = { ...settingsForm, [key]: value };
+    }
+
+    setSettingsForm(updated);
+
+    if (key === "privacyMode") {
+      setIsGhostMode(value === "GHOST");
+    }
+
+    if (key === "language") {
+      setLanguage(value);
+      localStorage.setItem("ahoj-lang", value);
+      window.dispatchEvent(new CustomEvent("ahoj-lang-change", { detail: value }));
+    }
+
+    setSettingsSaveSuccess(true);
+    setTimeout(() => setSettingsSaveSuccess(false), 2000);
+
+    try {
+      if (key === "message") {
+        await webApi.updateMessage(value);
+      } else if (["username", "bio", "avatarUrl"].includes(key)) {
+        await webApi.updateProfile({
+          username: updated.username,
+          bio: updated.bio,
+          profilePhotoUrl: updated.avatarUrl,
+          privacyMode: updated.privacyMode,
+        });
+      }
+
+      await webApi.updateSettings({
+        privacyMode: updated.privacyMode,
+        ghostFuzzRadiusMeters: updated.ghostFuzzRadiusMeters,
+        allowDirectMessages: updated.allowDirectMessages,
+        showDistanceToOthers: updated.showDistanceToOthers,
+        notifications: updated.notifications,
+        language: updated.language,
+        distanceUnit: updated.distanceUnit,
+        autoPlayVideos: updated.autoPlayVideos,
+        mediaUploadQuality: updated.mediaUploadQuality,
+      });
+    } catch {
+      // Silent catch
+    }
+  };
 
   // Load Real Data from Fastify API
   const loadAppData = async () => {
@@ -185,67 +297,77 @@ export default function FullWebAppDashboard() {
     if (isAuthenticated) {
       loadAppData();
     }
-  }, [isAuthenticated, radiusKm, coords]);
+  }, [isAuthenticated, coords, radiusKm]);
 
-  // Real-Time Socket.io Connection
+  // Connect Socket.io
   useEffect(() => {
     if (!isAuthenticated) return;
-
-    const token = localStorage.getItem("accessToken");
     const socket = io("http://localhost:3000", {
-      auth: { token },
       transports: ["websocket"],
+      auth: { token: localStorage.getItem("accessToken") },
     });
-
     socketRef.current = socket;
 
+    socket.on("connect", () => {
+      socket.emit("location:update", coords);
+    });
+
+    socket.on("feed:update", (users: any[]) => {
+      if (users?.length) setNearbyUsers(users);
+    });
+
     socket.on("message:new", (msg: any) => {
-      if (activeChatUser && msg.senderId === activeChatUser.id) {
-        setMessages((prev) => [...prev, msg]);
-      }
+      setMessages((prev) => [...prev, msg]);
     });
 
     return () => {
       socket.disconnect();
     };
-  }, [isAuthenticated, activeChatUser]);
+  }, [isAuthenticated, coords]);
 
-  // Story Progress Timer
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (selectedStoryUser) {
-      setStoryProgress(0);
-      timer = setInterval(() => {
-        setStoryProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(timer);
-            setSelectedStoryUser(null);
-            return 0;
-          }
-          return prev + 4;
-        });
-      }, 100);
-    }
-    return () => clearInterval(timer);
-  }, [selectedStoryUser]);
-
-  // Handlers
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
-    window.location.href = "/login";
+    setIsAuthenticated(false);
+    router.replace("/login");
   };
 
-  const handleSendMessage = async () => {
-    if (!typedMessage.trim() || !activeChatUser) return;
-    const text = typedMessage.trim();
-    setTypedMessage("");
+  const handleCreateSpark = async () => {
+    if (!newSparkTitle.trim()) return;
+    try {
+      await webApi.createSpark({
+        title: newSparkTitle,
+        category: newSparkCategory,
+        lat: coords.lat,
+        lng: coords.lng,
+      });
+      setNewSparkTitle("");
+      setIsCreateSparkOpen(false);
+      loadAppData();
+    } catch {
+      // Failed
+    }
+  };
 
+  const handleUploadStory = async () => {
+    setIsUploadingStory(true);
+    try {
+      await webApi.uploadStory("https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&q=80&w=600", `Vibe: ${selectedFilter}`);
+      setIsAddStoryOpen(false);
+      setSelectedFilter("none");
+      setAddedStickers([]);
+      loadAppData();
+    } finally {
+      setIsUploadingStory(false);
+    }
+  };
+
+  const handleSendMessage = async (text: string) => {
+    if (!text.trim() || !activeChatUser) return;
     const tempMsg = {
-      id: Date.now().toString(),
-      senderId: myUser?.id || "me",
-      receiverId: activeChatUser.id,
-      text,
+      id: String(Date.now()),
+      senderId: myUser?.id,
+      content: text,
       createdAt: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, tempMsg]);
@@ -253,132 +375,7 @@ export default function FullWebAppDashboard() {
     try {
       await webApi.sendMessage(activeChatUser.id, text);
     } catch {
-      // Message saved
-    }
-  };
-
-  const handleSaveSettings = async () => {
-    setIsSavingSettings(true);
-    setSettingsSaveSuccess(false);
-
-    try {
-      if (settingsForm.message !== myUser?.message) {
-        await webApi.updateMessage(settingsForm.message);
-      }
-
-      const updatedUser = await webApi.updateProfile({
-        username: settingsForm.username,
-        bio: settingsForm.bio,
-        privacyMode: settingsForm.privacyMode,
-        profilePhotoUrl: settingsForm.avatarUrl,
-      });
-
-      setMyUser((prev: any) => ({
-        ...prev,
-        ...updatedUser,
-        username: settingsForm.username,
-        bio: settingsForm.bio,
-        message: settingsForm.message,
-        privacyMode: settingsForm.privacyMode,
-        avatarUrl: settingsForm.avatarUrl,
-      }));
-
-      setIsGhostMode(settingsForm.privacyMode === "GHOST");
-      setSettingsSaveSuccess(true);
-      setTimeout(() => setSettingsSaveSuccess(false), 3000);
-    } catch {
-      setMyUser((prev: any) => ({
-        ...prev,
-        username: settingsForm.username,
-        bio: settingsForm.bio,
-        message: settingsForm.message,
-        privacyMode: settingsForm.privacyMode,
-        avatarUrl: settingsForm.avatarUrl,
-      }));
-      setSettingsSaveSuccess(true);
-      setTimeout(() => setSettingsSaveSuccess(false), 3000);
-    } finally {
-      setIsSavingSettings(false);
-    }
-  };
-
-  const handleCreateSpark = async () => {
-    if (!newSparkTitle.trim()) return;
-    try {
-      const res = await webApi.createSpark({
-        title: newSparkTitle,
-        category: newSparkCategory,
-        lat: coords.lat,
-        lng: coords.lng,
-      });
-      setSparks([res.spark, ...(sparks || [])]);
-      setNewSparkTitle("");
-      setIsCreateSparkOpen(false);
-    } catch {
-      const newSpark = {
-        id: Date.now().toString(),
-        username: myUser?.username || "dev_user",
-        userAvatarUrl: myUser?.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=dev_user",
-        title: newSparkTitle,
-        category: newSparkCategory,
-        distanceMeters: 50,
-        createdAt: "Just now",
-      };
-      setSparks([newSpark, ...(sparks || [])]);
-      setNewSparkTitle("");
-      setIsCreateSparkOpen(false);
-    }
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === "string") {
-          setStoryMediaUrl(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handlePublishStory = async () => {
-    if (!storyMediaUrl.trim()) return;
-
-    const params = new URLSearchParams();
-    if (storyFilter !== "none") params.append("filter", storyFilter);
-    if (storyCaption.trim()) params.append("text", storyCaption.trim());
-    if (storySticker) params.append("sticker", storySticker);
-
-    const queryString = params.toString();
-    const finalUrl = queryString ? `${storyMediaUrl}?${queryString}` : storyMediaUrl;
-
-    try {
-      await webApi.uploadStory(finalUrl, storyCaption);
-      setIsAddStoryOpen(false);
-      setStoryCaption("");
-      loadAppData();
-    } catch {
-      setIsAddStoryOpen(false);
-    }
-  };
-
-  const handleApproveRequest = async (id: string) => {
-    try {
-      await webApi.approveAccess(id);
-      setIncomingRequests((incomingRequests || []).filter((r) => r.id !== id));
-    } catch {
-      setIncomingRequests((incomingRequests || []).filter((r) => r.id !== id));
-    }
-  };
-
-  const handleDenyRequest = async (id: string) => {
-    try {
-      await webApi.denyAccess(id);
-      setIncomingRequests((incomingRequests || []).filter((r) => r.id !== id));
-    } catch {
-      setIncomingRequests((incomingRequests || []).filter((r) => r.id !== id));
+      // Saved
     }
   };
 
@@ -396,7 +393,7 @@ export default function FullWebAppDashboard() {
   return (
     <div className="page-shell" style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', position: 'relative', overflowX: 'hidden' }}>
 
-      {/* AUTHENTICATED APP HEADER — Mobile Volcanic Theme via CSS variables */}
+      {/* AUTHENTICATED APP HEADER */}
       <header style={{ position: 'sticky', top: 0, zIndex: 40, backgroundColor: 'var(--bg-primary)', borderBottom: '1px solid var(--border-light)' }}>
         <div className="content-max" style={{ padding: '0 var(--space-lg)', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
@@ -405,7 +402,7 @@ export default function FullWebAppDashboard() {
               <span style={{ fontSize: 'var(--text-md)', fontWeight: 700, color: 'var(--text-primary)' }}>ahoj</span>
             </Link>
             <span className="badge-brand" style={{ fontSize: 'var(--text-xs)' }}>
-              <Zap style={{ width: 12, height: 12 }} /> Web App
+              <Zap style={{ width: 12, height: 12 }} /> {t.nav.dashboard}
             </span>
           </div>
 
@@ -423,19 +420,19 @@ export default function FullWebAppDashboard() {
                 cursor: 'pointer', fontWeight: 600, fontSize: 'var(--text-xs)',
                 transition: 'all 0.15s ease',
               }}
-              title="App Settings"
+              title={t.settings.title}
             >
               <Settings style={{ width: 14, height: 14 }} />
-              <span>Settings</span>
+              <span>{t.settings.title}</span>
             </button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '6px var(--space-sm)' }}>
               <img
-                src={myUser?.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=dev_user"}
+                src={myUser?.avatarUrl || settingsForm.avatarUrl}
                 alt="My profile"
                 style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--color-primary)' }}
               />
-              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--text-primary)' }}>@{myUser?.username || "dev_user"}</span>
+              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--text-primary)' }}>@{myUser?.username || settingsForm.username}</span>
             </div>
 
             <button
@@ -451,7 +448,7 @@ export default function FullWebAppDashboard() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'color 0.15s ease',
               }}
-              title="Sign Out"
+              title={t.nav.signOut}
             >
               <LogOut style={{ width: 16, height: 16 }} />
             </button>
@@ -459,7 +456,7 @@ export default function FullWebAppDashboard() {
         </div>
       </header>
 
-      <main className="content-max" style={{ flex: 1, width: '100%', padding: 'var(--space-lg)', display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-lg)', position: 'relative', zIndex: 10 }} >
+      <main className="content-max" style={{ flex: 1, width: '100%', padding: 'var(--space-lg)', display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-lg)', position: 'relative', zIndex: 10 }}>
 
         {/* LEFT SIDEBAR */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
@@ -468,14 +465,14 @@ export default function FullWebAppDashboard() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
               <div style={{ position: 'relative', width: 52, height: 52, borderRadius: 'var(--radius-lg)', border: '2px solid var(--color-primary)', padding: 2, backgroundColor: 'var(--bg-card)' }}>
                 <img
-                  src={myUser?.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=dev_user"}
+                  src={myUser?.avatarUrl || settingsForm.avatarUrl}
                   alt="My avatar"
                   style={{ width: '100%', height: '100%', borderRadius: 'var(--radius-md)', objectFit: 'cover' }}
                 />
                 <div style={{ position: 'absolute', bottom: -3, right: -3, width: 14, height: 14, borderRadius: '50%', backgroundColor: 'var(--color-success)', border: '2px solid var(--bg-primary)' }} />
               </div>
               <div>
-                <h3 style={{ fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--text-primary)', margin: 0 }}>@{myUser?.username || "dev_user"}</h3>
+                <h3 style={{ fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--text-primary)', margin: 0 }}>@{myUser?.username || settingsForm.username}</h3>
                 <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-primary)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
                   <Shield style={{ width: 12, height: 12 }} /> Proximity Verified
                 </span>
@@ -483,13 +480,13 @@ export default function FullWebAppDashboard() {
             </div>
 
             <div style={{ padding: 'var(--space-sm)', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-light)' }}>
-              <span style={{ fontSize: 10, color: 'var(--text-disabled)', fontWeight: 600, textTransform: 'uppercase' }}>Status</span>
-              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-primary)', fontStyle: 'italic', margin: '2px 0 0' }}>&quot;{myUser?.message || "Ahoj! Exploring nearby spots 📍"}&quot;</p>
+              <span style={{ fontSize: 10, color: 'var(--text-disabled)', fontWeight: 600, textTransform: 'uppercase' }}>{t.settings.statusMessage}</span>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-primary)', fontStyle: 'italic', margin: '2px 0 0' }}>&quot;{myUser?.message || settingsForm.message || "Ahoj!"}&quot;</p>
             </div>
 
             <div style={{ paddingTop: 'var(--space-sm)', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                <span>Radar Radius</span>
+                <span>{t.feed.radius}</span>
                 <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>{radiusKm} km</span>
               </div>
               <input
@@ -503,11 +500,11 @@ export default function FullWebAppDashboard() {
           {/* Navigation Menu */}
           <div className="glass-panel" style={{ padding: 'var(--space-sm)', borderRadius: 'var(--radius-xl)', display: 'flex', flexDirection: 'column', gap: 4 }}>
             {[
-              { id: 'feed', label: 'Nearby Radar', icon: <Compass style={{ width: 15, height: 15 }} />, count: (nearbyUsers || []).length },
-              { id: 'sparks', label: 'Sparks Meetups', icon: <Flame style={{ width: 15, height: 15 }} />, count: (sparks || []).length },
-              { id: 'chats', label: 'E2EE Messages', icon: <MessageSquare style={{ width: 15, height: 15 }} />, count: (conversations || []).length },
-              { id: 'requests', label: 'Access Requests', icon: <Lock style={{ width: 15, height: 15 }} />, count: incomingRequests?.length || 0 },
-              { id: 'settings', label: 'App Settings', icon: <Settings style={{ width: 15, height: 15 }} />, count: null },
+              { id: 'feed', label: t.feed.title, icon: <Compass style={{ width: 15, height: 15 }} />, count: (nearbyUsers || []).length },
+              { id: 'sparks', label: t.sparks.title, icon: <Flame style={{ width: 15, height: 15 }} />, count: (sparks || []).length },
+              { id: 'chats', label: t.chats.title, icon: <MessageSquare style={{ width: 15, height: 15 }} />, count: (conversations || []).length },
+              { id: 'requests', label: t.requests.title, icon: <Lock style={{ width: 15, height: 15 }} />, count: incomingRequests?.length || 0 },
+              { id: 'settings', label: t.settings.title, icon: <Settings style={{ width: 15, height: 15 }} />, count: null },
             ].map(({ id, label, icon, count }) => (
               <button
                 key={id}
@@ -556,7 +553,7 @@ export default function FullWebAppDashboard() {
               {activeTab === 'chats' && <MessageSquare style={{ width: 15, height: 15, color: 'var(--color-primary)' }} />}
               {activeTab === 'requests' && <Lock style={{ width: 15, height: 15, color: 'var(--color-primary)' }} />}
               {activeTab === 'settings' && <Settings style={{ width: 15, height: 15, color: 'var(--color-primary)' }} />}
-              {activeTab === 'settings' ? 'App Settings & Profile' : activeTab}
+              {activeTab === 'settings' ? t.settings.title : activeTab}
             </span>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
@@ -575,7 +572,7 @@ export default function FullWebAppDashboard() {
                       }}
                     >
                       {mode === 'grid' ? <LayoutGrid style={{ width: 13, height: 13 }} /> : <Radio style={{ width: 13, height: 13 }} />}
-                      {mode === 'grid' ? 'Grid' : 'Radar'}
+                      {mode === 'grid' ? t.feed.grid : t.feed.radar}
                     </button>
                   ))}
                 </div>
@@ -583,7 +580,7 @@ export default function FullWebAppDashboard() {
 
               <button
                 type="button"
-                onClick={() => setIsGhostMode(!isGhostMode)}
+                onClick={() => handleImmediateSettingChange("privacyMode", isGhostMode ? "PUBLIC" : "GHOST")}
                 style={{
                   width: 32, height: 32, borderRadius: '50%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -592,159 +589,115 @@ export default function FullWebAppDashboard() {
                   color: isGhostMode ? 'var(--color-accent)' : 'var(--text-tertiary)',
                   cursor: 'pointer', transition: 'all 0.15s ease',
                 }}
-                title={isGhostMode ? 'Ghost Mode Active' : 'Toggle Ghost Mode'}
+                title={isGhostMode ? t.settings.privacyGhost : "Toggle Ghost Mode"}
               >
                 <Ghost style={{ width: 14, height: 14 }} />
               </button>
             </div>
           </div>
 
-          {/* TAB 1: RADAR / PROXIMITY FEED */}
+          {/* TAB 1: NEARBY RADAR FEED */}
           {activeTab === "feed" && (
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scrollbar-none">
-              
-              {/* 24h Story Bar — Dual Story Ring Gradient (Mobile standard: #00F2FE -> #FF6B6B) */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center text-xs font-bold text-white/70">
-                  <span className="flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5 text-[#00F2FE]" /> 24h Active Stories</span>
-                  <button
-                    type="button"
-                    onClick={() => setIsAddStoryOpen(true)}
-                    className="text-[#00F2FE] hover:underline flex items-center gap-1 cursor-pointer font-semibold transition-all"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Post 24h Story
-                  </button>
-                </div>
-
-                <div className="flex gap-3.5 overflow-x-auto pb-2 scrollbar-none">
-                  <button
-                    type="button"
-                    onClick={() => setIsAddStoryOpen(true)}
-                    className="flex flex-col items-center gap-1.5 shrink-0 group cursor-pointer"
-                  >
-                    <div className="w-14 h-14 rounded-full p-[2px] story-ring-gradient relative bg-white/5 group-hover:scale-105 transition-transform">
-                      <img
-                        src={myUser?.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=dev_user"}
-                        alt="My story"
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                      <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-[#00F2FE] text-[#0C0C0C] text-xs font-bold flex items-center justify-center">+</div>
-                    </div>
-                    <span className="text-[10px] text-white/70 font-medium">Add Story</span>
-                  </button>
-
-                  {(nearbyUsers || []).map((user) => (
-                    <button
-                      key={user.id}
-                      type="button"
-                      onClick={() => setSelectedStoryUser(user)}
-                      className="flex flex-col items-center gap-1.5 shrink-0 group cursor-pointer"
-                    >
-                      <div className="w-14 h-14 rounded-full p-[2px] story-ring-gradient bg-white/5 group-hover:scale-105 transition-transform">
-                        <img
-                          src={user.avatarUrl || "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&q=80&w=600"}
-                          alt={user.username}
-                          className="w-full h-full rounded-full object-cover"
-                        />
+            <div className="flex-1 p-5 overflow-y-auto space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {nearbyUsers.map((user) => (
+                  <div key={user.id} className="glass-panel p-4 rounded-3xl space-y-3 border border-white/10 hover:border-[#00F2FE]/40 transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className="relative w-12 h-12 rounded-2xl bg-white/5 border border-[#00F2FE]/40 overflow-hidden">
+                        <img src={user.avatarUrl} alt={user.username} className="w-full h-full object-cover" />
+                        {user.hasActiveStories && (
+                          <div className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-[#FF6B6B] border border-black" />
+                        )}
                       </div>
-                      <span className="text-[10px] text-white/90 font-medium max-w-[56px] truncate">@{user.username}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Feed Grid View vs Radar View */}
-              {viewMode === "grid" ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {(nearbyUsers || []).map((user) => (
-                    <div
-                      key={user.id}
-                      className="glass-panel p-4 rounded-2xl space-y-3 relative group border border-white/10 hover:border-[#00F2FE]/40 transition-all duration-300"
-                    >
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={user.avatarUrl || "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&q=80&w=600"}
-                          alt={user.username}
-                          className="w-12 h-12 rounded-xl object-cover border border-white/10 group-hover:border-[#00F2FE] transition-colors"
-                        />
-                        <div>
-                          <h4 className="font-bold text-sm text-white">@{user.username}</h4>
-                          <span className="text-[10px] text-[#00F2FE] font-bold">
-                            {user.distanceMeters ? `${user.distanceMeters}m away` : "Nearby"}
-                          </span>
-                        </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-sm text-white truncate">@{user.username}</div>
+                        <div className="text-xs text-[#00F2FE] font-mono font-semibold">~{user.distanceMeters}m {t.feed.distance}</div>
                       </div>
-                      <p className="text-xs text-white/70 italic bg-white/5 p-2.5 rounded-xl border border-white/5">
-                        &quot;{user.message || "Ahoj!"}&quot;
-                      </p>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="relative w-full h-[480px] bg-[#0C0C0C] rounded-3xl border border-white/10 flex items-center justify-center overflow-hidden">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,242,254,0.12)_0,transparent_70%)]" />
-                  <div className="absolute inset-0 rounded-full border border-[#00F2FE]/20 animate-radar pointer-events-none" />
-                  <div className="absolute w-[300px] h-[300px] rounded-full border border-[#00F2FE]/30 animate-pulse pointer-events-none" />
-                  <div className="w-16 h-16 rounded-full bg-[#00F2FE]/20 border-2 border-[#00F2FE] flex items-center justify-center z-10">
-                    <span className="text-xs font-bold text-[#00F2FE]">You</span>
-                  </div>
 
-                  {(nearbyUsers || []).map((user, idx) => {
-                    const angle = (idx / nearbyUsers.length) * 2 * Math.PI;
-                    const dist = 90 + (idx % 3) * 55;
-                    const x = Math.cos(angle) * dist;
-                    const y = Math.sin(angle) * dist;
+                    <div className="p-2.5 rounded-xl bg-[#121212] border border-white/10 text-xs text-white/80 italic">
+                      &quot;{user.message}&quot;
+                    </div>
 
-                    return (
-                      <div
-                        key={user.id}
-                        style={{ transform: `translate(${x}px, ${y}px)` }}
-                        className="absolute z-20 flex flex-col items-center gap-1 group cursor-pointer hover:scale-110 transition-transform"
-                        onClick={() => setSelectedStoryUser(user)}
+                    <div className="flex items-center justify-between pt-1 text-xs">
+                      <span className="text-white/40 text-[10px]">{user.lastActive || "Active now"}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveChatUser(user);
+                          setActiveTab("chats");
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-[#00F2FE]/15 hover:bg-[#00F2FE]/25 text-[#00F2FE] font-bold text-xs flex items-center gap-1 transition-all"
                       >
-                        <img
-                          src={user.avatarUrl || "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&q=80&w=600"}
-                          alt={user.username}
-                          className="w-11 h-11 rounded-full border-2 border-[#00F2FE] object-cover"
-                        />
-                        <span className="text-[9px] bg-black/80 text-white font-bold px-2 py-0.5 rounded-full border border-white/20">
-                          @{user.username}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                        <MessageSquare className="w-3.5 h-3.5" /> Chat
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
           {/* TAB 2: SPARKS MEETUPS */}
           {activeTab === "sparks" && (
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-white/70 flex items-center gap-1.5">
-                  <Flame className="w-4 h-4 text-[#00F2FE]" /> Spontaneous Meetups (2h Expiry)
-                </span>
+            <div className="flex-1 p-5 overflow-y-auto space-y-4">
+              <div className="flex justify-between items-center pb-2 border-b border-white/10">
+                <span className="text-xs font-semibold text-white/70">{t.sparks.title}</span>
                 <button
                   type="button"
                   onClick={() => setIsCreateSparkOpen(true)}
-                  className="px-3.5 py-2 rounded-xl bg-[#00F2FE] hover:bg-[#00DCE6] text-[#0C0C0C] font-bold text-xs flex items-center gap-1 cursor-pointer transition-all"
+                  className="px-3.5 py-2 rounded-xl bg-[#00F2FE] hover:bg-[#00DCE6] text-[#0C0C0C] font-bold text-xs flex items-center gap-1.5 transition-all"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Create Spark
+                  <Plus className="w-4 h-4" /> {t.sparks.create}
                 </button>
               </div>
 
+              {isCreateSparkOpen && (
+                <div className="p-4 rounded-3xl bg-[#121212] border border-[#00F2FE]/40 space-y-3 animate-fadeIn">
+                  <div className="font-bold text-sm text-white">{t.sparks.create}</div>
+                  <input
+                    type="text"
+                    value={newSparkTitle}
+                    onChange={(e) => setNewSparkTitle(e.target.value)}
+                    placeholder="Meetup title (e.g. Coffee at Campus ☕)..."
+                    className="w-full glass-input px-3.5 py-2.5 rounded-xl text-xs"
+                  />
+                  <div className="flex gap-2">
+                    {["COFFEE", "SPORTS", "PARTY", "STUDY"].map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setNewSparkCategory(cat)}
+                        className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+                          newSparkCategory === cat ? "bg-[#00F2FE] text-[#0C0C0C]" : "bg-white/5 text-white/60"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button type="button" onClick={() => setIsCreateSparkOpen(false)} className="px-3 py-1.5 rounded-xl text-xs text-white/60">Cancel</button>
+                    <button type="button" onClick={handleCreateSpark} className="px-4 py-1.5 rounded-xl bg-[#00F2FE] text-[#0C0C0C] font-bold text-xs">Publish Spark</button>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {(sparks || []).map((spark) => (
-                  <div key={spark.id} className="glass-panel p-4 rounded-2xl space-y-2 border border-[#00F2FE]/30 hover:border-[#00F2FE] transition-all">
-                    <div className="flex justify-between items-start">
-                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#00F2FE]/20 text-[#00F2FE] border border-[#00F2FE]/30">
+                {sparks.map((spark) => (
+                  <div key={spark.id} className="glass-panel p-4 rounded-3xl space-y-3 border border-white/10">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] bg-[#00F2FE]/15 text-[#00F2FE] font-bold px-2.5 py-0.5 rounded-full border border-[#00F2FE]/30">
                         {spark.category}
                       </span>
-                      <span className="text-[10px] text-white/50 font-medium">2h active</span>
+                      <span className="text-[10px] text-white/50 font-mono">~{spark.distanceMeters}m</span>
                     </div>
                     <h4 className="font-bold text-sm text-white">{spark.title}</h4>
-                    <span className="text-xs text-white/60">By @{spark.username}</span>
+                    <p className="text-xs text-white/60">{spark.description || "Spontaneous meetup created nearby."}</p>
+                    <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
+                      <span className="text-white/40 text-[10px]">@{spark.username}</span>
+                      <button type="button" className="px-3 py-1.5 rounded-xl bg-[#00F2FE] text-[#0C0C0C] font-bold text-xs">{t.sparks.join}</button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -754,75 +707,74 @@ export default function FullWebAppDashboard() {
           {/* TAB 3: E2EE CHATS */}
           {activeTab === "chats" && (
             <div className="flex-1 flex overflow-hidden">
-              <div className="w-1/3 border-r border-white/10 overflow-y-auto p-3 space-y-2 scrollbar-none">
-                {(conversations || []).map((c) => (
+              <div className="w-1/3 border-r border-white/10 p-3 space-y-2 overflow-y-auto">
+                <div className="text-xs font-bold text-white/60 uppercase tracking-wider px-2 py-1">{t.chats.title}</div>
+                {conversations.map((c) => (
                   <button
                     key={c.id}
                     type="button"
-                    onClick={() => setActiveChatUser(c)}
-                    className={`w-full p-3 rounded-2xl text-left flex items-center gap-3 transition-all cursor-pointer ${
-                      activeChatUser?.id === c.id ? "bg-white/10 border border-[#00F2FE]/50" : "hover:bg-white/5"
+                    onClick={() => setActiveChatUser(c.partner)}
+                    className={`w-full p-3 rounded-2xl text-left border transition-all ${
+                      activeChatUser?.id === c.partner.id ? "bg-[#00F2FE]/15 border-[#00F2FE]/40" : "bg-white/5 border-white/5"
                     }`}
                   >
-                    <img src={c.avatarUrl} alt={c.username} className="w-10 h-10 rounded-full object-cover border border-white/10" />
-                    <div className="min-w-0 flex-1">
-                      <h4 className="font-bold text-xs text-white truncate">@{c.username}</h4>
-                      <p className="text-[10px] text-[#00F2FE] font-medium truncate flex items-center gap-1">
-                        <Shield className="w-3 h-3 inline" /> Signal E2EE
-                      </p>
-                    </div>
+                    <div className="font-bold text-xs text-white">@{c.partner.username}</div>
+                    <div className="text-[10px] text-white/50 truncate">{c.lastMessage || "Encrypted thread"}</div>
                   </button>
                 ))}
               </div>
 
-              <div className="w-2/3 flex flex-col bg-black/40">
+              <div className="flex-1 flex flex-col bg-[#0C0C0C]">
                 {activeChatUser ? (
                   <>
-                    <div className="p-3.5 border-b border-white/10 flex items-center justify-between bg-white/5">
-                      <span className="font-bold text-xs text-white">@{activeChatUser.username}</span>
-                      <span className="text-[10px] text-[#4CAF50] font-semibold flex items-center gap-1 bg-[#4CAF50]/15 px-2.5 py-0.5 rounded-full border border-[#4CAF50]/30">
-                        <Shield className="w-3 h-3" /> Signal E2EE Active
+                    <div className="p-3 border-b border-white/10 flex items-center justify-between">
+                      <div className="font-bold text-xs text-white">@{activeChatUser.username}</div>
+                      <span className="text-[10px] text-[#4CAF50] font-semibold flex items-center gap-1">
+                        <Lock className="w-3 h-3" /> {t.chats.e2eeNotice}
                       </span>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                      {(messages || []).map((m) => (
-                        <div
-                          key={m.id}
-                          className={`flex ${m.senderId === myUser?.id ? "justify-end" : "justify-start"}`}
-                        >
-                          <div
-                            className={`max-w-[70%] px-3.5 py-2 rounded-2xl text-xs font-medium ${
-                              m.senderId === myUser?.id
-                                ? "bg-[#00F2FE] text-[#0C0C0C] font-semibold"
-                                : "bg-white/10 text-white border border-white/10"
-                            }`}
-                          >
-                            {m.text}
+
+                    <div className="flex-1 p-4 overflow-y-auto space-y-3">
+                      {messages.map((m) => (
+                        <div key={m.id} className={`flex ${m.senderId === myUser?.id ? "justify-end" : "justify-start"}`}>
+                          <div className={`max-w-[75%] p-3 rounded-2xl text-xs ${
+                            m.senderId === myUser?.id ? "bg-[#00F2FE] text-[#0C0C0C] font-semibold" : "bg-white/10 text-white"
+                          }`}>
+                            {m.content}
                           </div>
                         </div>
                       ))}
                     </div>
+
                     <div className="p-3 border-t border-white/10 flex gap-2">
                       <input
                         type="text"
                         value={typedMessage}
                         onChange={(e) => setTypedMessage(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                        placeholder="Type E2EE message..."
-                        className="flex-1 glass-input px-4 py-2 rounded-xl text-xs"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleSendMessage(typedMessage);
+                            setTypedMessage("");
+                          }
+                        }}
+                        placeholder={t.chats.typeMessage}
+                        className="flex-1 glass-input px-3.5 py-2.5 rounded-xl text-xs"
                       />
                       <button
                         type="button"
-                        onClick={handleSendMessage}
-                        className="px-4 py-2 rounded-xl bg-[#00F2FE] text-[#0C0C0C] font-bold text-xs cursor-pointer hover:bg-[#00DCE6] transition-all"
+                        onClick={() => {
+                          handleSendMessage(typedMessage);
+                          setTypedMessage("");
+                        }}
+                        className="px-4 py-2.5 rounded-xl bg-[#00F2FE] text-[#0C0C0C] font-bold text-xs"
                       >
-                        <Send className="w-3.5 h-3.5" />
+                        {t.chats.send}
                       </button>
                     </div>
                   </>
                 ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center text-white/40 text-xs">
-                    <MessageSquare className="w-8 h-8 mb-2 text-white/20" /> Select a chat to start messaging
+                  <div className="flex-1 flex items-center justify-center text-white/40 text-xs">
+                    Select a conversation to start chat
                   </div>
                 )}
               </div>
@@ -831,123 +783,116 @@ export default function FullWebAppDashboard() {
 
           {/* TAB 4: ACCESS REQUESTS */}
           {activeTab === "requests" && (
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-              <span className="text-xs font-bold text-white/70">Pending Story & Profile Access Requests</span>
-              {(incomingRequests || []).length > 0 ? (
+            <div className="flex-1 p-5 overflow-y-auto space-y-4">
+              <div className="text-xs font-bold text-white/70 uppercase tracking-wider">{t.requests.title}</div>
+              {incomingRequests.length ? (
                 incomingRequests.map((req) => (
-                  <div key={req.id} className="glass-panel p-4 rounded-2xl flex items-center justify-between border border-white/10 hover:border-white/20 transition-all">
-                    <div>
-                      <h4 className="font-bold text-sm text-white">@{req.requesterUsername}</h4>
-                      <span className="text-xs text-white/50">Wants to unlock your 24h stories</span>
+                  <div key={req.id} className="glass-panel p-4 rounded-3xl flex items-center justify-between border border-white/10">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center font-bold text-sm text-[#00F2FE]">
+                        {req.requesterUsername?.[0]?.toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="font-bold text-xs text-white">@{req.requesterUsername}</div>
+                        <div className="text-[10px] text-white/40">Requested access to private profile & stories</div>
+                      </div>
                     </div>
                     <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleApproveRequest(req.id)}
-                        className="px-3.5 py-1.5 rounded-xl bg-[#4CAF50] text-[#0C0C0C] font-bold text-xs cursor-pointer transition-all"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDenyRequest(req.id)}
-                        className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs cursor-pointer transition-all"
-                      >
-                        Deny
-                      </button>
+                      <button type="button" onClick={() => webApi.approveAccess(req.id).then(loadAppData)} className="px-3.5 py-1.5 rounded-xl bg-[#4CAF50]/20 text-[#4CAF50] border border-[#4CAF50]/40 font-bold text-xs">{t.requests.approve}</button>
+                      <button type="button" onClick={() => webApi.denyAccess(req.id).then(loadAppData)} className="px-3.5 py-1.5 rounded-xl bg-[#F44336]/20 text-[#F44336] border border-[#F44336]/40 font-bold text-xs">{t.requests.deny}</button>
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="text-center py-16 text-white/40 text-xs font-medium space-y-2">
                   <Lock className="w-8 h-8 mx-auto text-white/20" />
-                  <p>No pending access requests</p>
+                  <p>{t.requests.noRequests}</p>
                 </div>
               )}
             </div>
           )}
 
-          {/* TAB 5: APP SETTINGS PAGE */}
+          {/* TAB 5: APP SETTINGS PAGE (IMMEDIATE SAVE) */}
           {activeTab === "settings" && (
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scrollbar-none">
-              
+
               {settingsSaveSuccess && (
-                <div className="p-3.5 rounded-2xl bg-[#4CAF50]/20 border border-[#4CAF50] text-[#4CAF50] text-xs font-bold flex items-center gap-2 animate-fadeIn">
-                  <CheckCircle2 className="w-4 h-4" /> Settings updated successfully!
+                <div className="p-3.5 rounded-2xl bg-[#4CAF50]/20 border border-[#4CAF50] text-[#4CAF50] text-xs font-bold flex items-center gap-2 animate-fadeIn sticky top-0 z-30 shadow-lg backdrop-blur-md">
+                  <CheckCircle2 className="w-4 h-4" /> {t.settings.saved}
                 </div>
               )}
 
-              {/* Profile Customization Section */}
+              {/* Profile & Identity */}
               <div className="glass-panel p-5 rounded-3xl space-y-4 border border-white/10">
                 <h3 className="font-bold text-sm text-[#00F2FE] uppercase tracking-wider flex items-center gap-2">
-                  <User className="w-4 h-4" /> Profile & Identity
+                  <User className="w-4 h-4" /> {t.settings.profile}
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-white/70">Username</label>
+                    <label className="text-xs font-semibold text-white/70">{t.settings.username}</label>
                     <input
                       type="text"
                       value={settingsForm.username}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, username: e.target.value })}
+                      onChange={(e) => handleImmediateSettingChange("username", e.target.value)}
                       className="w-full glass-input px-3.5 py-2.5 rounded-xl text-xs"
-                      placeholder="Username..."
+                      placeholder={t.settings.username}
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-white/70">Status Message (Visible on Radar)</label>
+                    <label className="text-xs font-semibold text-white/70">{t.settings.statusMessage}</label>
                     <input
                       type="text"
                       value={settingsForm.message}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, message: e.target.value })}
+                      onChange={(e) => handleImmediateSettingChange("message", e.target.value)}
                       className="w-full glass-input px-3.5 py-2.5 rounded-xl text-xs"
-                      placeholder="Status message..."
+                      placeholder={t.settings.statusMessage}
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-white/70">Bio Description</label>
+                  <label className="text-xs font-semibold text-white/70">{t.settings.bio}</label>
                   <textarea
                     rows={2}
                     value={settingsForm.bio}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, bio: e.target.value })}
+                    onChange={(e) => handleImmediateSettingChange("bio", e.target.value)}
                     className="w-full glass-input px-3.5 py-2.5 rounded-xl text-xs"
-                    placeholder="Short bio about yourself..."
+                    placeholder={t.settings.bio}
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-white/70">Avatar Image URL</label>
+                  <label className="text-xs font-semibold text-white/70">{t.settings.avatarUrl}</label>
                   <input
                     type="text"
                     value={settingsForm.avatarUrl}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, avatarUrl: e.target.value })}
+                    onChange={(e) => handleImmediateSettingChange("avatarUrl", e.target.value)}
                     className="w-full glass-input px-3.5 py-2.5 rounded-xl text-xs"
                     placeholder="https://..."
                   />
                 </div>
               </div>
 
-              {/* Privacy & Radar Controls */}
+              {/* Privacy & Location Modes */}
               <div className="glass-panel p-5 rounded-3xl space-y-4 border border-white/10">
                 <h3 className="font-bold text-sm text-[#00F2FE] uppercase tracking-wider flex items-center gap-2">
-                  <Shield className="w-4 h-4" /> Privacy & Location Modes
+                  <Shield className="w-4 h-4" /> {t.settings.privacy}
                 </h3>
 
                 <div className="space-y-2">
                   <label className="text-xs font-semibold text-white/70">Proximity Visibility</label>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { id: "PUBLIC", label: "Public 🌍", desc: "Visible on Radar" },
-                      { id: "GHOST", label: "Ghost 👻", desc: "Invisible Mode" },
-                      { id: "PRIVATE", label: "Private 🔒", desc: "Approval Required" },
+                      { id: "PUBLIC", label: t.settings.privacyPublic, desc: t.settings.privacyPublicDesc },
+                      { id: "GHOST", label: t.settings.privacyGhost, desc: t.settings.privacyGhostDesc },
+                      { id: "PRIVATE", label: t.settings.privacyPrivate, desc: t.settings.privacyPrivateDesc },
                     ].map((mode) => (
                       <button
                         key={mode.id}
                         type="button"
-                        onClick={() => setSettingsForm({ ...settingsForm, privacyMode: mode.id })}
+                        onClick={() => handleImmediateSettingChange("privacyMode", mode.id)}
                         className={`p-3 rounded-2xl text-left border transition-all cursor-pointer ${
                           settingsForm.privacyMode === mode.id
                             ? "bg-[#00F2FE] text-[#0C0C0C] border-[#00F2FE] font-bold"
@@ -961,46 +906,127 @@ export default function FullWebAppDashboard() {
                   </div>
                 </div>
 
+                {/* Ghost Fuzzing Radius */}
+                <div className="space-y-2 pt-2 border-t border-white/10">
+                  <div className="flex justify-between items-center text-xs font-semibold text-white/70">
+                    <span>{t.settings.ghostFuzz}</span>
+                    <span className="text-[#00F2FE] font-bold">{settingsForm.ghostFuzzRadiusMeters}m</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="100"
+                    max="1000"
+                    step="50"
+                    value={settingsForm.ghostFuzzRadiusMeters}
+                    onChange={(e) => handleImmediateSettingChange("ghostFuzzRadiusMeters", parseInt(e.target.value))}
+                    className="w-full accent-[#00F2FE] bg-white/10 h-1.5 rounded-lg cursor-pointer"
+                  />
+                  <p className="text-[10px] text-white/40">{t.settings.ghostFuzzDesc}</p>
+                </div>
+
+                {/* DM Permission */}
+                <div className="space-y-2 pt-2 border-t border-white/10">
+                  <label className="text-xs font-semibold text-white/70">{t.settings.dmPermission}</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: "EVERYONE", label: t.settings.dmEveryone },
+                      { id: "APPROVED", label: t.settings.dmApproved },
+                      { id: "NOBODY", label: t.settings.dmNobody },
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => handleImmediateSettingChange("allowDirectMessages", opt.id)}
+                        className={`p-2.5 rounded-xl text-center text-xs border transition-all cursor-pointer ${
+                          settingsForm.allowDirectMessages === opt.id
+                            ? "bg-[#00F2FE]/20 text-[#00F2FE] border-[#00F2FE] font-bold"
+                            : "bg-[#121212] border-white/10 text-white/60"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Distance Toggle */}
                 <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs text-white/70">
-                  <span>EXIF Privacy Protection</span>
-                  <span className="text-[#4CAF50] font-bold flex items-center gap-1 bg-[#4CAF50]/15 px-2.5 py-0.5 rounded-full border border-[#4CAF50]/30">
-                    <CheckCircle2 className="w-3 h-3" /> GPS Cleared
-                  </span>
+                  <div>
+                    <div className="font-bold text-white">{t.settings.showDistance}</div>
+                    <div className="text-[10px] text-white/50">{t.settings.showDistanceDesc}</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={settingsForm.showDistanceToOthers}
+                    onChange={(e) => handleImmediateSettingChange("showDistanceToOthers", e.target.checked)}
+                    className="w-4 h-4 accent-[#00F2FE] cursor-pointer"
+                  />
                 </div>
               </div>
 
-              {/* Encryption & Security Preferences */}
+              {/* Notifications */}
               <div className="glass-panel p-5 rounded-3xl space-y-4 border border-white/10">
                 <h3 className="font-bold text-sm text-[#00F2FE] uppercase tracking-wider flex items-center gap-2">
-                  <Key className="w-4 h-4" /> Security & E2EE Signal Keys
+                  <Bell className="w-4 h-4" /> {t.settings.notifications}
                 </h3>
 
-                <div className="flex items-center justify-between text-xs p-3 rounded-2xl bg-[#121212] border border-white/10">
-                  <div>
-                    <div className="font-bold text-white">Signal E2EE Double Ratchet</div>
-                    <div className="text-[10px] text-white/50">End-to-End Encrypted key exchange enabled</div>
+                {[
+                  { key: "notifications.pushEnabled", label: t.settings.pushEnabled, val: settingsForm.notifications.pushEnabled },
+                  { key: "notifications.nearbyUsersAlert", label: t.settings.nearbyAlert, val: settingsForm.notifications.nearbyUsersAlert },
+                  { key: "notifications.sparksAlert", label: t.settings.sparksAlert, val: settingsForm.notifications.sparksAlert },
+                  { key: "notifications.messagesAlert", label: t.settings.messagesAlert, val: settingsForm.notifications.messagesAlert },
+                  { key: "notifications.soundEnabled", label: t.settings.soundEnabled, val: settingsForm.notifications.soundEnabled },
+                ].map((item) => (
+                  <div key={item.key} className="flex items-center justify-between text-xs text-white/70">
+                    <span>{item.label}</span>
+                    <input
+                      type="checkbox"
+                      checked={item.val}
+                      onChange={(e) => handleImmediateSettingChange(item.key, e.target.checked)}
+                      className="w-4 h-4 accent-[#00F2FE] cursor-pointer"
+                    />
                   </div>
-                  <span className="text-[10px] bg-[#4CAF50]/20 text-[#4CAF50] font-bold px-2.5 py-0.5 rounded-full border border-[#4CAF50]/40">
-                    Active
-                  </span>
-                </div>
+                ))}
               </div>
 
-              {/* Save Actions */}
-              <div className="flex justify-end pt-2">
-                <button
-                  type="button"
-                  onClick={handleSaveSettings}
-                  disabled={isSavingSettings}
-                  className="px-6 py-3 rounded-2xl bg-[#00F2FE] hover:bg-[#00DCE6] text-[#0C0C0C] font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
-                >
-                  {isSavingSettings ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                  Save Profile Settings
-                </button>
+              {/* App Preferences (Language & Units) */}
+              <div className="glass-panel p-5 rounded-3xl space-y-4 border border-white/10">
+                <h3 className="font-bold text-sm text-[#00F2FE] uppercase tracking-wider flex items-center gap-2">
+                  <Globe className="w-4 h-4" /> {t.settings.appPreferences}
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-white/70">{t.settings.language}</label>
+                    <select
+                      value={settingsForm.language}
+                      onChange={(e) => handleImmediateSettingChange("language", e.target.value)}
+                      className="w-full glass-input px-3.5 py-2.5 rounded-xl text-xs bg-[#121212] text-white border border-white/10"
+                    >
+                      <option value="cs">🇨🇿 Čeština</option>
+                      <option value="en">🇬🇧 English</option>
+                      <option value="de">🇩🇪 Deutsch</option>
+                      <option value="sk">🇸🇰 Slovenčina</option>
+                      <option value="pl">🇵🇱 Polski</option>
+                      <option value="uk">🇺🇦 Українська</option>
+                      <option value="ru">🇷🇺 Русский</option>
+                      <option value="zh">🇨🇳 中文</option>
+                      <option value="ja">🇯🇵 日本語</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-white/70">{t.settings.distanceUnit}</label>
+                    <select
+                      value={settingsForm.distanceUnit}
+                      onChange={(e) => handleImmediateSettingChange("distanceUnit", e.target.value)}
+                      className="w-full glass-input px-3.5 py-2.5 rounded-xl text-xs bg-[#121212] text-white border border-white/10"
+                    >
+                      <option value="metric">{t.settings.metric}</option>
+                      <option value="imperial">{t.settings.imperial}</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
             </div>
@@ -1030,159 +1056,6 @@ export default function FullWebAppDashboard() {
               alt="Story"
               className="w-full h-full object-cover"
             />
-          </div>
-        </div>
-      )}
-
-      {/* WEB STORY CREATOR MEDIA EDITOR MODAL */}
-      {isAddStoryOpen && (
-        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg glass-panel p-6 rounded-3xl space-y-4 border border-white/20">
-            <div className="flex justify-between items-center border-b border-white/10 pb-3">
-              <h3 className="font-bold text-base text-white flex items-center gap-2">
-                <Camera className="w-5 h-5 text-[#00F2FE]" /> Story Media Editor
-              </h3>
-              <button type="button" onClick={() => setIsAddStoryOpen(false)} className="text-white/60 hover:text-white font-bold cursor-pointer">✕</button>
-            </div>
-
-            {/* Preview Box with Filter Tint & EXIF Badge */}
-            <div className="relative w-full h-56 rounded-2xl overflow-hidden bg-black border border-white/10 flex items-center justify-center">
-              <img src={storyMediaUrl} alt="Story preview" className="w-full h-full object-cover" />
-              
-              {/* Filter Tint Overlays */}
-              {storyFilter === "beauty" && <div className="absolute inset-0 bg-[#FFDCE6]/15 pointer-events-none" />}
-              {storyFilter === "bokeh" && <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px] pointer-events-none" />}
-              {storyFilter === "greenscreen" && <div className="absolute inset-0 bg-[#4CAF50]/20 pointer-events-none" />}
-              {storyFilter === "cyber" && <div className="absolute inset-0 bg-[#00F2FE]/20 pointer-events-none" />}
-              {storyFilter === "retro" && <div className="absolute inset-0 bg-[#FF9800]/15 pointer-events-none" />}
-              {storyFilter === "neon" && <div className="absolute inset-0 bg-[#FF6B6B]/20 pointer-events-none" />}
-              {storyFilter === "noir" && <div className="absolute inset-0 bg-black/50 grayscale pointer-events-none" />}
-
-              {/* Floating Sticker */}
-              {storySticker && (
-                <div className="absolute top-4 bg-[#00F2FE]/20 border border-[#00F2FE] px-3 py-1 rounded-full text-xs font-bold text-white shadow-lg">
-                  {storySticker}
-                </div>
-              )}
-
-              {/* Floating Caption */}
-              {storyCaption && (
-                <div className="absolute bottom-4 bg-black/70 border border-white/20 px-4 py-1.5 rounded-xl text-xs font-bold text-white text-center max-w-[80%]">
-                  {storyCaption}
-                </div>
-              )}
-
-              {/* EXIF Security Badge */}
-              <div className="absolute top-3 left-3 bg-[#4CAF50]/20 border border-[#4CAF50] px-2.5 py-0.5 rounded-full text-[9px] font-bold text-[#4CAF50] flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> EXIF Clean (GPS Privacy)
-              </div>
-            </div>
-
-            {/* Inputs & File Upload */}
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={storyMediaUrl}
-                  onChange={(e) => setStoryMediaUrl(e.target.value)}
-                  placeholder="Image URL or upload below..."
-                  className="flex-1 glass-input px-3.5 py-2 rounded-xl text-xs"
-                />
-                <label className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold cursor-pointer flex items-center gap-1 border border-white/10">
-                  <ImageIcon className="w-3.5 h-3.5" /> Upload File
-                  <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-                </label>
-              </div>
-
-              <input
-                type="text"
-                value={storyCaption}
-                onChange={(e) => setStoryCaption(e.target.value)}
-                placeholder="Story caption text..."
-                className="w-full glass-input px-3.5 py-2 rounded-xl text-xs"
-              />
-
-              {/* Filter Selector */}
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-[#00F2FE] uppercase tracking-wider">Effects & Filters</span>
-                <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                  {STORY_FILTERS.map((f) => (
-                    <button
-                      key={f.id}
-                      type="button"
-                      onClick={() => setStoryFilter(f.id)}
-                      className={`px-3 py-1 rounded-full text-[11px] font-semibold shrink-0 border transition-all cursor-pointer ${
-                        storyFilter === f.id ? "bg-[#00F2FE] text-[#0C0C0C] border-[#00F2FE] font-bold" : "bg-white/5 border-white/10 text-white/70"
-                      }`}
-                    >
-                      {f.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Sticker Selector */}
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-[#00F2FE] uppercase tracking-wider">Stickers & Overlays</span>
-                <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                  <button
-                    type="button"
-                    onClick={() => setStorySticker(null)}
-                    className={`px-3 py-1 rounded-full text-[11px] font-semibold shrink-0 border cursor-pointer ${
-                      !storySticker ? "bg-[#00F2FE] text-[#0C0C0C] border-[#00F2FE]" : "bg-white/5 border-white/10 text-white/70"
-                    }`}
-                  >
-                    ✕ None
-                  </button>
-                  {EMOJI_STICKERS.map((stk) => (
-                    <button
-                      key={stk}
-                      type="button"
-                      onClick={() => setStorySticker(stk)}
-                      className={`px-3 py-1 rounded-full text-[11px] font-semibold shrink-0 border cursor-pointer ${
-                        storySticker === stk ? "bg-[#00F2FE] text-[#0C0C0C] border-[#00F2FE]" : "bg-white/5 border-white/10 text-white/70"
-                      }`}
-                    >
-                      {stk}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handlePublishStory}
-              className="w-full py-3 rounded-xl bg-[#00F2FE] text-[#0C0C0C] font-bold text-xs cursor-pointer"
-            >
-              Publish to 24h Stories ⚡
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* CREATE SPARK MODAL */}
-      {isCreateSparkOpen && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-sm glass-panel p-6 rounded-3xl space-y-4 border border-white/20">
-            <div className="flex justify-between items-center">
-              <h3 className="font-bold text-base text-white">⚡ Create Nearby Spark</h3>
-              <button type="button" onClick={() => setIsCreateSparkOpen(false)} className="text-white/60 hover:text-white cursor-pointer">✕</button>
-            </div>
-            <input
-              type="text"
-              value={newSparkTitle}
-              onChange={(e) => setNewSparkTitle(e.target.value)}
-              placeholder="What are you up to? (e.g. Coffee @ Main Square)"
-              className="w-full glass-input px-4 py-2.5 rounded-xl text-xs"
-            />
-            <button
-              type="button"
-              onClick={handleCreateSpark}
-              className="w-full py-3 rounded-xl bg-[#00F2FE] text-[#0C0C0C] font-bold text-xs cursor-pointer"
-            >
-              Publish Spark (2h Expiry)
-            </button>
           </div>
         </div>
       )}

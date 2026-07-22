@@ -250,3 +250,27 @@ export const reports = pgTable("reports", {
   status: reportStatusEnum("status").notNull().default("PENDING"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const userSettings = pgTable("user_settings", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  privacyMode: privacyModeEnum("privacy_mode").notNull().default("PUBLIC"),
+  ghostFuzzRadiusMeters: integer("ghost_fuzz_radius_meters").notNull().default(300),
+  allowDirectMessages: varchar("allow_direct_messages", { length: 20 }).notNull().default("EVERYONE"),
+  showDistanceToOthers: boolean("show_distance_to_others").notNull().default(true),
+  notifications: jsonb("notifications").$type<{
+    pushEnabled: boolean;
+    nearbyUsersAlert: boolean;
+    sparksAlert: boolean;
+    messagesAlert: boolean;
+    accessRequestAlert: boolean;
+    soundEnabled: boolean;
+  }>().notNull().default(sql`'{"pushEnabled":true,"nearbyUsersAlert":true,"sparksAlert":true,"messagesAlert":true,"accessRequestAlert":true,"soundEnabled":true}'::jsonb`),
+  language: varchar("language", { length: 10 }).notNull().default("cs"),
+  distanceUnit: varchar("distance_unit", { length: 10 }).notNull().default("metric"),
+  autoPlayVideos: varchar("auto_play_videos", { length: 20 }).notNull().default("wifi"),
+  mediaUploadQuality: varchar("media_upload_quality", { length: 20 }).notNull().default("high"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+

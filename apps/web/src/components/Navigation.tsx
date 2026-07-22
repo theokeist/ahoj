@@ -4,8 +4,10 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Globe, ChevronDown, User, UserPlus } from "lucide-react";
+import { TRANSLATIONS, type SupportedLanguage } from "@ahoj/shared";
+import { webApi } from "../lib/api";
 
-const LANGUAGES = [
+const LANGUAGES: { code: SupportedLanguage; label: string; flag: string }[] = [
   { code: "cs", label: "Čeština", flag: "🇨🇿" },
   { code: "en", label: "English", flag: "🇬🇧" },
   { code: "de", label: "Deutsch", flag: "🇩🇪" },
@@ -23,6 +25,14 @@ export default function Navigation() {
   const [selectedLang, setSelectedLang] = useState(LANGUAGES[0]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const saved = localStorage.getItem("ahoj-lang") as SupportedLanguage;
+    if (saved && TRANSLATIONS[saved]) {
+      const found = LANGUAGES.find((l) => l.code === saved);
+      if (found) setSelectedLang(found);
+    }
+  }, []);
+
   // Close dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -33,6 +43,25 @@ export default function Navigation() {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  const handleSelectLang = async (lang: typeof LANGUAGES[number]) => {
+    setSelectedLang(lang);
+    setLangOpen(false);
+    localStorage.setItem("ahoj-lang", lang.code);
+    window.dispatchEvent(new CustomEvent("ahoj-lang-change", { detail: lang.code }));
+
+    // Immediate save to backend if user is authenticated
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      try {
+        await webApi.updateSettings({ language: lang.code });
+      } catch {
+        // silent fallback if unauthenticated
+      }
+    }
+  };
+
+  const t = TRANSLATIONS[selectedLang.code]?.nav ?? TRANSLATIONS.cs.nav;
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 bg-[#0C0C0C]/80 backdrop-blur-md border-b border-white/10">
@@ -56,7 +85,7 @@ export default function Navigation() {
               pathname === "/" ? "text-[#00F2FE]" : "text-white/70 hover:text-white"
             }`}
           >
-            Home
+            {t.home}
           </Link>
           <Link
             href="/about"
@@ -64,7 +93,7 @@ export default function Navigation() {
               pathname === "/about" ? "text-[#00F2FE]" : "text-white/70 hover:text-white"
             }`}
           >
-            About
+            {t.about}
           </Link>
         </nav>
 
@@ -93,10 +122,7 @@ export default function Navigation() {
                   <button
                     key={lang.code}
                     type="button"
-                    onClick={() => {
-                      setSelectedLang(lang);
-                      setLangOpen(false);
-                    }}
+                    onClick={() => handleSelectLang(lang)}
                     className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium transition-colors cursor-pointer text-left ${
                       selectedLang.code === lang.code
                         ? "bg-[#00F2FE]/10 text-[#00F2FE]"
@@ -119,13 +145,13 @@ export default function Navigation() {
             href="/login"
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-white/10 hover:border-[#00F2FE]/50 text-xs font-semibold text-white/80 hover:text-white transition-all bg-white/[0.03]"
           >
-            <User size={14} /> Sign In
+            <User size={14} /> {t.signIn}
           </Link>
           <Link
             href="/register"
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#00F2FE] hover:bg-[#00DCE6] text-xs font-bold text-black shadow-[0_0_15px_rgba(0,242,254,0.3)] transition-all"
           >
-            <UserPlus size={14} /> Register
+            <UserPlus size={14} /> {t.register}
           </Link>
         </div>
       </div>
