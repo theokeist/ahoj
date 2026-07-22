@@ -9,6 +9,7 @@ import {
   StatusBar,
   Dimensions,
   ScrollView,
+  PanResponder,
 } from "react-native";
 import { useState, useRef } from "react";
 import { router } from "expo-router";
@@ -76,10 +77,38 @@ export default function StoryCreateScreen() {
   const [textColor, setTextColor] = useState("#00F2FE");
   const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
 
+  // Advanced Text Format & Positioning States
+  const [fontSize, setFontSize] = useState<number>(22);
+  const [textAlign, setTextAlign] = useState<"left" | "center" | "right">("center");
+  const [textBannerStyle, setTextBannerStyle] = useState<"none" | "glass" | "teal" | "black">("glass");
+  const [fontFormat, setFontFormat] = useState<"bold" | "italic" | "mono">("bold");
+
+  // Touch Drag Positioning (x, y)
+  const [textPos, setTextPos] = useState({ x: 40, y: height * 0.35 });
+  const textPan = useRef({ x: 40, y: height * 0.35 });
+
+  const textPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gestureState) => {
+        setTextPos({
+          x: textPan.current.x + gestureState.dx,
+          y: textPan.current.y + gestureState.dy,
+        });
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        textPan.current = {
+          x: textPan.current.x + gestureState.dx,
+          y: textPan.current.y + gestureState.dy,
+        };
+      },
+    })
+  ).current;
+
   const [isUploading, setIsUploading] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
 
-  // Mutations
+  // Upload Mutation
   const uploadStoryMutation = useMutation({
     mutationFn: async () => {
       if (!photoUri) throw new Error("No photo uri available");
@@ -88,18 +117,18 @@ export default function StoryCreateScreen() {
       try {
         let finalMediaUrl = photoUri;
 
-        // If local file, upload it
         if (photoUri.startsWith("file:") || photoUri.startsWith("content:") || photoUri.startsWith("ph://")) {
           const { mediaUrl } = await storiesApi.uploadStoryFile(photoUri);
           finalMediaUrl = mediaUrl;
         }
 
-        // Build parameters query string to save overlay edits
         const params = new URLSearchParams();
         if (selectedFilter !== "none") params.append("filter", selectedFilter);
         if (overlayText.trim()) {
           params.append("text", overlayText.trim());
           params.append("textColor", textColor);
+          params.append("fontSize", fontSize.toString());
+          params.append("banner", textBannerStyle);
         }
         if (selectedSticker) params.append("sticker", selectedSticker);
 
@@ -129,9 +158,7 @@ export default function StoryCreateScreen() {
   const handleCapture = async () => {
     if (cameraRef.current) {
       try {
-        const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.8,
-        });
+        const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
         if (photo && photo.uri) {
           setPhotoUri(photo.uri);
           setMode("EDITOR");
@@ -210,7 +237,6 @@ export default function StoryCreateScreen() {
 
       {mode === "CAMERA" ? (
         <View style={styles.cameraWrapper}>
-          {/* FIX: CameraView rendered without children to prevent React Native warning */}
           <CameraView
             style={StyleSheet.absoluteFillObject}
             facing={facing}
@@ -218,9 +244,7 @@ export default function StoryCreateScreen() {
             ref={cameraRef}
           />
 
-          {/* Absolute Controls Overlay */}
           <View style={[StyleSheet.absoluteFillObject, { zIndex: 10 }]} pointerEvents="box-none">
-            {/* Top controls overlay */}
             <View style={styles.topControls}>
               <TouchableOpacity style={styles.circularBtn} onPress={() => router.back()}>
                 <Text style={styles.btnText}>✕</Text>
@@ -245,7 +269,6 @@ export default function StoryCreateScreen() {
               </View>
             </View>
 
-            {/* Template Drawer */}
             {showTemplates && (
               <View style={styles.templateDrawer}>
                 <Text style={styles.drawerTitle}>Select Story Template</Text>
@@ -266,7 +289,6 @@ export default function StoryCreateScreen() {
               </View>
             )}
 
-            {/* Bottom Shutter & controls overlay */}
             <View style={styles.bottomControls}>
               <TouchableOpacity style={styles.sideBtn} onPress={handlePickFromGallery}>
                 <Text style={styles.sideBtnText}>Gallery</Text>
@@ -286,11 +308,11 @@ export default function StoryCreateScreen() {
           </View>
         </View>
       ) : (
-        /* MEDIA EDITOR MODE */
+        /* MEDIA EDITOR MODE WITH DRAGGING & FORMATTING */
         <View style={styles.editorWrapper}>
           <Image source={{ uri: photoUri }} style={styles.editorImage} contentFit="cover" />
 
-          {/* Filter tint overlays */}
+          {/* Filter Tint Overlays */}
           {selectedFilter === "cyber" && (
             <View style={[styles.filterOverlay, { backgroundColor: "rgba(0, 242, 254, 0.18)" }]} pointerEvents="none" />
           )}
@@ -307,17 +329,37 @@ export default function StoryCreateScreen() {
             <View style={[styles.filterOverlay, { backgroundColor: "rgba(16, 185, 129, 0.15)" }]} pointerEvents="none" />
           )}
 
-          {/* Floating Sticker / Location Badge */}
+          {/* Draggable Floating Sticker / Badge */}
           {selectedSticker && (
             <View style={styles.floatingStickerContainer}>
               <Text style={styles.floatingStickerText}>{selectedSticker}</Text>
             </View>
           )}
 
-          {/* Floating Text Banner */}
+          {/* Draggable Floating Text Caption Container with Formatting */}
           {overlayText.trim().length > 0 && (
-            <View style={styles.floatingTextContainer}>
-              <Text style={[styles.floatingText, { color: textColor }]}>
+            <View
+              {...textPanResponder.panHandlers}
+              style={[
+                styles.draggableTextContainer,
+                { left: textPos.x, top: textPos.y },
+                textBannerStyle === "glass" && styles.bannerGlass,
+                textBannerStyle === "teal" && styles.bannerTeal,
+                textBannerStyle === "black" && styles.bannerBlack,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.draggableText,
+                  {
+                    color: textBannerStyle === "teal" ? "#000000" : textColor,
+                    fontSize,
+                    textAlign,
+                    fontStyle: fontFormat === "italic" ? "italic" : "normal",
+                    fontFamily: fontFormat === "mono" ? "Courier" : undefined,
+                  },
+                ]}
+              >
                 {overlayText.trim()}
               </Text>
             </View>
@@ -333,13 +375,80 @@ export default function StoryCreateScreen() {
             <TouchableOpacity style={styles.circularBtn} onPress={resetCamera}>
               <Text style={styles.btnText}>←</Text>
             </TouchableOpacity>
-            <Text style={styles.editorTitle}>Story Editor</Text>
+            <Text style={styles.editorTitle}>Story Media Editor</Text>
             <View style={{ width: 44 }} />
           </View>
 
-          {/* Editor Options Drawer */}
+          {/* Editor Control Drawer */}
           <View style={styles.editorControls}>
-            {/* 1. Stickers & Location Badges */}
+            {/* 1. Text Caption & Background Banner Formats */}
+            <View style={styles.editorSection}>
+              <Text style={styles.sectionLabel}>Text & Format Options</Text>
+              <TextInput
+                style={styles.textInput}
+                value={overlayText}
+                onChangeText={setOverlayText}
+                placeholder="Type caption (Drag on screen to move)..."
+                placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                maxLength={60}
+              />
+              
+              {/* Font Size & Alignment Row */}
+              <View style={styles.formatRow}>
+                <Text style={styles.formatLabel}>Size:</Text>
+                {[16, 22, 28, 34].map((sz) => (
+                  <TouchableOpacity
+                    key={sz}
+                    onPress={() => setFontSize(sz)}
+                    style={[styles.formatBadge, fontSize === sz && styles.activeFormatBadge]}
+                  >
+                    <Text style={styles.formatBadgeText}>{sz}px</Text>
+                  </TouchableOpacity>
+                ))}
+
+                <Text style={[styles.formatLabel, { marginLeft: 8 }]}>Align:</Text>
+                {(["left", "center", "right"] as const).map((al) => (
+                  <TouchableOpacity
+                    key={al}
+                    onPress={() => setTextAlign(al)}
+                    style={[styles.formatBadge, textAlign === al && styles.activeFormatBadge]}
+                  >
+                    <Text style={styles.formatBadgeText}>{al[0].toUpperCase()}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Banner Style Row */}
+              <View style={styles.formatRow}>
+                <Text style={styles.formatLabel}>Banner:</Text>
+                {(["none", "glass", "teal", "black"] as const).map((bn) => (
+                  <TouchableOpacity
+                    key={bn}
+                    onPress={() => setTextBannerStyle(bn)}
+                    style={[styles.formatBadge, textBannerStyle === bn && styles.activeFormatBadge]}
+                  >
+                    <Text style={styles.formatBadgeText}>{bn}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Colors */}
+              <View style={styles.colorRow}>
+                {TEXT_COLORS.map((col) => (
+                  <TouchableOpacity
+                    key={col.hex}
+                    style={[
+                      styles.colorBall,
+                      { backgroundColor: col.hex },
+                      textColor === col.hex && styles.activeColorBall,
+                    ]}
+                    onPress={() => setTextColor(col.hex)}
+                  />
+                ))}
+              </View>
+            </View>
+
+            {/* 2. Stickers & Badges */}
             <View style={styles.editorSection}>
               <Text style={styles.sectionLabel}>Stickers & Badges</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.emojiList}>
@@ -361,33 +470,7 @@ export default function StoryCreateScreen() {
               </ScrollView>
             </View>
 
-            {/* 2. Text Banner & Font Colors */}
-            <View style={styles.editorSection}>
-              <Text style={styles.sectionLabel}>Story Caption & Text Banner</Text>
-              <TextInput
-                style={styles.textInput}
-                value={overlayText}
-                onChangeText={setOverlayText}
-                placeholder="Add text caption..."
-                placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                maxLength={50}
-              />
-              <View style={styles.colorRow}>
-                {TEXT_COLORS.map((col) => (
-                  <TouchableOpacity
-                    key={col.hex}
-                    style={[
-                      styles.colorBall,
-                      { backgroundColor: col.hex },
-                      textColor === col.hex && styles.activeColorBall,
-                    ]}
-                    onPress={() => setTextColor(col.hex)}
-                  />
-                ))}
-              </View>
-            </View>
-
-            {/* 3. Cyberpunk & Color Filters */}
+            {/* 3. Filters */}
             <View style={styles.editorSection}>
               <Text style={styles.sectionLabel}>Filters</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
@@ -405,7 +488,7 @@ export default function StoryCreateScreen() {
               </ScrollView>
             </View>
 
-            {/* 4. Action Buttons */}
+            {/* Action Publish Button */}
             <TouchableOpacity
               style={[styles.publishBtn, (uploadStoryMutation.isPending || isUploading) && styles.disabledBtn]}
               onPress={() => uploadStoryMutation.mutate()}
@@ -425,382 +508,69 @@ export default function StoryCreateScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#000",
-  },
-  permissionContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: spacing.xl,
-    backgroundColor: "#0C0C0C",
-  },
-  permissionEmoji: {
-    fontSize: 54,
-    marginBottom: spacing.md,
-  },
-  permissionTitle: {
-    fontSize: typography.xl,
-    fontWeight: typography.bold,
-    color: "#fff",
-    marginBottom: spacing.sm,
-  },
-  permissionDescription: {
-    fontSize: typography.base,
-    color: colors.text.secondary,
-    textAlign: "center",
-    marginBottom: spacing.xl,
-    lineHeight: 22,
-  },
-  permissionBtn: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: radius.full,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 8,
-    marginBottom: spacing.lg,
-  },
-  permissionBtnText: {
-    color: "#000",
-    fontWeight: typography.bold,
-    fontSize: typography.base,
-  },
-  cancelLink: {
-    paddingVertical: 8,
-  },
-  cancelLinkText: {
-    color: colors.text.tertiary,
-    fontSize: typography.base,
-  },
-  cameraWrapper: {
-    flex: 1,
-  },
-  topControls: {
-    position: "absolute",
-    top: 50,
-    left: spacing.lg,
-    right: spacing.lg,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    zIndex: 20,
-  },
-  row: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  circularBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
-  },
-  activeBtn: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  btnText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  templateDrawer: {
-    position: "absolute",
-    bottom: 140,
-    left: 0,
-    right: 0,
-    backgroundColor: "rgba(12,12,12,0.9)",
-    paddingVertical: spacing.md,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    zIndex: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-  },
-  drawerTitle: {
-    color: "#fff",
-    fontSize: typography.xs,
-    fontWeight: typography.bold,
-    textTransform: "uppercase",
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.sm,
-    letterSpacing: 0.5,
-  },
-  drawerScroll: {
-    paddingHorizontal: spacing.lg,
-    gap: spacing.md,
-  },
-  drawerCard: {
-    width: 100,
-    height: 140,
-    borderRadius: radius.md,
-    overflow: "hidden",
-    position: "relative",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
-  },
-  drawerCardImage: {
-    width: "100%",
-    height: "100%",
-  },
-  drawerCardOverlay: {
-    position: "absolute",
-    inset: 0,
-    backgroundColor: "rgba(0,0,0,0.3)",
-    justifyContent: "flex-end",
-    padding: 6,
-  },
-  drawerCardText: {
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: "bold",
-  },
-  bottomControls: {
-    position: "absolute",
-    bottom: 40,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    zIndex: 20,
-  },
-  sideBtn: {
-    width: 80,
-    alignItems: "center",
-    paddingVertical: 10,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
-  },
-  sideBtnText: {
-    color: "#fff",
-    fontSize: typography.sm,
-    fontWeight: typography.semibold,
-  },
-  shutterContainer: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    borderWidth: 4,
-    borderColor: colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-  },
-  shutterInner: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: "#fff",
-  },
-  editorWrapper: {
-    flex: 1,
-    position: "relative",
-  },
-  editorImage: {
-    width: width,
-    height: height,
-  },
-  filterOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 5,
-  },
-  floatingStickerContainer: {
-    position: "absolute",
-    top: "25%",
-    alignSelf: "center",
-    zIndex: 10,
-    backgroundColor: "rgba(0,242,254,0.15)",
-    borderWidth: 1,
-    borderColor: colors.primary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderRadius: radius.full,
-  },
-  floatingStickerText: {
-    fontSize: typography.base,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  floatingTextContainer: {
-    position: "absolute",
-    top: "40%",
-    left: spacing.xl,
-    right: spacing.xl,
-    zIndex: 10,
-    backgroundColor: "rgba(0,0,0,0.65)",
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-  },
-  floatingText: {
-    fontSize: 22,
-    fontWeight: "bold",
-    textAlign: "center",
-    textShadowColor: "rgba(0,0,0,0.9)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  exifBadge: {
-    position: "absolute",
-    top: 104,
-    alignSelf: "center",
-    zIndex: 12,
-    backgroundColor: "rgba(16, 185, 129, 0.2)",
-    borderColor: colors.success,
-    borderWidth: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 4,
-    borderRadius: radius.full,
-  },
-  exifBadgeText: {
-    color: colors.success,
-    fontSize: 10,
-    fontWeight: "bold",
-  },
-  editorTitle: {
-    color: "#fff",
-    fontSize: typography.base,
-    fontWeight: typography.bold,
-  },
-  editorControls: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "rgba(12,12,12,0.92)",
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    padding: spacing.lg,
-    gap: spacing.md,
-    zIndex: 15,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.1)",
-  },
-  editorSection: {
-    gap: spacing.xs,
-  },
-  sectionLabel: {
-    color: colors.primary,
-    fontSize: 10,
-    fontWeight: "bold",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  emojiList: {
-    gap: spacing.sm,
-    paddingVertical: 2,
-  },
-  emojiItem: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: radius.full,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
-  },
-  activeEmoji: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  emojiItemText: {
-    fontSize: 12,
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  textInput: {
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    color: "#fff",
-    fontSize: typography.sm,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-  },
-  colorRow: {
-    flexDirection: "row",
-    gap: spacing.md,
-    marginTop: 6,
-  },
-  colorBall: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.2)",
-  },
-  activeColorBall: {
-    borderColor: "#fff",
-    transform: [{ scale: 1.15 }],
-  },
-  filterRow: {
-    flexDirection: "row",
-    gap: spacing.xs,
-  },
-  filterBadge: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: radius.full,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
-  },
-  activeFilterBadge: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  filterBadgeText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  activeFilterBadgeText: {
-    color: "#000",
-    fontWeight: "bold",
-  },
-  publishBtn: {
-    backgroundColor: colors.primary,
-    paddingVertical: 14,
-    borderRadius: radius.full,
-    alignItems: "center",
-    marginTop: spacing.xs,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  disabledBtn: {
-    opacity: 0.6,
-  },
-  publishBtnText: {
-    color: "#000",
-    fontSize: typography.base,
-    fontWeight: typography.bold,
-  },
+  container: { flex: 1, backgroundColor: "#000" },
+  centerContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#000" },
+  permissionContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: spacing.xl, backgroundColor: "#0C0C0C" },
+  permissionEmoji: { fontSize: 54, marginBottom: spacing.md },
+  permissionTitle: { fontSize: typography.xl, fontWeight: typography.bold, color: "#fff", marginBottom: spacing.sm },
+  permissionDescription: { fontSize: typography.base, color: colors.text.secondary, textAlign: "center", marginBottom: spacing.xl, lineHeight: 22 },
+  permissionBtn: { backgroundColor: colors.primary, paddingVertical: 14, paddingHorizontal: 28, borderRadius: radius.full, shadowColor: colors.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 8, marginBottom: spacing.lg },
+  permissionBtnText: { color: "#000", fontWeight: typography.bold, fontSize: typography.base },
+  cancelLink: { paddingVertical: 8 },
+  cancelLinkText: { color: colors.text.tertiary, fontSize: typography.base },
+  cameraWrapper: { flex: 1 },
+  topControls: { position: "absolute", top: 50, left: spacing.lg, right: spacing.lg, flexDirection: "row", justifyContent: "space-between", alignItems: "center", zIndex: 20 },
+  row: { flexDirection: "row", gap: spacing.sm },
+  circularBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
+  activeBtn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  btnText: { color: "#fff", fontSize: 14, fontWeight: "bold" },
+  templateDrawer: { position: "absolute", bottom: 140, left: 0, right: 0, backgroundColor: "rgba(12,12,12,0.9)", paddingVertical: spacing.md, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, zIndex: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  drawerTitle: { color: "#fff", fontSize: typography.xs, fontWeight: typography.bold, textTransform: "uppercase", paddingHorizontal: spacing.lg, marginBottom: spacing.sm, letterSpacing: 0.5 },
+  drawerScroll: { paddingHorizontal: spacing.lg, gap: spacing.md },
+  drawerCard: { width: 100, height: 140, borderRadius: radius.md, overflow: "hidden", position: "relative", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
+  drawerCardImage: { width: "100%", height: "100%" },
+  drawerCardOverlay: { position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "flex-end", padding: 6 },
+  drawerCardText: { color: "#fff", fontSize: 10, fontWeight: "bold" },
+  bottomControls: { position: "absolute", bottom: 40, left: 0, right: 0, flexDirection: "row", justifyContent: "space-around", alignItems: "center", zIndex: 20 },
+  sideBtn: { width: 80, alignItems: "center", paddingVertical: 10, backgroundColor: "rgba(0,0,0,0.5)", borderRadius: radius.md, borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
+  sideBtnText: { color: "#fff", fontSize: typography.sm, fontWeight: typography.semibold },
+  shutterContainer: { width: 84, height: 84, borderRadius: 42, borderWidth: 4, borderColor: colors.primary, justifyContent: "center", alignItems: "center", shadowColor: colors.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 12 },
+  shutterInner: { width: 68, height: 68, borderRadius: 34, backgroundColor: "#fff" },
+  editorWrapper: { flex: 1, position: "relative" },
+  editorImage: { width, height },
+  filterOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 5 },
+  floatingStickerContainer: { position: "absolute", top: "22%", alignSelf: "center", zIndex: 10, backgroundColor: "rgba(0,242,254,0.15)", borderWidth: 1, borderColor: colors.primary, paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: radius.full },
+  floatingStickerText: { fontSize: typography.base, fontWeight: "bold", color: "#fff" },
+  draggableTextContainer: { position: "absolute", zIndex: 12, paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.md, borderRadius: radius.md },
+  bannerGlass: { backgroundColor: "rgba(0,0,0,0.65)", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
+  bannerTeal: { backgroundColor: "#00F2FE" },
+  bannerBlack: { backgroundColor: "#000000" },
+  draggableText: { fontWeight: "bold" },
+  exifBadge: { position: "absolute", top: 104, alignSelf: "center", zIndex: 12, backgroundColor: "rgba(16, 185, 129, 0.2)", borderColor: colors.success, borderWidth: 1, paddingHorizontal: spacing.md, paddingVertical: 4, borderRadius: radius.full },
+  exifBadgeText: { color: colors.success, fontSize: 10, fontWeight: "bold" },
+  editorTitle: { color: "#fff", fontSize: typography.base, fontWeight: typography.bold },
+  editorControls: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "rgba(12,12,12,0.92)", borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.md, gap: spacing.sm, zIndex: 15, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.1)" },
+  editorSection: { gap: 4 },
+  sectionLabel: { color: colors.primary, fontSize: 10, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 0.5 },
+  emojiList: { gap: spacing.xs, paddingVertical: 2 },
+  emojiItem: { paddingHorizontal: spacing.md, paddingVertical: 5, borderRadius: radius.full, backgroundColor: "rgba(255,255,255,0.08)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
+  activeEmoji: { backgroundColor: colors.primary, borderColor: colors.primary },
+  emojiItemText: { fontSize: 11, color: "#fff", fontWeight: "bold" },
+  textInput: { backgroundColor: "rgba(255,255,255,0.08)", borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 8, color: "#fff", fontSize: typography.xs, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  formatRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
+  formatLabel: { color: "rgba(255,255,255,0.5)", fontSize: 10, fontWeight: "bold" },
+  formatBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.sm, backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  activeFormatBadge: { backgroundColor: colors.primary, borderColor: colors.primary },
+  formatBadgeText: { color: "#fff", fontSize: 10, fontWeight: "bold" },
+  colorRow: { flexDirection: "row", gap: spacing.md, marginTop: 4 },
+  colorBall: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.2)" },
+  activeColorBall: { borderColor: "#fff", transform: [{ scale: 1.15 }] },
+  filterRow: { flexDirection: "row", gap: spacing.xs },
+  filterBadge: { paddingVertical: 5, paddingHorizontal: 10, borderRadius: radius.full, backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
+  activeFilterBadge: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterBadgeText: { color: "#fff", fontSize: 11, fontWeight: "600" },
+  activeFilterBadgeText: { color: "#000", fontWeight: "bold" },
+  publishBtn: { backgroundColor: colors.primary, paddingVertical: 12, borderRadius: radius.full, alignItems: "center", marginTop: 4 },
+  disabledBtn: { opacity: 0.6 },
+  publishBtnText: { color: "#000", fontSize: typography.sm, fontWeight: typography.bold },
 });
