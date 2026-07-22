@@ -76,12 +76,12 @@ export default function UserDetailScreen() {
     <View style={pageStyles.screen}>
       <StatusBar barStyle="light-content" />
       {/* Custom Header */}
-      <View style={[pageStyles.header, { paddingTop: 12 + 0 }]}> 
+      <View style={[pageStyles.header, { paddingTop: 12 }]}> 
         <TouchableOpacity onPress={() => router.back()} style={styles.back}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
         <Text style={pageStyles.headerTitle}>Profile</Text>
-        <View style={{ width: 50 }} /> {/* balance layout */}
+        <View style={{ width: 50 }} />
       </View>
 
       <ScrollView contentContainerStyle={pageStyles.scrollContent}>
@@ -112,7 +112,7 @@ export default function UserDetailScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Icebreaker Message</Text>
           <View style={styles.messageBox}>
-            <Text style={styles.messageText}>"{user.message}"</Text>
+            <Text style={styles.messageText}>{`"${user.message}"`}</Text>
           </View>
         </View>
 
@@ -120,7 +120,7 @@ export default function UserDetailScreen() {
           <View style={styles.privateLock}>
             <Text style={styles.lockTitle}>Stories & Bio are Locked</Text>
             <Text style={styles.lockDesc}>
-              Request permission to view @{user.username}'s active stories and detailed bio.
+              {`Request permission to view @${user.username}'s active stories and detailed bio.`}
             </Text>
             {user.accessStatus === "PENDING" ? (
               <View style={[styles.actionButton, styles.buttonPending]}>
@@ -149,7 +149,7 @@ export default function UserDetailScreen() {
             {isPrivate && isApproved && (
               <View style={styles.approvedBanner}>
                 <Text style={styles.approvedBannerText}>
-                  🔓 You have approved access to @{user.username}'s profile
+                  {`🔓 You have approved access to @${user.username}'s profile`}
                 </Text>
               </View>
             )}
@@ -161,7 +161,7 @@ export default function UserDetailScreen() {
               <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
                 <Text style={styles.sectionTitle}>📸 Fotoalbum</Text>
                 <View style={styles.albumGrid}>
-                  {user.photoAlbum.map((photoUrl, idx) => (
+                  {user.photoAlbum.map((photoUrl: string, idx: number) => (
                     <TouchableOpacity
                       key={idx}
                       style={styles.albumItem}
