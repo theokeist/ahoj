@@ -25,7 +25,7 @@ export default function LoginPage() {
 
       message.success(`Welcome back, ${data.user.username}!`);
       localStorage.setItem("accessToken", data.accessToken);
-      window.location.href = "/";
+      window.location.href = "/app";
     } catch (err: any) {
       message.error(err.message || "Unable to sign in");
     } finally {
@@ -70,7 +70,7 @@ export default function LoginPage() {
 
       message.success({ content: `Signed in via ${provider.toUpperCase()} as @${data.user.username}!`, key: "oauth" });
       localStorage.setItem("accessToken", data.accessToken);
-      window.location.href = "/";
+      window.location.href = "/app";
     } catch (err: any) {
       message.error({ content: err.message || "OAuth authentication failed", key: "oauth" });
     } finally {

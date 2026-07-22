@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Sparkles, User, UserPlus } from "lucide-react";
+import { User, UserPlus, Compass, Info } from "lucide-react";
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -31,20 +31,20 @@ export default function Navigation() {
             Home
           </Link>
           <Link
-            href="/simulator"
+            href="/about"
             className={`text-sm font-semibold transition-colors ${
-              pathname === "/simulator" ? "text-[#00F2FE]" : "text-white/70 hover:text-white"
+              pathname === "/about" ? "text-[#00F2FE]" : "text-white/70 hover:text-white"
             }`}
           >
-            Simulator
+            About
           </Link>
           <Link
-            href="/brand"
-            className={`text-sm font-semibold transition-colors ${
-              pathname === "/brand" ? "text-[#00F2FE]" : "text-white/70 hover:text-white"
+            href="/app"
+            className={`text-sm font-semibold transition-colors flex items-center gap-1.5 ${
+              pathname === "/app" ? "text-[#00F2FE]" : "text-white/70 hover:text-white"
             }`}
           >
-            Brand & Design
+            <Compass className="w-4 h-4 text-[#00F2FE]" /> Web App
           </Link>
         </nav>
 

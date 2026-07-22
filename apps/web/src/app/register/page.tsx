@@ -32,7 +32,7 @@ export default function RegisterPage() {
 
       message.success(`Account created! Welcome to ahoj, @${data.user.username}!`);
       localStorage.setItem("accessToken", data.accessToken);
-      window.location.href = "/";
+      window.location.href = "/app";
     } catch (err: any) {
       message.error(err.message || "Registration failed");
     } finally {
@@ -69,7 +69,7 @@ export default function RegisterPage() {
 
       message.success({ content: `Registered via ${provider.toUpperCase()} as @${data.user.username}!`, key: "oauth" });
       localStorage.setItem("accessToken", data.accessToken);
-      window.location.href = "/";
+      window.location.href = "/app";
     } catch (err: any) {
       message.error({ content: err.message || "OAuth registration failed", key: "oauth" });
     } finally {
