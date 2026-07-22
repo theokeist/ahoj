@@ -67,6 +67,12 @@ export const webApi = {
   // Auth
   getMe: () => apiFetch<{ user: any }>("/auth/me"),
 
+  // Users & Profile Settings
+  updateProfile: (body: { username?: string; bio?: string; privacyMode?: string; profilePhotoUrl?: string }) =>
+    apiFetch<any>("/users/me", { method: "PUT", body: JSON.stringify(body) }),
+  updateMessage: (message: string) =>
+    apiFetch<{ message: string }>("/users/me/message", { method: "PUT", body: JSON.stringify({ message }) }),
+
   // Feed & Nearby
   getNearbyUsers: (lat: number, lng: number, radius: number) =>
     apiFetch<{ users: any[] }>(`/feed/nearby?lat=${lat}&lng=${lng}&radius=${radius}`),
