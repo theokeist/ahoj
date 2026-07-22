@@ -133,21 +133,21 @@ export default function FullWebAppDashboard() {
       ]);
 
       if (nearbyRes.status === "fulfilled") {
-        setNearbyUsers(nearbyRes.value.users.length ? nearbyRes.value.users : MOCK_NEARBY_USERS);
+        setNearbyUsers(nearbyRes.value?.users?.length ? nearbyRes.value.users : MOCK_NEARBY_USERS);
       } else {
         setNearbyUsers(MOCK_NEARBY_USERS);
       }
 
       if (sparksRes.status === "fulfilled") {
-        setSparks(sparksRes.value.sparks);
+        setSparks(sparksRes.value?.sparks || []);
       }
 
       if (convsRes.status === "fulfilled") {
-        setConversations(convsRes.value.conversations);
+        setConversations(convsRes.value?.conversations || []);
       }
 
       if (reqsRes.status === "fulfilled") {
-        setIncomingRequests(reqsRes.value.requests);
+        setIncomingRequests(reqsRes.value?.requests || []);
       }
     } finally {
       setIsLoadingData(false);
@@ -233,7 +233,7 @@ export default function FullWebAppDashboard() {
         lat: coords.lat,
         lng: coords.lng,
       });
-      setSparks([res.spark, ...sparks]);
+      setSparks([res.spark, ...(sparks || [])]);
       setNewSparkTitle("");
       setIsCreateSparkOpen(false);
     } catch {
@@ -246,7 +246,7 @@ export default function FullWebAppDashboard() {
         distanceMeters: 50,
         createdAt: "Just now",
       };
-      setSparks([newSpark, ...sparks]);
+      setSparks([newSpark, ...(sparks || [])]);
       setNewSparkTitle("");
       setIsCreateSparkOpen(false);
     }
@@ -289,18 +289,18 @@ export default function FullWebAppDashboard() {
   const handleApproveRequest = async (id: string) => {
     try {
       await webApi.approveAccess(id);
-      setIncomingRequests(incomingRequests.filter((r) => r.id !== id));
+      setIncomingRequests((incomingRequests || []).filter((r) => r.id !== id));
     } catch {
-      setIncomingRequests(incomingRequests.filter((r) => r.id !== id));
+      setIncomingRequests((incomingRequests || []).filter((r) => r.id !== id));
     }
   };
 
   const handleDenyRequest = async (id: string) => {
     try {
       await webApi.denyAccess(id);
-      setIncomingRequests(incomingRequests.filter((r) => r.id !== id));
+      setIncomingRequests((incomingRequests || []).filter((r) => r.id !== id));
     } catch {
-      setIncomingRequests(incomingRequests.filter((r) => r.id !== id));
+      setIncomingRequests((incomingRequests || []).filter((r) => r.id !== id));
     }
   };
 
@@ -372,7 +372,7 @@ export default function FullWebAppDashboard() {
               }`}
             >
               <span className="flex items-center gap-2.5"><Compass className="w-4 h-4" /> Nearby Radar</span>
-              <span className="text-[10px] opacity-80">{nearbyUsers.length}</span>
+              <span className="text-[10px] opacity-80">{(nearbyUsers || []).length}</span>
             </button>
 
             <button
@@ -383,7 +383,7 @@ export default function FullWebAppDashboard() {
               }`}
             >
               <span className="flex items-center gap-2.5"><Flame className="w-4 h-4" /> Sparks Meetups</span>
-              <span className="text-[10px] opacity-80">{sparks.length}</span>
+              <span className="text-[10px] opacity-80">{(sparks || []).length}</span>
             </button>
 
             <button
@@ -394,7 +394,7 @@ export default function FullWebAppDashboard() {
               }`}
             >
               <span className="flex items-center gap-2.5"><MessageSquare className="w-4 h-4" /> E2EE Messages</span>
-              <span className="text-[10px] opacity-80">{conversations.length}</span>
+              <span className="text-[10px] opacity-80">{(conversations || []).length}</span>
             </button>
 
             <button
@@ -405,7 +405,7 @@ export default function FullWebAppDashboard() {
               }`}
             >
               <span className="flex items-center gap-2.5"><Lock className="w-4 h-4" /> Access Requests</span>
-              {incomingRequests.length > 0 && (
+              {(incomingRequests?.length || 0) > 0 && (
                 <span className="w-4 h-4 rounded-full bg-[#FF6B6B] text-black text-[9px] font-bold flex items-center justify-center">
                   {incomingRequests.length}
                 </span>
@@ -492,7 +492,7 @@ export default function FullWebAppDashboard() {
                     <span className="text-[10px] text-white/70 font-medium">Add Story</span>
                   </button>
 
-                  {nearbyUsers.map((user) => (
+                  {(nearbyUsers || []).map((user) => (
                     <button
                       key={user.id}
                       type="button"
@@ -515,7 +515,7 @@ export default function FullWebAppDashboard() {
               {/* Feed Grid View vs Radar View */}
               {viewMode === "grid" ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {nearbyUsers.map((user) => (
+                  {(nearbyUsers || []).map((user) => (
                     <div key={user.id} className="glass-panel p-4 rounded-2xl space-y-3 relative group">
                       <div className="flex items-center gap-3">
                         <img
@@ -545,7 +545,7 @@ export default function FullWebAppDashboard() {
                     <span className="text-xs font-bold text-[#00F2FE]">You</span>
                   </div>
 
-                  {nearbyUsers.map((user, idx) => {
+                  {(nearbyUsers || []).map((user, idx) => {
                     const angle = (idx / nearbyUsers.length) * 2 * Math.PI;
                     const dist = 80 + (idx % 3) * 50;
                     const x = Math.cos(angle) * dist;
@@ -582,14 +582,14 @@ export default function FullWebAppDashboard() {
                 <button
                   type="button"
                   onClick={() => setIsCreateSparkOpen(true)}
-                  className="px-3 py-1.5 rounded-xl bg-[#00F2FE] text-black font-bold text-xs flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-xl bg-[#00F2FE] text-black font-bold text-xs flex items-center gap-1 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" /> Create Spark
                 </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {sparks.map((spark) => (
+                {(sparks || []).map((spark) => (
                   <div key={spark.id} className="glass-panel p-4 rounded-2xl space-y-2 border border-[#00F2FE]/30">
                     <div className="flex justify-between items-start">
                       <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#00F2FE]/20 text-[#00F2FE]">
@@ -609,12 +609,12 @@ export default function FullWebAppDashboard() {
           {activeTab === "chats" && (
             <div className="flex-1 flex overflow-hidden">
               <div className="w-1/3 border-r border-white/10 overflow-y-auto p-3 space-y-2">
-                {conversations.map((c) => (
+                {(conversations || []).map((c) => (
                   <button
                     key={c.id}
                     type="button"
                     onClick={() => setActiveChatUser(c)}
-                    className={`w-full p-3 rounded-2xl text-left flex items-center gap-3 transition-all ${
+                    className={`w-full p-3 rounded-2xl text-left flex items-center gap-3 transition-all cursor-pointer ${
                       activeChatUser?.id === c.id ? "bg-white/10 border border-[#00F2FE]/40" : "hover:bg-white/5"
                     }`}
                   >
@@ -637,7 +637,7 @@ export default function FullWebAppDashboard() {
                       </span>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                      {messages.map((m) => (
+                      {(messages || []).map((m) => (
                         <div
                           key={m.id}
                           className={`flex ${m.senderId === myUser?.id ? "justify-end" : "justify-start"}`}
@@ -666,7 +666,7 @@ export default function FullWebAppDashboard() {
                       <button
                         type="button"
                         onClick={handleSendMessage}
-                        className="px-4 py-2 rounded-xl bg-[#00F2FE] text-black font-bold text-xs"
+                        className="px-4 py-2 rounded-xl bg-[#00F2FE] text-black font-bold text-xs cursor-pointer"
                       >
                         <Send className="w-3.5 h-3.5" />
                       </button>
@@ -685,30 +685,36 @@ export default function FullWebAppDashboard() {
           {activeTab === "requests" && (
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               <span className="text-xs font-bold text-white/60">Pending Story & Profile Access Requests</span>
-              {incomingRequests.map((req) => (
-                <div key={req.id} className="glass-panel p-4 rounded-2xl flex items-center justify-between">
-                  <div>
-                    <h4 className="font-bold text-sm text-white">@{req.requesterUsername}</h4>
-                    <span className="text-xs text-white/50">Wants to unlock your 24h stories</span>
+              {(incomingRequests || []).length > 0 ? (
+                incomingRequests.map((req) => (
+                  <div key={req.id} className="glass-panel p-4 rounded-2xl flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-sm text-white">@{req.requesterUsername}</h4>
+                      <span className="text-xs text-white/50">Wants to unlock your 24h stories</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleApproveRequest(req.id)}
+                        className="px-3 py-1.5 rounded-xl bg-[#10B981] text-black font-bold text-xs cursor-pointer"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDenyRequest(req.id)}
+                        className="px-3 py-1.5 rounded-xl bg-white/10 text-white font-bold text-xs cursor-pointer"
+                      >
+                        Deny
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleApproveRequest(req.id)}
-                      className="px-3 py-1.5 rounded-xl bg-[#10B981] text-black font-bold text-xs"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDenyRequest(req.id)}
-                      className="px-3 py-1.5 rounded-xl bg-white/10 text-white font-bold text-xs"
-                    >
-                      Deny
-                    </button>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-12 text-white/40 text-xs font-medium">
+                  No pending access requests
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
@@ -727,7 +733,7 @@ export default function FullWebAppDashboard() {
                 <img src={selectedStoryUser.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-full object-cover" />
                 <span className="text-white text-xs font-bold">@{selectedStoryUser.username}</span>
               </div>
-              <button type="button" onClick={() => setSelectedStoryUser(null)} className="text-white text-sm font-bold">✕</button>
+              <button type="button" onClick={() => setSelectedStoryUser(null)} className="text-white text-sm font-bold cursor-pointer">✕</button>
             </div>
 
             <img
@@ -747,7 +753,7 @@ export default function FullWebAppDashboard() {
               <h3 className="font-bold text-base text-white flex items-center gap-2">
                 <Camera className="w-5 h-5 text-[#00F2FE]" /> Story Media Editor
               </h3>
-              <button type="button" onClick={() => setIsAddStoryOpen(false)} className="text-white/60 hover:text-white font-bold">✕</button>
+              <button type="button" onClick={() => setIsAddStoryOpen(false)} className="text-white/60 hover:text-white font-bold cursor-pointer">✕</button>
             </div>
 
             {/* Preview Box with Filter Tint & EXIF Badge */}
@@ -816,7 +822,7 @@ export default function FullWebAppDashboard() {
                       key={f.id}
                       type="button"
                       onClick={() => setStoryFilter(f.id)}
-                      className={`px-3 py-1 rounded-full text-[11px] font-semibold shrink-0 border transition-all ${
+                      className={`px-3 py-1 rounded-full text-[11px] font-semibold shrink-0 border transition-all cursor-pointer ${
                         storyFilter === f.id ? "bg-[#00F2FE] text-black border-[#00F2FE] font-bold" : "bg-white/5 border-white/10 text-white/70"
                       }`}
                     >
@@ -833,7 +839,7 @@ export default function FullWebAppDashboard() {
                   <button
                     type="button"
                     onClick={() => setStorySticker(null)}
-                    className={`px-3 py-1 rounded-full text-[11px] font-semibold shrink-0 border ${
+                    className={`px-3 py-1 rounded-full text-[11px] font-semibold shrink-0 border cursor-pointer ${
                       !storySticker ? "bg-[#00F2FE] text-black border-[#00F2FE]" : "bg-white/5 border-white/10 text-white/70"
                     }`}
                   >
@@ -844,7 +850,7 @@ export default function FullWebAppDashboard() {
                       key={stk}
                       type="button"
                       onClick={() => setStorySticker(stk)}
-                      className={`px-3 py-1 rounded-full text-[11px] font-semibold shrink-0 border ${
+                      className={`px-3 py-1 rounded-full text-[11px] font-semibold shrink-0 border cursor-pointer ${
                         storySticker === stk ? "bg-[#00F2FE] text-black border-[#00F2FE]" : "bg-white/5 border-white/10 text-white/70"
                       }`}
                     >
@@ -858,7 +864,7 @@ export default function FullWebAppDashboard() {
             <button
               type="button"
               onClick={handlePublishStory}
-              className="w-full py-3 rounded-xl bg-[#00F2FE] text-black font-bold text-xs shadow-[0_0_20px_rgba(0,242,254,0.4)]"
+              className="w-full py-3 rounded-xl bg-[#00F2FE] text-black font-bold text-xs shadow-[0_0_20px_rgba(0,242,254,0.4)] cursor-pointer"
             >
               Publish to 24h Stories ⚡
             </button>
@@ -872,7 +878,7 @@ export default function FullWebAppDashboard() {
           <div className="w-full max-w-sm glass-panel p-6 rounded-3xl space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="font-bold text-base text-white">⚡ Create Nearby Spark</h3>
-              <button type="button" onClick={() => setIsCreateSparkOpen(false)} className="text-white/60 hover:text-white">✕</button>
+              <button type="button" onClick={() => setIsCreateSparkOpen(false)} className="text-white/60 hover:text-white cursor-pointer">✕</button>
             </div>
             <input
               type="text"
@@ -884,7 +890,7 @@ export default function FullWebAppDashboard() {
             <button
               type="button"
               onClick={handleCreateSpark}
-              className="w-full py-3 rounded-xl bg-[#00F2FE] text-black font-bold text-xs"
+              className="w-full py-3 rounded-xl bg-[#00F2FE] text-black font-bold text-xs cursor-pointer"
             >
               Publish Spark (2h Expiry)
             </button>

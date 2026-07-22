@@ -56,16 +56,26 @@ export const webApi = {
     }),
 
   // Access Requests
-  getIncomingRequests: () => apiFetch<{ requests: any[] }>("/access-requests/incoming"),
+  getIncomingRequests: async () => {
+    const data = await apiFetch<any>("/access-requests/incoming");
+    const requests = Array.isArray(data)
+      ? data.map((r) => ({
+          ...r,
+          requesterUsername: r.requester?.username || "user",
+          requesterAvatarUrl: r.requester?.profilePhotoUrl || null,
+        }))
+      : data.requests || [];
+    return { requests };
+  },
   requestAccess: (targetUserId: string) =>
     apiFetch<{ request: any }>("/access-requests", {
       method: "POST",
-      body: JSON.stringify({ targetUserId }),
+      body: JSON.stringify({ targetId: targetUserId }),
     }),
   approveAccess: (requestId: string) =>
-    apiFetch<{ success: boolean }>(`/access-requests/${requestId}/approve`, { method: "POST" }),
+    apiFetch<{ success: boolean }>(`/access-requests/${requestId}/approve`, { method: "PUT" }),
   denyAccess: (requestId: string) =>
-    apiFetch<{ success: boolean }>(`/access-requests/${requestId}/deny`, { method: "POST" }),
+    apiFetch<{ success: boolean }>(`/access-requests/${requestId}/deny`, { method: "PUT" }),
 
   // Stories
   uploadStory: (mediaUrl: string, caption?: string) =>
