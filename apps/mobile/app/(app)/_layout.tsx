@@ -5,23 +5,40 @@ import { colors } from "../../lib/theme";
 
 import { useEffect } from "react";
 import * as Notifications from "expo-notifications";
-import Constants from "expo-constants";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import { usersApi } from "../../lib/api";
 
-// Configure how notifications are handled when the app is foregrounded
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  } as any),
-});
+// Check if app is running inside Expo Go client (SDK 53+ removed remote push from Expo Go)
+const isExpoGo =
+  Constants.appOwnership === "expo" ||
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
+// Configure notification handler safely (only if not in Expo Go)
+if (!isExpoGo) {
+  try {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      } as any),
+    });
+  } catch (err) {
+    // Ignore notification handler error in Expo Go
+  }
+}
 
 export default function AppLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   useEffect(() => {
     async function registerForPushNotificationsAsync() {
+      // Workaround: Skip remote push notifications in Expo Go SDK 53+ to prevent annoying error logs
+      if (isExpoGo) {
+        console.log("ℹ️ [Push Notifications] Skipped in Expo Go. Use EAS dev build or standalone app for remote push testing.");
+        return;
+      }
+
       try {
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
@@ -40,9 +57,6 @@ export default function AppLayout() {
 
         const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         if (!projectId || !isUuid.test(projectId)) {
-          console.log(
-            "Push notifications skipped in development: no valid eas.projectId found in app.json. Replace 'YOUR_EAS_PROJECT_ID' with a real EAS project ID to test push notifications."
-          );
           return;
         }
 
