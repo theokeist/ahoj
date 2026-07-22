@@ -45,11 +45,13 @@ const EMOJI_STICKERS = ["📍 Brno", "⚡ Spark", "🔥 Hot", "☕ Coffee", "�
 
 const FILTERS = [
   { id: "none", name: "Original 📷" },
+  { id: "beauty", name: "Beauty Glow 💄" },
+  { id: "bokeh", name: "Portrait Bokeh 🤖" },
+  { id: "greenscreen", name: "Green Screen 🌿" },
   { id: "cyber", name: "Cyberpunk ⚡" },
   { id: "retro", name: "Retro 📻" },
   { id: "neon", name: "Neon 🌅" },
   { id: "noir", name: "Noir B&W 🖤" },
-  { id: "emerald", name: "Emerald 🌿" },
 ] as const;
 
 const TEXT_COLORS = [
@@ -72,7 +74,7 @@ export default function StoryCreateScreen() {
 
   // Editor states
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [selectedFilter, setSelectedFilter] = useState<"none" | "cyber" | "retro" | "neon" | "noir" | "emerald">("none");
+  const [selectedFilter, setSelectedFilter] = useState<"none" | "beauty" | "bokeh" | "greenscreen" | "cyber" | "retro" | "neon" | "noir">("none");
   const [overlayText, setOverlayText] = useState("");
   const [textColor, setTextColor] = useState("#00F2FE");
   const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
@@ -308,11 +310,20 @@ export default function StoryCreateScreen() {
           </View>
         </View>
       ) : (
-        /* MEDIA EDITOR MODE WITH DRAGGING & FORMATTING */
+        /* MEDIA EDITOR MODE WITH FANCY FILTERS & DRAGGING */
         <View style={styles.editorWrapper}>
           <Image source={{ uri: photoUri }} style={styles.editorImage} contentFit="cover" />
 
-          {/* Filter Tint Overlays */}
+          {/* Fancy Filter Tint Overlays */}
+          {selectedFilter === "beauty" && (
+            <View style={[styles.filterOverlay, { backgroundColor: "rgba(255, 220, 230, 0.12)" }]} pointerEvents="none" />
+          )}
+          {selectedFilter === "bokeh" && (
+            <View style={[styles.filterOverlay, { backgroundColor: "rgba(0, 0, 0, 0.25)" }]} pointerEvents="none" />
+          )}
+          {selectedFilter === "greenscreen" && (
+            <View style={[styles.filterOverlay, { backgroundColor: "rgba(16, 185, 129, 0.2)" }]} pointerEvents="none" />
+          )}
           {selectedFilter === "cyber" && (
             <View style={[styles.filterOverlay, { backgroundColor: "rgba(0, 242, 254, 0.18)" }]} pointerEvents="none" />
           )}
@@ -325,9 +336,6 @@ export default function StoryCreateScreen() {
           {selectedFilter === "noir" && (
             <View style={[styles.filterOverlay, { backgroundColor: "rgba(0, 0, 0, 0.4)" }]} pointerEvents="none" />
           )}
-          {selectedFilter === "emerald" && (
-            <View style={[styles.filterOverlay, { backgroundColor: "rgba(16, 185, 129, 0.15)" }]} pointerEvents="none" />
-          )}
 
           {/* Draggable Floating Sticker / Badge */}
           {selectedSticker && (
@@ -336,7 +344,7 @@ export default function StoryCreateScreen() {
             </View>
           )}
 
-          {/* Draggable Floating Text Caption Container with Formatting */}
+          {/* Draggable Floating Text Caption Container */}
           {overlayText.trim().length > 0 && (
             <View
               {...textPanResponder.panHandlers}
@@ -370,12 +378,29 @@ export default function StoryCreateScreen() {
             <Text style={styles.exifBadgeText}>🛡️ EXIF Cleared (GPS Metadata Stripped)</Text>
           </View>
 
+          {/* Fancy Feature Badge if active */}
+          {selectedFilter === "beauty" && (
+            <View style={styles.fancyActiveBadge}>
+              <Text style={styles.fancyActiveBadgeText}>💄 Beauty Retouch Active</Text>
+            </View>
+          )}
+          {selectedFilter === "bokeh" && (
+            <View style={styles.fancyActiveBadge}>
+              <Text style={styles.fancyActiveBadgeText}>🤖 Portrait Bokeh Depth Blur</Text>
+            </View>
+          )}
+          {selectedFilter === "greenscreen" && (
+            <View style={styles.fancyActiveBadge}>
+              <Text style={styles.fancyActiveBadgeText}>🌿 AI Green Screen Keying</Text>
+            </View>
+          )}
+
           {/* Editor Header */}
           <View style={styles.topControls}>
             <TouchableOpacity style={styles.circularBtn} onPress={resetCamera}>
               <Text style={styles.btnText}>←</Text>
             </TouchableOpacity>
-            <Text style={styles.editorTitle}>Story Media Editor</Text>
+            <Text style={styles.editorTitle}>Story Fancy Editor</Text>
             <View style={{ width: 44 }} />
           </View>
 
@@ -470,9 +495,9 @@ export default function StoryCreateScreen() {
               </ScrollView>
             </View>
 
-            {/* 3. Filters */}
+            {/* 3. Fancy Filters & AR Features */}
             <View style={styles.editorSection}>
-              <Text style={styles.sectionLabel}>Filters</Text>
+              <Text style={styles.sectionLabel}>Fancy Filters & AI Features</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
                 {FILTERS.map((f) => (
                   <TouchableOpacity
@@ -497,7 +522,7 @@ export default function StoryCreateScreen() {
               {uploadStoryMutation.isPending || isUploading ? (
                 <ActivityIndicator color="#000" />
               ) : (
-                <Text style={styles.publishBtnText}>Publish to 24h Stories ⚡</Text>
+                <Text style={styles.publishBtnText}>Publish Fancy Story ⚡</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -548,6 +573,8 @@ const styles = StyleSheet.create({
   draggableText: { fontWeight: "bold" },
   exifBadge: { position: "absolute", top: 104, alignSelf: "center", zIndex: 12, backgroundColor: "rgba(16, 185, 129, 0.2)", borderColor: colors.success, borderWidth: 1, paddingHorizontal: spacing.md, paddingVertical: 4, borderRadius: radius.full },
   exifBadgeText: { color: colors.success, fontSize: 10, fontWeight: "bold" },
+  fancyActiveBadge: { position: "absolute", top: 136, alignSelf: "center", zIndex: 12, backgroundColor: "rgba(0, 242, 254, 0.2)", borderColor: colors.primary, borderWidth: 1, paddingHorizontal: spacing.md, paddingVertical: 4, borderRadius: radius.full },
+  fancyActiveBadgeText: { color: colors.primary, fontSize: 10, fontWeight: "bold" },
   editorTitle: { color: "#fff", fontSize: typography.base, fontWeight: typography.bold },
   editorControls: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "rgba(12,12,12,0.92)", borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.md, gap: spacing.sm, zIndex: 15, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.1)" },
   editorSection: { gap: 4 },
