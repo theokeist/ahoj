@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   avatarPlaceholder: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.glass, alignItems: "center", justifyContent: "center" },
   avatarInitial: { color: colors.primary, fontWeight: typography.bold },
   username: { color: colors.text.primary, fontSize: typography.sm, fontWeight: typography.semibold },
-  distance: { color: colors.primary, fontSize: typography.xs, fontWeight: typography.mono },
+  distance: { color: colors.primary, fontSize: typography.xs, fontWeight: typography.medium },
   categoryBadge: { backgroundColor: colors.glass, paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border },
   categoryText: { color: colors.primary, fontSize: typography.xs, fontWeight: typography.bold },
   sparkTitle: { color: colors.text.primary, fontSize: typography.base, fontWeight: typography.bold },

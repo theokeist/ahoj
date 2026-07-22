@@ -387,7 +387,7 @@ export default function StoryCreateScreen() {
           {/* Active Effect & Privacy Header Tag */}
           <View style={styles.headerTagRow}>
             <View style={styles.exifBadge}>
-              <AntDesign name="safetycertificate" size={10} color={colors.success} />
+              <AntDesign name="safety-certificate" size={10} color={colors.success} />
               <Text style={styles.exifBadgeText}>EXIF Clean (GPS Privacy)</Text>
             </View>
 
@@ -401,7 +401,7 @@ export default function StoryCreateScreen() {
           {/* Header Bar */}
           <View style={styles.topControls}>
             <TouchableOpacity style={styles.circularBtn} onPress={resetCamera}>
-              <AntDesign name="arrowleft" size={20} color="#fff" />
+              <AntDesign name="left" size={20} color="#fff" />
             </TouchableOpacity>
             <Text style={styles.editorTitle}>Story Editor</Text>
             <View style={{ width: 44 }} />
@@ -414,7 +414,7 @@ export default function StoryCreateScreen() {
               style={styles.sidebarOptionBtn}
               onPress={() => setFontSizeIdx((prev) => (prev + 1) % FONT_SIZES.length)}
             >
-              <AntDesign name="fontsize" size={18} color="#00F2FE" />
+              <AntDesign name="font-size" size={18} color="#00F2FE" />
               <Text style={styles.sidebarOptionLabel}>{fontSize}px</Text>
             </TouchableOpacity>
 
@@ -423,7 +423,7 @@ export default function StoryCreateScreen() {
               style={styles.sidebarOptionBtn}
               onPress={() => setAlignIdx((prev) => (prev + 1) % ALIGNMENTS.length)}
             >
-              <AntDesign name="aligncenter" size={18} color="#00F2FE" />
+              <AntDesign name="align-center" size={18} color="#00F2FE" />
               <Text style={styles.sidebarOptionLabel}>{textAlign[0].toUpperCase()}</Text>
             </TouchableOpacity>
 
@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
   cancelLink: { paddingVertical: 8 },
   cancelLinkText: { color: colors.text.tertiary, fontSize: typography.base },
   cameraWrapper: { flex: 1 },
-  topControls: { position: "absolute", top: 48, left: spacing.md, right: spacing.md, flexDirection: "row", justify.content: "space-between", alignItems: "center", zIndex: 25 },
+  topControls: { position: "absolute", top: 48, left: spacing.md, right: spacing.md, flexDirection: "row", justifyContent: "space-between", alignItems: "center", zIndex: 25 },
   row: { flexDirection: "row", gap: spacing.sm },
   circularBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
   activeBtn: { backgroundColor: colors.primary, borderColor: colors.primary },
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: "rgba(255,255,255,0.06)",
     alignItems: "center",
-    justify.content: "center",
+    justifyContent: "center",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
   },

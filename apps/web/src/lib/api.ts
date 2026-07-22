@@ -1,6 +1,10 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
-export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+interface CustomRequestInit extends RequestInit {
+  _isRetry?: boolean;
+}
+
+export async function apiFetch<T>(endpoint: string, options: CustomRequestInit = {}): Promise<T> {
   const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -16,9 +20,36 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
     headers,
   });
 
-  if (res.status === 401) {
+  if (res.status === 401 && !options._isRetry && endpoint !== "/auth/login" && endpoint !== "/auth/register") {
+    // Attempt automatic token refresh
+    const refreshToken = typeof window !== "undefined" ? localStorage.getItem("refreshToken") : null;
+    if (refreshToken) {
+      try {
+        const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        if (refreshRes.ok) {
+          const refreshData = await refreshRes.json();
+          if (typeof window !== "undefined") {
+            localStorage.setItem("accessToken", refreshData.accessToken);
+            if (refreshData.refreshToken) {
+              localStorage.setItem("refreshToken", refreshData.refreshToken);
+            }
+          }
+          // Retry original request with new access token
+          return apiFetch<T>(endpoint, { ...options, _isRetry: true });
+        }
+      } catch {
+        // Refresh failed, proceed to logout redirect
+      }
+    }
+
     if (typeof window !== "undefined") {
       localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
       window.location.href = "/login";
     }
     throw new Error("Unauthorized");

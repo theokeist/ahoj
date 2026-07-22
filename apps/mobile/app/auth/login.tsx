@@ -138,13 +138,13 @@ export default function LoginScreen() {
               secureTextEntry
               autoComplete="current-password"
               returnKeyType="done"
-              onSubmitEditing={() => loginMutation.mutate()}
+              onSubmitEditing={() => loginMutation.mutate({ email, password })}
             />
           </View>
 
           <TouchableOpacity
             style={[styles.button, loginMutation.isPending && styles.buttonDisabled]}
-            onPress={() => loginMutation.mutate()}
+            onPress={() => loginMutation.mutate({ email, password })}
             disabled={loginMutation.isPending || !email || !password}
             activeOpacity={0.85}
           >
