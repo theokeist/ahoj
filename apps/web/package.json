@@ -12,6 +12,7 @@
     "@ahoj/shared": "workspace:*",
     "@ant-design/cssinjs": "^2.1.2",
     "@ant-design/icons": "^6.3.2",
+    "@ant-design/nextjs-registry": "^1.3.0",
     "antd": "^6.5.1",
     "lucide-react": "^0.400.0",
     "next": "16.2.10",

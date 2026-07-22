@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
+import { AntdRegistry } from "@ant-design/nextjs-registry";
 import "./globals.css";
 import { ThemeProvider } from "../components/ThemeProvider";
 
@@ -27,7 +28,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${outfit.variable} h-full`}>
       <body className="page-shell flex flex-col min-h-full">
-        <ThemeProvider>{children}</ThemeProvider>
+        <AntdRegistry>
+          <ThemeProvider>{children}</ThemeProvider>
+        </AntdRegistry>
       </body>
     </html>
   );
