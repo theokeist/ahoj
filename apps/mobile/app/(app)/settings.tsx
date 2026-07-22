@@ -14,13 +14,14 @@ import { router } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { accessRequestsApi, feedApi, infoApi } from "../../lib/api";
 import { useAuthStore, useLocationStore, useSettingsStore } from "../../store";
-import { colors, spacing, typography, radius, shadows } from "../../lib/theme";
+import { colors, spacing, typography, radius } from "../../lib/theme";
 import { pageStyles } from "../../lib/pageStyles";
 import { Image } from "expo-image";
 
 export default function SettingsScreen() {
   const queryClient = useQueryClient();
   const logout = useAuthStore((s) => s.logout);
+  const me = useAuthStore((s) => s.user);
   const { isGhostMode, setGhostMode } = useLocationStore();
   const { showStoryBar, setShowStoryBar } = useSettingsStore();
 
@@ -29,11 +30,11 @@ export default function SettingsScreen() {
     mutationFn: () => feedApi.seedDemo(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["feed"] });
-      Alert.alert("Demo Mode", "Demo uživatelé byli úspěšně přemístěni do tvé blízkosti! 🚀");
+      Alert.alert("Demo Mode", "Demo users moved nearby! 🚀");
     },
     onError: (err: any) => {
-      const msg = err?.response?.data?.error ?? "Chyba při spuštění demo režimu";
-      Alert.alert("Chyba", msg);
+      const msg = err?.response?.data?.error ?? "Error activating demo mode";
+      Alert.alert("Error", msg);
       setIsDemoMode(false);
     }
   });
@@ -49,7 +50,6 @@ export default function SettingsScreen() {
   const {
     data: incomingRequests = [],
     isLoading,
-    refetch,
   } = useQuery({
     queryKey: ["incoming-requests"],
     queryFn: () => accessRequestsApi.getIncoming(),
@@ -61,10 +61,7 @@ export default function SettingsScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["incoming-requests"] });
       queryClient.invalidateQueries({ queryKey: ["feed"] });
-      Alert.alert("Schváleno", "Uživatel má nyní přístup k tvým příběhům.");
-    },
-    onError: () => {
-      Alert.alert("Chyba", "Nepodařilo se schválit žádost.");
+      Alert.alert("Approved", "User now has access to your stories.");
     },
   });
 
@@ -73,10 +70,7 @@ export default function SettingsScreen() {
     mutationFn: (requestId: string) => accessRequestsApi.deny(requestId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["incoming-requests"] });
-      Alert.alert("Odmítnuto", "Žádost o přístup byla odmítnuta.");
-    },
-    onError: () => {
-      Alert.alert("Chyba", "Nepodařilo se odmítnout žádost.");
+      Alert.alert("Denied", "Access request denied.");
     },
   });
 
@@ -86,10 +80,10 @@ export default function SettingsScreen() {
   });
 
   const handleLogout = () => {
-    Alert.alert("Odhlásit se", "Opravdu se chceš odhlásit?", [
-      { text: "Zrušit", style: "cancel" },
+    Alert.alert("Log out", "Are you sure you want to log out?", [
+      { text: "Cancel", style: "cancel" },
       {
-        text: "Odhlásit",
+        text: "Log out",
         style: "destructive",
         onPress: () => {
           logout();
@@ -99,6 +93,18 @@ export default function SettingsScreen() {
     ]);
   };
 
+  const oauthProviders = [
+    { key: "google", name: "Google", region: "US", color: "#4285F4" },
+    { key: "apple", name: "Apple", region: "US", color: "#FFFFFF" },
+    { key: "meta", name: "Meta", region: "US", color: "#1877F2" },
+    { key: "netid", name: "NetID", region: "EU", color: "#00A88F" },
+    { key: "vk", name: "VK ID", region: "RU", color: "#0077FF" },
+    { key: "yandex", name: "Yandex", region: "RU", color: "#FC3F1D" },
+    { key: "wechat", name: "WeChat", region: "ASIA", color: "#07C160" },
+    { key: "line", name: "LINE", region: "ASIA", color: "#00B900" },
+    { key: "kakao", name: "Kakao", region: "ASIA", color: "#FEE500" },
+  ];
+
   return (
     <View style={pageStyles.screen}>
       <StatusBar barStyle="light-content" />
@@ -106,23 +112,23 @@ export default function SettingsScreen() {
       {/* Header */}
       <View style={pageStyles.header}>
         <TouchableOpacity onPress={() => router.back()} style={pageStyles.backButton}>
-          <Text style={pageStyles.backText}>← Zpět</Text>
+          <Text style={pageStyles.backText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={pageStyles.headerTitle}>Nastavení</Text>
+        <Text style={pageStyles.headerTitle}>Settings</Text>
         <View style={pageStyles.headerSpacer} />
       </View>
 
       <ScrollView contentContainerStyle={pageStyles.scrollContent}>
         {/* Proximity / Ghost Mode Settings */}
         <View style={pageStyles.section}>
-          <Text style={pageStyles.sectionTitle}>👻 Soukromí & Viditelnost</Text>
+          <Text style={pageStyles.sectionTitle}>👻 Privacy & Visibility</Text>
           <View style={pageStyles.card}>
             {/* Demo Mode Row */}
             <View style={[styles.settingRow, { borderBottomWidth: 1, borderBottomColor: colors.borderLight, paddingBottom: spacing.md, marginBottom: spacing.md }]}>
               <View style={styles.settingTextContainer}>
-                <Text style={styles.settingLabel}>🚀 Demo Režim</Text>
+                <Text style={styles.settingLabel}>🚀 Demo Mode</Text>
                 <Text style={styles.settingDescription}>
-                  Přemístí demo uživatele (Bob, Alice, Charlie) do tvé blízkosti.
+                  Move nearby demo users (Bob, Alice, Charlie) to your location.
                 </Text>
               </View>
               {seedDemoMutation.isPending ? (
@@ -142,7 +148,7 @@ export default function SettingsScreen() {
               <View style={styles.settingTextContainer}>
                 <Text style={styles.settingLabel}>Ghost Mode</Text>
                 <Text style={styles.settingDescription}>
-                  Skryje tvůj profil a příspěvky na radarové mapě a feedu ostatních.
+                  Hide your location and posts on the radar map.
                 </Text>
               </View>
               <Switch
@@ -158,7 +164,7 @@ export default function SettingsScreen() {
               <View style={styles.settingTextContainer}>
                 <Text style={styles.settingLabel}>Story Bar</Text>
                 <Text style={styles.settingDescription}>
-                  Zobrazit nebo skrýt lištu příběhů v feedu.
+                  Show or hide story bar on nearby feed.
                 </Text>
               </View>
               <Switch
@@ -171,15 +177,39 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Global 3rd Party OAuth Accounts */}
+        <View style={pageStyles.section}>
+          <Text style={pageStyles.sectionTitle}>🌐 Linked Identity Accounts (Global OAuth)</Text>
+          <View style={pageStyles.card}>
+            <View style={styles.oauthContainer}>
+              {oauthProviders.map((p) => (
+                <View key={p.key} style={styles.oauthRow}>
+                  <View style={styles.oauthLeft}>
+                    <View style={[styles.oauthDot, { backgroundColor: p.color === "#FFFFFF" ? "#AAA" : p.color }]} />
+                    <Text style={styles.oauthName}>{p.name}</Text>
+                    <Text style={styles.oauthRegion}>({p.region})</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.linkBadge}
+                    onPress={() => Alert.alert("Linked", `${p.name} account is active for 1-click login.`)}
+                  >
+                    <Text style={styles.linkBadgeText}>✓ Linked</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          </View>
+        </View>
+
         {/* Incoming Access Requests */}
         <View style={pageStyles.section}>
-          <Text style={pageStyles.sectionTitle}>🔑 Žádosti o přístup k příběhům</Text>
+          <Text style={pageStyles.sectionTitle}>🔑 Story Access Requests</Text>
           <View style={pageStyles.card}>
             {isLoading ? (
               <ActivityIndicator color={colors.primary} style={{ paddingVertical: spacing.md }} />
             ) : incomingRequests.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>Žádné čekající žádosti o přístup. 🌟</Text>
+                <Text style={styles.emptyText}>No pending access requests. 🌟</Text>
               </View>
             ) : (
               incomingRequests.map((req: any) => (
@@ -207,16 +237,14 @@ export default function SettingsScreen() {
                     <TouchableOpacity
                       style={[styles.actionBtn, styles.approveBtn]}
                       onPress={() => approveMutation.mutate(req.id)}
-                      disabled={approveMutation.isPending || denyMutation.isPending}
                     >
-                      <Text style={styles.approveBtnText}>Schválit</Text>
+                      <Text style={styles.approveBtnText}>Approve</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.actionBtn, styles.denyBtn]}
                       onPress={() => denyMutation.mutate(req.id)}
-                      disabled={approveMutation.isPending || denyMutation.isPending}
                     >
-                      <Text style={styles.denyBtnText}>Odmítnout</Text>
+                      <Text style={styles.denyBtnText}>Deny</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -225,46 +253,10 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* App Info / Legal / Open Source */}
-        <View style={pageStyles.section}>
-          <Text style={pageStyles.sectionTitle}>⚖️ Informace o aplikaci</Text>
-          <View style={pageStyles.card}>
-            {appInfo?.legal?.privacyPolicy && (
-              <View style={styles.infoBlock}>
-                <Text style={styles.infoTitle}>{appInfo.legal.privacyPolicy.title}</Text>
-                <Text style={styles.infoText}>{appInfo.legal.privacyPolicy.body}</Text>
-              </View>
-            )}
-            {appInfo?.legal?.termsOfService && (
-              <View style={styles.infoBlock}>
-                <Text style={styles.infoTitle}>{appInfo.legal.termsOfService.title}</Text>
-                <Text style={styles.infoText}>{appInfo.legal.termsOfService.body}</Text>
-              </View>
-            )}
-            {appInfo?.openSource && (
-              <View style={styles.infoBlock}>
-                <Text style={styles.infoTitle}>{appInfo.openSource.title}</Text>
-                <Text style={styles.infoText}>{appInfo.openSource.body}</Text>
-                {appInfo.openSource.items?.map((item: string) => (
-                  <View key={item} style={styles.tagItem}>
-                    <Text style={styles.tagText}>{item}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-            {appInfo?.additionalSections?.map((section: any) => (
-              <View key={section.title} style={styles.infoBlock}>
-                <Text style={styles.infoTitle}>{section.title}</Text>
-                <Text style={styles.infoText}>{section.body}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
         {/* Account / Action Section */}
         <View style={pageStyles.section}>
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-            <Text style={styles.logoutBtnText}>Odhlásit se</Text>
+            <Text style={styles.logoutBtnText}>Log out</Text>
           </TouchableOpacity>
         </View>
 
@@ -292,15 +284,16 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     lineHeight: 16,
   },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: spacing.md,
-  },
-  emptyText: {
-    color: colors.text.tertiary,
-    fontSize: typography.base,
-    fontWeight: typography.medium,
-  },
+  oauthContainer: { gap: spacing.sm },
+  oauthRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 4 },
+  oauthLeft: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
+  oauthDot: { width: 8, height: 8, borderRadius: 4 },
+  oauthName: { color: colors.text.primary, fontSize: typography.sm, fontWeight: typography.semibold },
+  oauthRegion: { color: colors.text.tertiary, fontSize: typography.xs },
+  linkBadge: { backgroundColor: colors.glass, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.sm },
+  linkBadgeText: { color: colors.primary, fontSize: typography.xs, fontWeight: typography.bold },
+  emptyState: { alignItems: "center", paddingVertical: spacing.md },
+  emptyText: { color: colors.text.tertiary, fontSize: typography.base, fontWeight: typography.medium },
   requestItem: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -311,114 +304,19 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
     gap: spacing.md,
   },
-  userInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    flex: 1,
-  },
-  avatarWrapper: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    overflow: "hidden",
-  },
+  userInfo: { flexDirection: "row", alignItems: "center", gap: spacing.sm, flex: 1 },
+  avatarWrapper: { width: 40, height: 40, borderRadius: 20, overflow: "hidden" },
   avatar: { width: "100%", height: "100%" },
-  avatarFallback: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: colors.background.card,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarInitial: {
-    color: colors.text.primary,
-    fontSize: typography.base,
-    fontWeight: typography.bold,
-  },
-  username: {
-    fontSize: typography.base,
-    fontWeight: typography.semibold,
-    color: colors.text.primary,
-  },
-  actionButtons: {
-    flexDirection: "row",
-    gap: spacing.xs,
-  },
-  actionBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.sm,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  approveBtn: {
-    backgroundColor: colors.success + "22", // 15% opacity green
-    borderWidth: 1,
-    borderColor: colors.success,
-  },
-  approveBtnText: {
-    color: colors.success,
-    fontSize: typography.xs,
-    fontWeight: typography.bold,
-  },
-  denyBtn: {
-    backgroundColor: colors.error + "22", // 15% opacity red
-    borderWidth: 1,
-    borderColor: colors.error,
-  },
-  denyBtnText: {
-    color: colors.error,
-    fontSize: typography.xs,
-    fontWeight: typography.bold,
-  },
-  logoutBtn: {
-    backgroundColor: colors.error,
-    borderRadius: radius.full,
-    paddingVertical: 16,
-    alignItems: "center",
-    shadowColor: colors.error,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  logoutBtnText: {
-    color: "#fff",
-    fontSize: typography.base,
-    fontWeight: typography.bold,
-  },
-  infoBlock: {
-    gap: spacing.sm,
-    paddingTop: spacing.sm,
-  },
-  infoTitle: {
-    fontSize: typography.base,
-    fontWeight: typography.bold,
-    color: colors.text.primary,
-  },
-  infoText: {
-    fontSize: typography.sm,
-    color: colors.text.secondary,
-    lineHeight: 18,
-  },
-  tagItem: {
-    alignSelf: "flex-start",
-    backgroundColor: colors.background.card,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    marginTop: spacing.xs,
-  },
-  tagText: {
-    fontSize: typography.xs,
-    color: colors.primary,
-    fontWeight: typography.semibold,
-  },
-  versionText: {
-    textAlign: "center",
-    color: colors.text.tertiary,
-    fontSize: typography.xs,
-    marginTop: spacing.md,
-  },
+  avatarFallback: { width: "100%", height: "100%", backgroundColor: colors.background.card, alignItems: "center", justifyContent: "center" },
+  avatarInitial: { color: colors.text.primary, fontSize: typography.base, fontWeight: typography.bold },
+  username: { fontSize: typography.base, fontWeight: typography.semibold, color: colors.text.primary },
+  actionButtons: { flexDirection: "row", gap: spacing.xs },
+  actionBtn: { paddingVertical: 6, paddingHorizontal: spacing.sm, borderRadius: radius.sm, justifyContent: "center", alignItems: "center" },
+  approveBtn: { backgroundColor: colors.success + "22", borderWidth: 1, borderColor: colors.success },
+  approveBtnText: { color: colors.success, fontSize: typography.xs, fontWeight: typography.bold },
+  denyBtn: { backgroundColor: colors.error + "22", borderWidth: 1, borderColor: colors.error },
+  denyBtnText: { color: colors.error, fontSize: typography.xs, fontWeight: typography.bold },
+  logoutBtn: { backgroundColor: colors.error, borderRadius: radius.full, paddingVertical: 16, alignItems: "center" },
+  logoutBtnText: { color: "#fff", fontSize: typography.base, fontWeight: typography.bold },
+  versionText: { textAlign: "center", color: colors.text.tertiary, fontSize: typography.xs, marginTop: spacing.md },
 });

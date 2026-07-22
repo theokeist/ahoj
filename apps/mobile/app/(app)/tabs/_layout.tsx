@@ -28,7 +28,7 @@ export default function TabsLayout() {
           height: tabBarHeight,
           paddingBottom: tabBarPaddingBottom,
           paddingTop: tabBarPaddingTop,
-          paddingHorizontal: 10,
+          paddingHorizontal: 6,
           elevation: 8,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: -3 },
@@ -54,6 +54,13 @@ export default function TabsLayout() {
         options={{
           title: "Nearby",
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: iconSize }}>🌍</Text>,
+        }}
+      />
+      <Tabs.Screen
+        name="sparks"
+        options={{
+          title: "Sparks",
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: iconSize }}>⚡</Text>,
         }}
       />
       <Tabs.Screen
