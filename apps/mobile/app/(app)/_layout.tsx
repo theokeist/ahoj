@@ -4,7 +4,6 @@ import { ActivityIndicator, View, StyleSheet } from "react-native";
 import { colors } from "../../lib/theme";
 
 import { useEffect } from "react";
-import * as Notifications from "expo-notifications";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { usersApi } from "../../lib/api";
 
@@ -13,33 +12,29 @@ const isExpoGo =
   Constants.appOwnership === "expo" ||
   Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
-// Configure notification handler safely (only if not in Expo Go)
-if (!isExpoGo) {
-  try {
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-      } as any),
-    });
-  } catch (err) {
-    // Ignore notification handler error in Expo Go
-  }
-}
-
 export default function AppLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   useEffect(() => {
     async function registerForPushNotificationsAsync() {
-      // Workaround: Skip remote push notifications in Expo Go SDK 53+ to prevent annoying error logs
+      // Workaround: BoundingExpo Go SDK 53+. Skip importing and setting up remote notifications in Expo Go.
       if (isExpoGo) {
-        console.log("ℹ️ [Push Notifications] Skipped in Expo Go. Use EAS dev build or standalone app for remote push testing.");
+        console.log("ℹ️ [Push Notifications] Skipped in Expo Go. Use EAS dev build for remote push testing.");
         return;
       }
 
       try {
+        // Dynamically import expo-notifications ONLY in non-Expo Go standalone/dev builds
+        const Notifications = await import("expo-notifications");
+
+        Notifications.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: false,
+          } as any),
+        });
+
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
         if (existingStatus !== "granted") {

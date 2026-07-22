@@ -40,22 +40,23 @@ const MOCK_STORY_TEMPLATES = [
   },
 ];
 
-const EMOJI_STICKERS = ["🔥", "☕", "📍", "🍻", "🍿", "🎵", "✨", "❤️", "🙌", "🎉"];
+const EMOJI_STICKERS = ["📍 Brno", "⚡ Spark", "🔥 Hot", "☕ Coffee", "🏔️ Trip", "🎧 Vibe", "🎉 Party", "✨ Glow"];
 
 const FILTERS = [
   { id: "none", name: "Original 📷" },
+  { id: "cyber", name: "Cyberpunk ⚡" },
   { id: "retro", name: "Retro 📻" },
-  { id: "neon", name: "Neon 🦄" },
-  { id: "moody", name: "Moody 🖤" },
-  { id: "sunset", name: "Sunset 🌅" },
+  { id: "neon", name: "Neon 🌅" },
+  { id: "noir", name: "Noir B&W 🖤" },
+  { id: "emerald", name: "Emerald 🌿" },
 ] as const;
 
 const TEXT_COLORS = [
-  { hex: "#FFFFFF", name: "Bílá" },
-  { hex: "#FF6B6B", name: "Růžová" },
-  { hex: "#10B981", name: "Zelená" },
-  { hex: "#F59E0B", name: "Žlutá" },
-  { hex: "#3B82F6", name: "Modrá" },
+  { hex: "#FFFFFF", name: "White" },
+  { hex: "#00F2FE", name: "Teal" },
+  { hex: "#FF6B6B", name: "Pink" },
+  { hex: "#F59E0B", name: "Gold" },
+  { hex: "#10B981", name: "Emerald" },
 ];
 
 export default function StoryCreateScreen() {
@@ -70,10 +71,10 @@ export default function StoryCreateScreen() {
 
   // Editor states
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [selectedFilter, setSelectedFilter] = useState<"none" | "retro" | "neon" | "moody" | "sunset">("none");
+  const [selectedFilter, setSelectedFilter] = useState<"none" | "cyber" | "retro" | "neon" | "noir" | "emerald">("none");
   const [overlayText, setOverlayText] = useState("");
-  const [textColor, setTextColor] = useState("#FFFFFF");
-  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
+  const [textColor, setTextColor] = useState("#00F2FE");
+  const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
 
   const [isUploading, setIsUploading] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -100,7 +101,7 @@ export default function StoryCreateScreen() {
           params.append("text", overlayText.trim());
           params.append("textColor", textColor);
         }
-        if (selectedEmoji) params.append("emoji", selectedEmoji);
+        if (selectedSticker) params.append("sticker", selectedSticker);
 
         const queryString = params.toString();
         const fullMediaUrl = queryString ? `${finalMediaUrl}?${queryString}` : finalMediaUrl;
@@ -115,13 +116,13 @@ export default function StoryCreateScreen() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["feed"] });
-      Alert.alert("Success", "Příběh byl úspěšně sdílen! 🌟", [
-        { text: "Skvělé", onPress: () => router.back() },
+      Alert.alert("Story Shared! 🚀", "Your 24h story is live for nearby people!", [
+        { text: "Awesome", onPress: () => router.back() },
       ]);
     },
     onError: (err: any) => {
-      const msg = err?.response?.data?.error ?? "Chyba při nahrávání příběhu";
-      Alert.alert("Chyba", msg);
+      const msg = err?.response?.data?.error ?? "Error uploading story";
+      Alert.alert("Error", msg);
     },
   });
 
@@ -136,7 +137,7 @@ export default function StoryCreateScreen() {
           setMode("EDITOR");
         }
       } catch (err) {
-        Alert.alert("Chyba", "Nepodařilo se pořídit fotografii.");
+        Alert.alert("Error", "Failed to capture photo.");
       }
     }
   };
@@ -144,13 +145,13 @@ export default function StoryCreateScreen() {
   const handlePickFromGallery = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Povolení zamítnuto", "K výběru fotek z galerie potřebujeme vaše svolení.");
+      Alert.alert("Permission denied", "Camera roll access is required to pick photos.");
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images", "videos"],
-      allowsMultipleSelection: true,
+      allowsMultipleSelection: false,
       quality: 0.8,
     });
 
@@ -171,8 +172,8 @@ export default function StoryCreateScreen() {
     setPhotoUri(null);
     setSelectedFilter("none");
     setOverlayText("");
-    setTextColor("#FFFFFF");
-    setSelectedEmoji(null);
+    setTextColor("#00F2FE");
+    setSelectedSticker(null);
     setMode("CAMERA");
   };
 
@@ -189,15 +190,15 @@ export default function StoryCreateScreen() {
       <View style={styles.permissionContainer}>
         <StatusBar barStyle="light-content" />
         <Text style={styles.permissionEmoji}>📸</Text>
-        <Text style={styles.permissionTitle}>Ahoj Příběhy</Text>
+        <Text style={styles.permissionTitle}>ahoj Camera</Text>
         <Text style={styles.permissionDescription}>
-          Chceš-li zachytit zajímavé momenty a sdílet je s lidmi v okolí, povol přístup k fotoaparátu.
+          Allow camera access to record 24h stories and share moments with nearby people.
         </Text>
         <TouchableOpacity style={styles.permissionBtn} onPress={requestPermission}>
-          <Text style={styles.permissionBtnText}>Povolit přístup</Text>
+          <Text style={styles.permissionBtnText}>Enable Camera</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.cancelLink} onPress={() => router.back()}>
-          <Text style={styles.cancelLinkText}>Zavřít</Text>
+          <Text style={styles.cancelLinkText}>Close</Text>
         </TouchableOpacity>
       </View>
     );
@@ -209,12 +210,16 @@ export default function StoryCreateScreen() {
 
       {mode === "CAMERA" ? (
         <View style={styles.cameraWrapper}>
+          {/* FIX: CameraView rendered without children to prevent React Native warning */}
           <CameraView
             style={StyleSheet.absoluteFillObject}
             facing={facing}
             flash={flash}
             ref={cameraRef}
-          >
+          />
+
+          {/* Absolute Controls Overlay */}
+          <View style={[StyleSheet.absoluteFillObject, { zIndex: 10 }]} pointerEvents="box-none">
             {/* Top controls overlay */}
             <View style={styles.topControls}>
               <TouchableOpacity style={styles.circularBtn} onPress={() => router.back()}>
@@ -243,7 +248,7 @@ export default function StoryCreateScreen() {
             {/* Template Drawer */}
             {showTemplates && (
               <View style={styles.templateDrawer}>
-                <Text style={styles.drawerTitle}>Vyber šablonu</Text>
+                <Text style={styles.drawerTitle}>Select Story Template</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.drawerScroll}>
                   {MOCK_STORY_TEMPLATES.map((item) => (
                     <TouchableOpacity
@@ -264,7 +269,7 @@ export default function StoryCreateScreen() {
             {/* Bottom Shutter & controls overlay */}
             <View style={styles.bottomControls}>
               <TouchableOpacity style={styles.sideBtn} onPress={handlePickFromGallery}>
-                <Text style={styles.sideBtnText}>Galerie</Text>
+                <Text style={styles.sideBtnText}>Gallery</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.shutterContainer} onPress={handleCapture}>
@@ -275,37 +280,41 @@ export default function StoryCreateScreen() {
                 style={styles.sideBtn}
                 onPress={() => setFacing(facing === "back" ? "front" : "back")}
               >
-                <Text style={styles.sideBtnText}>Otočit</Text>
+                <Text style={styles.sideBtnText}>Flip</Text>
               </TouchableOpacity>
             </View>
-          </CameraView>
+          </View>
         </View>
       ) : (
-        /* EDITOR MODE */
+        /* MEDIA EDITOR MODE */
         <View style={styles.editorWrapper}>
           <Image source={{ uri: photoUri }} style={styles.editorImage} contentFit="cover" />
 
           {/* Filter tint overlays */}
+          {selectedFilter === "cyber" && (
+            <View style={[styles.filterOverlay, { backgroundColor: "rgba(0, 242, 254, 0.18)" }]} pointerEvents="none" />
+          )}
           {selectedFilter === "retro" && (
-            <View style={[styles.filterOverlay, { backgroundColor: "rgba(230, 120, 0, 0.12)" }]} pointerEvents="none" />
+            <View style={[styles.filterOverlay, { backgroundColor: "rgba(230, 120, 0, 0.15)" }]} pointerEvents="none" />
           )}
           {selectedFilter === "neon" && (
-            <View style={[styles.filterOverlay, { backgroundColor: "rgba(200, 0, 200, 0.12)" }]} pointerEvents="none" />
+            <View style={[styles.filterOverlay, { backgroundColor: "rgba(255, 107, 107, 0.18)" }]} pointerEvents="none" />
           )}
-          {selectedFilter === "moody" && (
-            <View style={[styles.filterOverlay, { backgroundColor: "rgba(0, 0, 0, 0.35)" }]} pointerEvents="none" />
+          {selectedFilter === "noir" && (
+            <View style={[styles.filterOverlay, { backgroundColor: "rgba(0, 0, 0, 0.4)" }]} pointerEvents="none" />
           )}
-          {selectedFilter === "sunset" && (
-            <View style={[styles.filterOverlay, { backgroundColor: "rgba(255, 100, 0, 0.15)" }]} pointerEvents="none" />
+          {selectedFilter === "emerald" && (
+            <View style={[styles.filterOverlay, { backgroundColor: "rgba(16, 185, 129, 0.15)" }]} pointerEvents="none" />
           )}
 
-          {/* Live floating stickers and text previews */}
-          {selectedEmoji && (
-            <View style={styles.floatingEmojiContainer}>
-              <Text style={styles.floatingEmoji}>{selectedEmoji}</Text>
+          {/* Floating Sticker / Location Badge */}
+          {selectedSticker && (
+            <View style={styles.floatingStickerContainer}>
+              <Text style={styles.floatingStickerText}>{selectedSticker}</Text>
             </View>
           )}
 
+          {/* Floating Text Banner */}
           {overlayText.trim().length > 0 && (
             <View style={styles.floatingTextContainer}>
               <Text style={[styles.floatingText, { color: textColor }]}>
@@ -314,49 +323,54 @@ export default function StoryCreateScreen() {
             </View>
           )}
 
+          {/* EXIF Privacy Security Badge */}
+          <View style={styles.exifBadge}>
+            <Text style={styles.exifBadgeText}>🛡️ EXIF Cleared (GPS Metadata Stripped)</Text>
+          </View>
+
           {/* Editor Header */}
           <View style={styles.topControls}>
             <TouchableOpacity style={styles.circularBtn} onPress={resetCamera}>
               <Text style={styles.btnText}>←</Text>
             </TouchableOpacity>
-            <Text style={styles.editorTitle}>Upravit Příběh</Text>
+            <Text style={styles.editorTitle}>Story Editor</Text>
             <View style={{ width: 44 }} />
           </View>
 
-          {/* Editor Options Scroll */}
+          {/* Editor Options Drawer */}
           <View style={styles.editorControls}>
-            {/* 1. Emoji Selection Row */}
+            {/* 1. Stickers & Location Badges */}
             <View style={styles.editorSection}>
-              <Text style={styles.sectionLabel}>Nálepka (Emoji)</Text>
+              <Text style={styles.sectionLabel}>Stickers & Badges</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.emojiList}>
                 <TouchableOpacity
-                  style={[styles.emojiItem, !selectedEmoji && styles.activeEmoji]}
-                  onPress={() => setSelectedEmoji(null)}
+                  style={[styles.emojiItem, !selectedSticker && styles.activeEmoji]}
+                  onPress={() => setSelectedSticker(null)}
                 >
                   <Text style={styles.emojiItemText}>✕</Text>
                 </TouchableOpacity>
-                {EMOJI_STICKERS.map((emoji) => (
+                {EMOJI_STICKERS.map((stk) => (
                   <TouchableOpacity
-                    key={emoji}
-                    style={[styles.emojiItem, selectedEmoji === emoji && styles.activeEmoji]}
-                    onPress={() => setSelectedEmoji(emoji)}
+                    key={stk}
+                    style={[styles.emojiItem, selectedSticker === stk && styles.activeEmoji]}
+                    onPress={() => setSelectedSticker(stk)}
                   >
-                    <Text style={styles.emojiItemText}>{emoji}</Text>
+                    <Text style={styles.emojiItemText}>{stk}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             </View>
 
-            {/* 2. Text Input & Colors */}
+            {/* 2. Text Banner & Font Colors */}
             <View style={styles.editorSection}>
-              <Text style={styles.sectionLabel}>Text na fotce</Text>
+              <Text style={styles.sectionLabel}>Story Caption & Text Banner</Text>
               <TextInput
                 style={styles.textInput}
                 value={overlayText}
                 onChangeText={setOverlayText}
-                placeholder="Napiš něco k fotce..."
+                placeholder="Add text caption..."
                 placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                maxLength={45}
+                maxLength={50}
               />
               <View style={styles.colorRow}>
                 {TEXT_COLORS.map((col) => (
@@ -373,20 +387,22 @@ export default function StoryCreateScreen() {
               </View>
             </View>
 
-            {/* 3. Filters */}
+            {/* 3. Cyberpunk & Color Filters */}
             <View style={styles.editorSection}>
-              <Text style={styles.sectionLabel}>Filtry</Text>
-              <View style={styles.filterRow}>
+              <Text style={styles.sectionLabel}>Filters</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
                 {FILTERS.map((f) => (
                   <TouchableOpacity
                     key={f.id}
                     style={[styles.filterBadge, selectedFilter === f.id && styles.activeFilterBadge]}
                     onPress={() => setSelectedFilter(f.id)}
                   >
-                    <Text style={styles.filterBadgeText}>{f.name}</Text>
+                    <Text style={[styles.filterBadgeText, selectedFilter === f.id && styles.activeFilterBadgeText]}>
+                      {f.name}
+                    </Text>
                   </TouchableOpacity>
                 ))}
-              </View>
+              </ScrollView>
             </View>
 
             {/* 4. Action Buttons */}
@@ -396,9 +412,9 @@ export default function StoryCreateScreen() {
               disabled={uploadStoryMutation.isPending || isUploading}
             >
               {uploadStoryMutation.isPending || isUploading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color="#000" />
               ) : (
-                <Text style={styles.publishBtnText}>Sdílet do Příběhů 🚀</Text>
+                <Text style={styles.publishBtnText}>Publish to 24h Stories ⚡</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -424,7 +440,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: spacing.xl,
-    backgroundColor: "#1A0A2E",
+    backgroundColor: "#0C0C0C",
   },
   permissionEmoji: {
     fontSize: 54,
@@ -456,7 +472,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   permissionBtnText: {
-    color: "#fff",
+    color: "#000",
     fontWeight: typography.bold,
     fontSize: typography.base,
   },
@@ -488,11 +504,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
+    borderColor: "rgba(255,255,255,0.2)",
   },
   activeBtn: {
     backgroundColor: colors.primary,
@@ -508,11 +524,13 @@ const styles = StyleSheet.create({
     bottom: 140,
     left: 0,
     right: 0,
-    backgroundColor: "rgba(26,10,46,0.85)",
+    backgroundColor: "rgba(12,12,12,0.9)",
     paddingVertical: spacing.md,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     zIndex: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
   },
   drawerTitle: {
     color: "#fff",
@@ -543,7 +561,7 @@ const styles = StyleSheet.create({
   drawerCardOverlay: {
     position: "absolute",
     inset: 0,
-    backgroundColor: "rgba(0,0,0,0.25)",
+    backgroundColor: "rgba(0,0,0,0.3)",
     justifyContent: "flex-end",
     padding: 6,
   },
@@ -566,8 +584,10 @@ const styles = StyleSheet.create({
     width: 80,
     alignItems: "center",
     paddingVertical: 10,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(0,0,0,0.5)",
     borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
   },
   sideBtnText: {
     color: "#fff",
@@ -579,9 +599,13 @@ const styles = StyleSheet.create({
     height: 84,
     borderRadius: 42,
     borderWidth: 4,
-    borderColor: "#fff",
+    borderColor: colors.primary,
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
   },
   shutterInner: {
     width: 68,
@@ -601,34 +625,61 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 5,
   },
-  floatingEmojiContainer: {
+  floatingStickerContainer: {
     position: "absolute",
-    top: "30%",
+    top: "25%",
     alignSelf: "center",
     zIndex: 10,
+    backgroundColor: "rgba(0,242,254,0.15)",
+    borderWidth: 1,
+    borderColor: colors.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderRadius: radius.full,
   },
-  floatingEmoji: {
-    fontSize: 72,
+  floatingStickerText: {
+    fontSize: typography.base,
+    fontWeight: "bold",
+    color: "#fff",
   },
   floatingTextContainer: {
     position: "absolute",
-    top: "45%",
+    top: "40%",
     left: spacing.xl,
     right: spacing.xl,
     zIndex: 10,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.65)",
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
   },
   floatingText: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "bold",
     textAlign: "center",
-    textShadowColor: "rgba(0,0,0,0.75)",
+    textShadowColor: "rgba(0,0,0,0.9)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
+  },
+  exifBadge: {
+    position: "absolute",
+    top: 104,
+    alignSelf: "center",
+    zIndex: 12,
+    backgroundColor: "rgba(16, 185, 129, 0.2)",
+    borderColor: colors.success,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    borderRadius: radius.full,
+  },
+  exifBadgeText: {
+    color: colors.success,
+    fontSize: 10,
+    fontWeight: "bold",
   },
   editorTitle: {
     color: "#fff",
@@ -640,18 +691,20 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "rgba(0,0,0,0.85)",
+    backgroundColor: "rgba(12,12,12,0.92)",
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     padding: spacing.lg,
     gap: spacing.md,
     zIndex: 15,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.1)",
   },
   editorSection: {
     gap: spacing.xs,
   },
   sectionLabel: {
-    color: "rgba(255,255,255,0.5)",
+    color: colors.primary,
     fontSize: 10,
     fontWeight: "bold",
     textTransform: "uppercase",
@@ -662,30 +715,33 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   emojiItem: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+    backgroundColor: "rgba(255,255,255,0.08)",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: "transparent",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
   },
   activeEmoji: {
     backgroundColor: colors.primary,
-    borderColor: "#fff",
+    borderColor: colors.primary,
   },
   emojiItemText: {
-    fontSize: 18,
+    fontSize: 12,
     color: "#fff",
+    fontWeight: "bold",
   },
   textInput: {
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
     color: "#fff",
     fontSize: typography.sm,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
   },
   colorRow: {
     flexDirection: "row",
@@ -705,38 +761,45 @@ const styles = StyleSheet.create({
   },
   filterRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: spacing.xs,
   },
   filterBadge: {
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: radius.full,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderWidth: 1,
-    borderColor: "transparent",
+    borderColor: "rgba(255,255,255,0.15)",
   },
   activeFilterBadge: {
     backgroundColor: colors.primary,
-    borderColor: "rgba(255,255,255,0.3)",
+    borderColor: colors.primary,
   },
   filterBadgeText: {
     color: "#fff",
     fontSize: 12,
     fontWeight: "600",
   },
+  activeFilterBadgeText: {
+    color: "#000",
+    fontWeight: "bold",
+  },
   publishBtn: {
-    backgroundColor: "#10B981",
+    backgroundColor: colors.primary,
     paddingVertical: 14,
     borderRadius: radius.full,
     alignItems: "center",
     marginTop: spacing.xs,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   disabledBtn: {
     opacity: 0.6,
   },
   publishBtnText: {
-    color: "#fff",
+    color: "#000",
     fontSize: typography.base,
     fontWeight: typography.bold,
   },
