@@ -193,9 +193,9 @@ function LoginForm() {
 
           {/* Logo + heading */}
           <div className="text-center space-y-3">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#00F2FE]/10 border border-[#00F2FE]/30 text-[#00F2FE] font-black text-2xl shadow-[0_0_20px_rgba(0,242,254,0.2)]">
+            <Link href="/" className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#00F2FE]/10 border border-[#00F2FE]/30 text-[#00F2FE] font-black text-2xl shadow-[0_0_20px_rgba(0,242,254,0.2)] hover:scale-105 transition-transform">
               /A\
-            </div>
+            </Link>
             <div>
               <h1 className="text-2xl font-black tracking-tight text-white">Sign in to ahoj</h1>
               <p className="text-sm text-white/40 mt-1">Your proximity social network</p>
@@ -281,6 +281,19 @@ function LoginForm() {
               Create one now
             </Link>
           </p>
+
+          {/* Back to home */}
+          <div className="pt-2 border-t border-white/10 text-center">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-xs text-white/30 hover:text-white/70 transition-colors font-medium"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M19 12H5M12 5l-7 7 7 7"/>
+              </svg>
+              Back to ahoj home
+            </Link>
+          </div>
         </div>
       </div>
     </div>
