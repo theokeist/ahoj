@@ -13,164 +13,129 @@ import {
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
   // POST /auth/register
-  app.post("/register", {
-    schema: {
-      description: "Register a new ahoj account",
-      tags: ["auth"],
-      body: {
-        type: "object",
-        required: ["username", "email", "password"],
-        properties: {
-          username: { type: "string" },
-          email: { type: "string", format: "email" },
-          password: { type: "string", minLength: 8 },
-          dateOfBirth: { type: "string", format: "date" },
+  app.post("/register", async (request, reply) => {
+    const body = RegisterSchema.parse(request.body);
+
+    try {
+      const user = await registerUser(body);
+      const accessToken = await signAccessToken(user.id);
+      const refreshToken = await signRefreshToken(user.id);
+      await saveRefreshToken(user.id, refreshToken);
+
+      reply.setCookie("refresh_token", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 60 * 60 * 24 * 30,
+        path: "/auth/refresh",
+      });
+
+      return reply.status(201).send({
+        accessToken,
+        refreshToken,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          message: user.message,
+          profilePhotoUrl: user.profilePhotoUrl,
         },
-      },
-    },
-    handler: async (request, reply) => {
-      const body = RegisterSchema.parse(request.body);
-
-      try {
-        const user = await registerUser(body);
-        const accessToken = await signAccessToken(user.id);
-        const refreshToken = await signRefreshToken(user.id);
-        await saveRefreshToken(user.id, refreshToken);
-
-        reply.setCookie("refresh_token", refreshToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
-          maxAge: 60 * 60 * 24 * 30,
-          path: "/auth/refresh",
-        });
-
-        return reply.status(201).send({
-          accessToken,
-          refreshToken,
-          user: {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            message: user.message,
-            profilePhotoUrl: user.profilePhotoUrl,
-          },
-        });
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg.startsWith("EMAIL_TAKEN")) {
-          return reply.status(409).send({ error: "Email already in use" });
-        }
-        if (msg.startsWith("USERNAME_TAKEN")) {
-          return reply.status(409).send({ error: "Username already taken" });
-        }
-        if (msg.startsWith("UNDERAGE")) {
-          return reply.status(403).send({ error: "Must be 16+ to use ahoj" });
-        }
-        throw err;
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.startsWith("EMAIL_TAKEN")) {
+        return reply.status(409).send({ error: "Email already in use" });
       }
-    },
+      if (msg.startsWith("USERNAME_TAKEN")) {
+        return reply.status(409).send({ error: "Username already taken" });
+      }
+      if (msg.startsWith("UNDERAGE")) {
+        return reply.status(403).send({ error: "Must be 16+ to use ahoj" });
+      }
+      throw err;
+    }
   });
 
   // POST /auth/login
-  app.post("/login", {
-    config: {
-      rateLimit: {
-        max: 5,
-        timeWindow: "15 minutes",
-        errorResponseBuilder: () => ({
-          statusCode: 429,
-          error: "Too Many Requests",
-          message: "Too many login attempts. Wait 15 minutes.",
-        }),
-      },
-    },
-    handler: async (request, reply) => {
-      const body = LoginSchema.parse(request.body);
+  app.post("/login", async (request, reply) => {
+    const body = LoginSchema.parse(request.body);
 
-      try {
-        const user = await loginUser(body);
-        const accessToken = await signAccessToken(user.id);
-        const refreshToken = await signRefreshToken(user.id);
-        await saveRefreshToken(user.id, refreshToken);
+    try {
+      const user = await loginUser(body);
+      const accessToken = await signAccessToken(user.id);
+      const refreshToken = await signRefreshToken(user.id);
+      await saveRefreshToken(user.id, refreshToken);
 
-        reply.setCookie("refresh_token", refreshToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
-          maxAge: 60 * 60 * 24 * 30,
-          path: "/auth/refresh",
-        });
+      reply.setCookie("refresh_token", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 60 * 60 * 24 * 30,
+        path: "/auth/refresh",
+      });
 
-        return {
-          accessToken,
-          refreshToken,
-          user: {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            message: user.message,
-            privacyMode: user.privacyMode,
-            profilePhotoUrl: user.profilePhotoUrl,
-          },
-        };
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg === "INVALID_CREDENTIALS") {
-          return reply.status(401).send({ error: "Invalid email or password" });
-        }
-        if (msg === "ACCOUNT_BANNED") {
-          return reply.status(403).send({ error: "Account suspended" });
-        }
-        throw err;
+      return reply.send({
+        accessToken,
+        refreshToken,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          message: user.message,
+          privacyMode: user.privacyMode,
+          profilePhotoUrl: user.profilePhotoUrl,
+        },
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg === "INVALID_CREDENTIALS") {
+        return reply.status(401).send({ error: "Invalid email or password" });
       }
-    },
+      if (msg === "ACCOUNT_BANNED") {
+        return reply.status(403).send({ error: "Account suspended" });
+      }
+      throw err;
+    }
   });
 
   // POST /auth/oauth — Global 3rd Party OAuth handler (US, EU, RU, Asia)
-  app.post("/oauth", {
-    schema: {
-      description: "Sign in or register using a 3rd party OAuth provider",
-      tags: ["auth"],
-    },
-    handler: async (request, reply) => {
-      const body = OAuthAuthSchema.parse(request.body);
+  app.post("/oauth", async (request, reply) => {
+    const body = OAuthAuthSchema.parse(request.body);
 
-      try {
-        const user = await loginOrRegisterOAuthUser(body);
-        const accessToken = await signAccessToken(user.id);
-        const refreshToken = await signRefreshToken(user.id);
-        await saveRefreshToken(user.id, refreshToken);
+    try {
+      const user = await loginOrRegisterOAuthUser(body);
+      const accessToken = await signAccessToken(user.id);
+      const refreshToken = await signRefreshToken(user.id);
+      await saveRefreshToken(user.id, refreshToken);
 
-        reply.setCookie("refresh_token", refreshToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
-          maxAge: 60 * 60 * 24 * 30,
-          path: "/auth/refresh",
-        });
+      reply.setCookie("refresh_token", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 60 * 60 * 24 * 30,
+        path: "/auth/refresh",
+      });
 
-        return reply.status(200).send({
-          accessToken,
-          refreshToken,
-          user: {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            message: user.message,
-            privacyMode: user.privacyMode,
-            profilePhotoUrl: user.profilePhotoUrl,
-            bio: user.bio,
-          },
-        });
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg === "ACCOUNT_BANNED") {
-          return reply.status(403).send({ error: "Account suspended" });
-        }
-        throw err;
+      return reply.status(200).send({
+        accessToken,
+        refreshToken,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          message: user.message,
+          privacyMode: user.privacyMode,
+          profilePhotoUrl: user.profilePhotoUrl,
+          bio: user.bio,
+        },
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg === "ACCOUNT_BANNED") {
+        return reply.status(403).send({ error: "Account suspended" });
       }
-    },
+      throw err;
+    }
   });
 
   // POST /auth/refresh — supports httpOnly cookies & mobile JSON storage

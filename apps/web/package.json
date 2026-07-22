@@ -10,10 +10,13 @@
   },
   "dependencies": {
     "@ahoj/shared": "workspace:*",
+    "@ant-design/cssinjs": "^2.1.2",
+    "@ant-design/icons": "^6.3.2",
+    "antd": "^6.5.1",
+    "lucide-react": "^0.400.0",
     "next": "16.2.10",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "lucide-react": "^0.400.0",
     "socket.io-client": "^4.7.0"
   },
   "devDependencies": {
