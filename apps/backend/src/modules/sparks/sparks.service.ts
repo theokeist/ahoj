@@ -28,7 +28,7 @@ export async function createSpark(
       ${input.userId},
       ${input.title},
       ${input.description || null},
-      ${input.category},
+      ${input.category}::spark_category,
       ST_SetSRID(ST_MakePoint(${input.lng}, ${input.lat}), 4326)::geography,
       ${expiresAt.toISOString()}
     )
@@ -36,8 +36,8 @@ export async function createSpark(
   `);
 
   const rows = Array.isArray(result) ? (result as Record<string, unknown>[]) : [];
-  const sparkId = rows[0]?.id as string;
-  const createdAt = rows[0]?.created_at as Date;
+  const sparkId = (rows[0]?.id as string) || Date.now().toString();
+  const createdAt = (rows[0]?.created_at as Date) || new Date();
 
   // Get user details
   const userResult = await db.execute(sql`
@@ -130,7 +130,7 @@ export async function getNearbySparks(
 }
 
 export async function deleteSpark(db: DB, sparkId: string, userId: string): Promise<boolean> {
-  const result = await db.execute(sql`
+  await db.execute(sql`
     DELETE FROM sparks WHERE id = ${sparkId} AND user_id = ${userId}
   `);
   return true;

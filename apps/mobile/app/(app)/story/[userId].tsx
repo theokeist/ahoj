@@ -58,10 +58,8 @@ export default function StoryViewerScreen() {
 
   useEffect(() => {
     if (stories && stories[currentIdx]) {
-      // Mark current story as viewed
       viewStoryMutation.mutate(stories[currentIdx].id);
 
-      // Start progress animation
       progress.setValue(0);
       Animated.timing(progress, {
         toValue: 1,
@@ -169,7 +167,9 @@ export default function StoryViewerScreen() {
         filter: params.filter || null,
         text: params.text || null,
         textColor: params.textColor || "#FFFFFF",
-        emoji: params.emoji || null,
+        fontSize: params.fontSize ? parseInt(params.fontSize) : 22,
+        banner: params.banner || "glass",
+        sticker: params.sticker || params.emoji || null,
       };
     } catch {
       return null;
@@ -180,7 +180,6 @@ export default function StoryViewerScreen() {
     <View style={styles.container}>
       <StatusBar hidden />
 
-      {/* Main Touchable Story View */}
       <TouchableWithoutFeedback
         onPress={handlePress}
         onPressIn={handlePressIn}
@@ -195,35 +194,59 @@ export default function StoryViewerScreen() {
             />
           )}
 
-          {/* Render filters and sticker overlays */}
+          {/* Render filters, sticker overlays, and styled text banner */}
           {(() => {
             if (!currentStory) return null;
             const config = getOverlayConfig(currentStory.mediaUrl);
             if (!config) return null;
             return (
               <>
+                {config.filter === "beauty" && (
+                  <View style={[styles.filterOverlay, { backgroundColor: "rgba(255, 220, 230, 0.12)" }]} pointerEvents="none" />
+                )}
+                {config.filter === "bokeh" && (
+                  <View style={[styles.filterOverlay, { backgroundColor: "rgba(0, 0, 0, 0.25)" }]} pointerEvents="none" />
+                )}
+                {config.filter === "greenscreen" && (
+                  <View style={[styles.filterOverlay, { backgroundColor: "rgba(16, 185, 129, 0.2)" }]} pointerEvents="none" />
+                )}
+                {config.filter === "cyber" && (
+                  <View style={[styles.filterOverlay, { backgroundColor: "rgba(0, 242, 254, 0.18)" }]} pointerEvents="none" />
+                )}
                 {config.filter === "retro" && (
                   <View style={[styles.filterOverlay, { backgroundColor: "rgba(230, 120, 0, 0.12)" }]} pointerEvents="none" />
                 )}
                 {config.filter === "neon" && (
                   <View style={[styles.filterOverlay, { backgroundColor: "rgba(200, 0, 200, 0.12)" }]} pointerEvents="none" />
                 )}
-                {config.filter === "moody" && (
+                {config.filter === "noir" && (
                   <View style={[styles.filterOverlay, { backgroundColor: "rgba(0, 0, 0, 0.35)" }]} pointerEvents="none" />
                 )}
-                {config.filter === "sunset" && (
-                  <View style={[styles.filterOverlay, { backgroundColor: "rgba(255, 100, 0, 0.15)" }]} pointerEvents="none" />
-                )}
 
-                {config.emoji && (
-                  <View style={styles.floatingEmojiContainer}>
-                    <Text style={styles.floatingEmoji}>{config.emoji}</Text>
+                {config.sticker && (
+                  <View style={styles.floatingStickerContainer}>
+                    <Text style={styles.floatingStickerText}>{config.sticker}</Text>
                   </View>
                 )}
 
                 {config.text && (
-                  <View style={styles.floatingTextContainer}>
-                    <Text style={[styles.floatingText, { color: config.textColor }]}>
+                  <View
+                    style={[
+                      styles.floatingTextContainer,
+                      config.banner === "glass" && styles.bannerGlass,
+                      config.banner === "teal" && styles.bannerTeal,
+                      config.banner === "black" && styles.bannerBlack,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.floatingText,
+                        {
+                          color: config.banner === "teal" ? "#000000" : config.textColor,
+                          fontSize: config.fontSize,
+                        },
+                      ]}
+                    >
                       {config.text}
                     </Text>
                   </View>
@@ -231,9 +254,6 @@ export default function StoryViewerScreen() {
               </>
             );
           })()}
-
-          {/* Overlay Gradient */}
-          <View style={styles.overlay} />
 
           {/* Top Progress Bars */}
           <View style={styles.progressBarRow}>
@@ -254,7 +274,7 @@ export default function StoryViewerScreen() {
               </View>
               <View>
                 <Text style={styles.username}>{user?.username || "loading"}</Text>
-                <Text style={styles.timeText}>Active Story</Text>
+                <Text style={styles.timeText}>24h Active Story</Text>
               </View>
             </View>
             <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
@@ -262,11 +282,11 @@ export default function StoryViewerScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Pinned message / icebreaker caption */}
+          {/* Footer Caption */}
           {user && (
             <View style={styles.footer}>
               <View style={styles.captionBox}>
-                <Text style={styles.captionText}>"{user.message}"</Text>
+                <Text style={styles.captionText}>{`"${user.message}"`}</Text>
               </View>
             </View>
           )}
@@ -281,10 +301,6 @@ const styles = StyleSheet.create({
   center: { flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" },
   storyWrapper: { flex: 1, position: "relative" },
   storyImage: { width: width, height: height },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.15)",
-  },
   progressBarRow: {
     position: "absolute",
     top: 20,
@@ -311,7 +327,7 @@ const styles = StyleSheet.create({
     left: spacing.md,
     right: spacing.md,
     flexDirection: "row",
-    justifyContent: "space-between",
+    justify.content: "space-between",
     alignItems: "center",
     zIndex: 20,
   },
@@ -322,7 +338,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: colors.primary,
     alignItems: "center",
-    justifyContent: "center",
+    justify.content: "center",
   },
   avatarText: { color: "#fff", fontWeight: typography.bold, fontSize: 16 },
   username: { color: "#fff", fontWeight: typography.bold, fontSize: 14 },
@@ -333,7 +349,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: "rgba(0,0,0,0.4)",
     alignItems: "center",
-    justifyContent: "center",
+    justify.content: "center",
   },
   closeText: { color: "#fff", fontSize: 18, fontWeight: typography.bold },
   footer: {
@@ -360,32 +376,49 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 5,
   },
-  floatingEmojiContainer: {
+  floatingStickerContainer: {
     position: "absolute",
-    top: "30%",
+    top: "22%",
     alignSelf: "center",
     zIndex: 10,
+    backgroundColor: "rgba(0,242,254,0.15)",
+    borderWidth: 1,
+    borderColor: colors.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderRadius: radius.full,
   },
-  floatingEmoji: {
-    fontSize: 72,
+  floatingStickerText: {
+    fontSize: typography.base,
+    fontWeight: "bold",
+    color: "#fff",
   },
   floatingTextContainer: {
     position: "absolute",
-    top: "45%",
+    top: "40%",
     left: spacing.xl,
     right: spacing.xl,
     zIndex: 10,
-    backgroundColor: "rgba(0,0,0,0.5)",
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     alignItems: "center",
   },
+  bannerGlass: {
+    backgroundColor: "rgba(0,0,0,0.65)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
+  },
+  bannerTeal: {
+    backgroundColor: "#00F2FE",
+  },
+  bannerBlack: {
+    backgroundColor: "#000000",
+  },
   floatingText: {
-    fontSize: 24,
     fontWeight: "bold",
     textAlign: "center",
-    textShadowColor: "rgba(0,0,0,0.75)",
+    textShadowColor: "rgba(0,0,0,0.8)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },

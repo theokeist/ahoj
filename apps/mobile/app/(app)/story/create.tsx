@@ -54,13 +54,10 @@ const FILTERS = [
   { id: "noir", name: "Noir B&W 🖤" },
 ] as const;
 
-const TEXT_COLORS = [
-  { hex: "#FFFFFF", name: "White" },
-  { hex: "#00F2FE", name: "Teal" },
-  { hex: "#FF6B6B", name: "Pink" },
-  { hex: "#F59E0B", name: "Gold" },
-  { hex: "#10B981", name: "Emerald" },
-];
+const TEXT_COLORS = ["#FFFFFF", "#00F2FE", "#FF6B6B", "#F59E0B", "#10B981"];
+const FONT_SIZES = [16, 22, 28, 34];
+const ALIGNMENTS = ["center", "left", "right"] as const;
+const BANNERS = ["glass", "teal", "black", "none"] as const;
 
 export default function StoryCreateScreen() {
   const queryClient = useQueryClient();
@@ -76,18 +73,23 @@ export default function StoryCreateScreen() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<"none" | "beauty" | "bokeh" | "greenscreen" | "cyber" | "retro" | "neon" | "noir">("none");
   const [overlayText, setOverlayText] = useState("");
-  const [textColor, setTextColor] = useState("#00F2FE");
+  const [colorIdx, setColorIdx] = useState(1); // #00F2FE
   const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
 
-  // Advanced Text Format & Positioning States
-  const [fontSize, setFontSize] = useState<number>(22);
-  const [textAlign, setTextAlign] = useState<"left" | "center" | "right">("center");
-  const [textBannerStyle, setTextBannerStyle] = useState<"none" | "glass" | "teal" | "black">("glass");
+  // Advanced Text Format & Resizing States
+  const [fontSizeIdx, setFontSizeIdx] = useState<number>(1); // 22px
+  const [alignIdx, setAlignIdx] = useState<number>(0); // center
+  const [bannerIdx, setBannerIdx] = useState<number>(0); // glass
   const [fontFormat, setFontFormat] = useState<"bold" | "italic" | "mono">("bold");
 
+  const textColor = TEXT_COLORS[colorIdx];
+  const fontSize = FONT_SIZES[fontSizeIdx];
+  const textAlign = ALIGNMENTS[alignIdx];
+  const textBannerStyle = BANNERS[bannerIdx];
+
   // Touch Drag Positioning (x, y)
-  const [textPos, setTextPos] = useState({ x: 40, y: height * 0.35 });
-  const textPan = useRef({ x: 40, y: height * 0.35 });
+  const [textPos, setTextPos] = useState({ x: 30, y: height * 0.3 });
+  const textPan = useRef({ x: 30, y: height * 0.3 });
 
   const textPanResponder = useRef(
     PanResponder.create({
@@ -201,7 +203,7 @@ export default function StoryCreateScreen() {
     setPhotoUri(null);
     setSelectedFilter("none");
     setOverlayText("");
-    setTextColor("#00F2FE");
+    setColorIdx(1);
     setSelectedSticker(null);
     setMode("CAMERA");
   };
@@ -310,11 +312,13 @@ export default function StoryCreateScreen() {
           </View>
         </View>
       ) : (
-        /* MEDIA EDITOR MODE WITH FANCY FILTERS & DRAGGING */
+        /* MEDIA EDITOR 3-PART SCREEN LAYOUT */
         <View style={styles.editorWrapper}>
-          <Image source={{ uri: photoUri }} style={styles.editorImage} contentFit="cover" />
+          
+          {/* PART 3 (FULL-PT AREA): CAPTURED PICTURE CANVAS */}
+          <Image source={{ uri: photoUri }} style={styles.fullPictureArea} contentFit="cover" />
 
-          {/* Fancy Filter Tint Overlays */}
+          {/* Filter Tint Overlays */}
           {selectedFilter === "beauty" && (
             <View style={[styles.filterOverlay, { backgroundColor: "rgba(255, 220, 230, 0.12)" }]} pointerEvents="none" />
           )}
@@ -373,141 +377,119 @@ export default function StoryCreateScreen() {
             </View>
           )}
 
-          {/* EXIF Privacy Security Badge */}
+          {/* EXIF Security Badge */}
           <View style={styles.exifBadge}>
             <Text style={styles.exifBadgeText}>🛡️ EXIF Cleared (GPS Metadata Stripped)</Text>
           </View>
-
-          {/* Fancy Feature Badge if active */}
-          {selectedFilter === "beauty" && (
-            <View style={styles.fancyActiveBadge}>
-              <Text style={styles.fancyActiveBadgeText}>💄 Beauty Retouch Active</Text>
-            </View>
-          )}
-          {selectedFilter === "bokeh" && (
-            <View style={styles.fancyActiveBadge}>
-              <Text style={styles.fancyActiveBadgeText}>🤖 Portrait Bokeh Depth Blur</Text>
-            </View>
-          )}
-          {selectedFilter === "greenscreen" && (
-            <View style={styles.fancyActiveBadge}>
-              <Text style={styles.fancyActiveBadgeText}>🌿 AI Green Screen Keying</Text>
-            </View>
-          )}
 
           {/* Editor Header */}
           <View style={styles.topControls}>
             <TouchableOpacity style={styles.circularBtn} onPress={resetCamera}>
               <Text style={styles.btnText}>←</Text>
             </TouchableOpacity>
-            <Text style={styles.editorTitle}>Story Fancy Editor</Text>
+            <Text style={styles.editorTitle}>Story Camera Editor</Text>
             <View style={{ width: 44 }} />
           </View>
 
-          {/* Editor Control Drawer */}
-          <View style={styles.editorControls}>
-            {/* 1. Text Caption & Background Banner Formats */}
-            <View style={styles.editorSection}>
-              <Text style={styles.sectionLabel}>Text & Format Options</Text>
-              <TextInput
-                style={styles.textInput}
-                value={overlayText}
-                onChangeText={setOverlayText}
-                placeholder="Type caption (Drag on screen to move)..."
-                placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                maxLength={60}
-              />
-              
-              {/* Font Size & Alignment Row */}
-              <View style={styles.formatRow}>
-                <Text style={styles.formatLabel}>Size:</Text>
-                {[16, 22, 28, 34].map((sz) => (
-                  <TouchableOpacity
-                    key={sz}
-                    onPress={() => setFontSize(sz)}
-                    style={[styles.formatBadge, fontSize === sz && styles.activeFormatBadge]}
-                  >
-                    <Text style={styles.formatBadgeText}>{sz}px</Text>
-                  </TouchableOpacity>
-                ))}
+          {/* PART 1 (LEFT 40-48PT VERTICAL SIDEBAR): STYLISTIC & RESIZING EDIT OPTIONS */}
+          <View style={styles.leftStylisticSidebar}>
+            {/* Font Size Resizer */}
+            <TouchableOpacity
+              style={styles.sidebarOptionBtn}
+              onPress={() => setFontSizeIdx((prev) => (prev + 1) % FONT_SIZES.length)}
+            >
+              <Text style={styles.sidebarOptionIcon}>📏</Text>
+              <Text style={styles.sidebarOptionLabel}>{fontSize}px</Text>
+            </TouchableOpacity>
 
-                <Text style={[styles.formatLabel, { marginLeft: 8 }]}>Align:</Text>
-                {(["left", "center", "right"] as const).map((al) => (
-                  <TouchableOpacity
-                    key={al}
-                    onPress={() => setTextAlign(al)}
-                    style={[styles.formatBadge, textAlign === al && styles.activeFormatBadge]}
-                  >
-                    <Text style={styles.formatBadgeText}>{al[0].toUpperCase()}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+            {/* Text Alignment */}
+            <TouchableOpacity
+              style={styles.sidebarOptionBtn}
+              onPress={() => setAlignIdx((prev) => (prev + 1) % ALIGNMENTS.length)}
+            >
+              <Text style={styles.sidebarOptionIcon}>📐</Text>
+              <Text style={styles.sidebarOptionLabel}>{textAlign[0].toUpperCase()}</Text>
+            </TouchableOpacity>
 
-              {/* Banner Style Row */}
-              <View style={styles.formatRow}>
-                <Text style={styles.formatLabel}>Banner:</Text>
-                {(["none", "glass", "teal", "black"] as const).map((bn) => (
-                  <TouchableOpacity
-                    key={bn}
-                    onPress={() => setTextBannerStyle(bn)}
-                    style={[styles.formatBadge, textBannerStyle === bn && styles.activeFormatBadge]}
-                  >
-                    <Text style={styles.formatBadgeText}>{bn}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+            {/* Banner Style */}
+            <TouchableOpacity
+              style={styles.sidebarOptionBtn}
+              onPress={() => setBannerIdx((prev) => (prev + 1) % BANNERS.length)}
+            >
+              <Text style={styles.sidebarOptionIcon}>🖼️</Text>
+              <Text style={styles.sidebarOptionLabel}>{textBannerStyle}</Text>
+            </TouchableOpacity>
 
-              {/* Colors */}
-              <View style={styles.colorRow}>
-                {TEXT_COLORS.map((col) => (
-                  <TouchableOpacity
-                    key={col.hex}
-                    style={[
-                      styles.colorBall,
-                      { backgroundColor: col.hex },
-                      textColor === col.hex && styles.activeColorBall,
-                    ]}
-                    onPress={() => setTextColor(col.hex)}
-                  />
-                ))}
-              </View>
-            </View>
+            {/* Text Color Swatch Toggle */}
+            <TouchableOpacity
+              style={styles.sidebarOptionBtn}
+              onPress={() => setColorIdx((prev) => (prev + 1) % TEXT_COLORS.length)}
+            >
+              <View style={[styles.sidebarColorDot, { backgroundColor: textColor }]} />
+              <Text style={styles.sidebarOptionLabel}>Color</Text>
+            </TouchableOpacity>
 
-            {/* 2. Stickers & Badges */}
-            <View style={styles.editorSection}>
-              <Text style={styles.sectionLabel}>Stickers & Badges</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.emojiList}>
-                <TouchableOpacity
-                  style={[styles.emojiItem, !selectedSticker && styles.activeEmoji]}
-                  onPress={() => setSelectedSticker(null)}
-                >
-                  <Text style={styles.emojiItemText}>✕</Text>
-                </TouchableOpacity>
-                {EMOJI_STICKERS.map((stk) => (
+            {/* Font Style Format */}
+            <TouchableOpacity
+              style={styles.sidebarOptionBtn}
+              onPress={() =>
+                setFontFormat((prev) =>
+                  prev === "bold" ? "italic" : prev === "italic" ? "mono" : "bold"
+                )
+              }
+            >
+              <Text style={styles.sidebarOptionIcon}>✍️</Text>
+              <Text style={styles.sidebarOptionLabel}>{fontFormat}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* PART 2 (BOTTOM 300PT HORIZONTAL PANEL): EFFECTS, OVERLAYS & PHOTO STYLES */}
+          <View style={styles.bottomEffectsPanel}>
+            {/* Caption Input */}
+            <TextInput
+              style={styles.textInput}
+              value={overlayText}
+              onChangeText={setOverlayText}
+              placeholder="Add text overlay caption (Drag on screen to reposition)..."
+              placeholderTextColor="rgba(255, 255, 255, 0.4)"
+              maxLength={60}
+            />
+
+            {/* Effects & Filters Carousel */}
+            <View style={styles.panelSection}>
+              <Text style={styles.panelSectionTitle}>Effects & Photo Styles</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselScroll}>
+                {FILTERS.map((f) => (
                   <TouchableOpacity
-                    key={stk}
-                    style={[styles.emojiItem, selectedSticker === stk && styles.activeEmoji]}
-                    onPress={() => setSelectedSticker(stk)}
+                    key={f.id}
+                    style={[styles.filterChip, selectedFilter === f.id && styles.filterChipActive]}
+                    onPress={() => setSelectedFilter(f.id)}
                   >
-                    <Text style={styles.emojiItemText}>{stk}</Text>
+                    <Text style={[styles.filterChipText, selectedFilter === f.id && styles.filterChipTextActive]}>
+                      {f.name}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
             </View>
 
-            {/* 3. Fancy Filters & AR Features */}
-            <View style={styles.editorSection}>
-              <Text style={styles.sectionLabel}>Fancy Filters & AI Features</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-                {FILTERS.map((f) => (
+            {/* Overlays & Stickers Carousel */}
+            <View style={styles.panelSection}>
+              <Text style={styles.panelSectionTitle}>Stickers & Overlays</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselScroll}>
+                <TouchableOpacity
+                  style={[styles.stickerChip, !selectedSticker && styles.stickerChipActive]}
+                  onPress={() => setSelectedSticker(null)}
+                >
+                  <Text style={styles.stickerChipText}>✕ None</Text>
+                </TouchableOpacity>
+                {EMOJI_STICKERS.map((stk) => (
                   <TouchableOpacity
-                    key={f.id}
-                    style={[styles.filterBadge, selectedFilter === f.id && styles.activeFilterBadge]}
-                    onPress={() => setSelectedFilter(f.id)}
+                    key={stk}
+                    style={[styles.stickerChip, selectedSticker === stk && styles.stickerChipActive]}
+                    onPress={() => setSelectedSticker(stk)}
                   >
-                    <Text style={[styles.filterBadgeText, selectedFilter === f.id && styles.activeFilterBadgeText]}>
-                      {f.name}
-                    </Text>
+                    <Text style={styles.stickerChipText}>{stk}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -522,7 +504,7 @@ export default function StoryCreateScreen() {
               {uploadStoryMutation.isPending || isUploading ? (
                 <ActivityIndicator color="#000" />
               ) : (
-                <Text style={styles.publishBtnText}>Publish Fancy Story ⚡</Text>
+                <Text style={styles.publishBtnText}>Publish to 24h Stories ⚡</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -544,7 +526,7 @@ const styles = StyleSheet.create({
   cancelLink: { paddingVertical: 8 },
   cancelLinkText: { color: colors.text.tertiary, fontSize: typography.base },
   cameraWrapper: { flex: 1 },
-  topControls: { position: "absolute", top: 50, left: spacing.lg, right: spacing.lg, flexDirection: "row", justifyContent: "space-between", alignItems: "center", zIndex: 20 },
+  topControls: { position: "absolute", top: 48, left: spacing.md, right: spacing.md, flexDirection: "row", justifyContent: "space-between", alignItems: "center", zIndex: 25 },
   row: { flexDirection: "row", gap: spacing.sm },
   circularBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
   activeBtn: { backgroundColor: colors.primary, borderColor: colors.primary },
@@ -561,43 +543,83 @@ const styles = StyleSheet.create({
   sideBtnText: { color: "#fff", fontSize: typography.sm, fontWeight: typography.semibold },
   shutterContainer: { width: 84, height: 84, borderRadius: 42, borderWidth: 4, borderColor: colors.primary, justifyContent: "center", alignItems: "center", shadowColor: colors.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 12 },
   shutterInner: { width: 68, height: 68, borderRadius: 34, backgroundColor: "#fff" },
-  editorWrapper: { flex: 1, position: "relative" },
-  editorImage: { width, height },
+  
+  /* EDITOR 3-PART SCREEN LAYOUT STYLES */
+  editorWrapper: { flex: 1, position: "relative", backgroundColor: "#000" },
+  fullPictureArea: { width, height, position: "absolute", inset: 0 },
   filterOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 5 },
-  floatingStickerContainer: { position: "absolute", top: "22%", alignSelf: "center", zIndex: 10, backgroundColor: "rgba(0,242,254,0.15)", borderWidth: 1, borderColor: colors.primary, paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: radius.full },
+  
+  floatingStickerContainer: { position: "absolute", top: "20%", alignSelf: "center", zIndex: 10, backgroundColor: "rgba(0,242,254,0.15)", borderWidth: 1, borderColor: colors.primary, paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: radius.full },
   floatingStickerText: { fontSize: typography.base, fontWeight: "bold", color: "#fff" },
+  
   draggableTextContainer: { position: "absolute", zIndex: 12, paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.md, borderRadius: radius.md },
   bannerGlass: { backgroundColor: "rgba(0,0,0,0.65)", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
   bannerTeal: { backgroundColor: "#00F2FE" },
   bannerBlack: { backgroundColor: "#000000" },
   draggableText: { fontWeight: "bold" },
+
   exifBadge: { position: "absolute", top: 104, alignSelf: "center", zIndex: 12, backgroundColor: "rgba(16, 185, 129, 0.2)", borderColor: colors.success, borderWidth: 1, paddingHorizontal: spacing.md, paddingVertical: 4, borderRadius: radius.full },
   exifBadgeText: { color: colors.success, fontSize: 10, fontWeight: "bold" },
-  fancyActiveBadge: { position: "absolute", top: 136, alignSelf: "center", zIndex: 12, backgroundColor: "rgba(0, 242, 254, 0.2)", borderColor: colors.primary, borderWidth: 1, paddingHorizontal: spacing.md, paddingVertical: 4, borderRadius: radius.full },
-  fancyActiveBadgeText: { color: colors.primary, fontSize: 10, fontWeight: "bold" },
   editorTitle: { color: "#fff", fontSize: typography.base, fontWeight: typography.bold },
-  editorControls: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "rgba(12,12,12,0.92)", borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.md, gap: spacing.sm, zIndex: 15, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.1)" },
-  editorSection: { gap: 4 },
-  sectionLabel: { color: colors.primary, fontSize: 10, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 0.5 },
-  emojiList: { gap: spacing.xs, paddingVertical: 2 },
-  emojiItem: { paddingHorizontal: spacing.md, paddingVertical: 5, borderRadius: radius.full, backgroundColor: "rgba(255,255,255,0.08)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
-  activeEmoji: { backgroundColor: colors.primary, borderColor: colors.primary },
-  emojiItemText: { fontSize: 11, color: "#fff", fontWeight: "bold" },
-  textInput: { backgroundColor: "rgba(255,255,255,0.08)", borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 8, color: "#fff", fontSize: typography.xs, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
-  formatRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
-  formatLabel: { color: "rgba(255,255,255,0.5)", fontSize: 10, fontWeight: "bold" },
-  formatBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.sm, backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
-  activeFormatBadge: { backgroundColor: colors.primary, borderColor: colors.primary },
-  formatBadgeText: { color: "#fff", fontSize: 10, fontWeight: "bold" },
-  colorRow: { flexDirection: "row", gap: spacing.md, marginTop: 4 },
-  colorBall: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.2)" },
-  activeColorBall: { borderColor: "#fff", transform: [{ scale: 1.15 }] },
-  filterRow: { flexDirection: "row", gap: spacing.xs },
-  filterBadge: { paddingVertical: 5, paddingHorizontal: 10, borderRadius: radius.full, backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
-  activeFilterBadge: { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterBadgeText: { color: "#fff", fontSize: 11, fontWeight: "600" },
-  activeFilterBadgeText: { color: "#000", fontWeight: "bold" },
-  publishBtn: { backgroundColor: colors.primary, paddingVertical: 12, borderRadius: radius.full, alignItems: "center", marginTop: 4 },
+
+  /* PART 1: LEFT VERTICAL STYLISTIC SIDEBAR (ABOUT 44PT WIDE) */
+  leftStylisticSidebar: {
+    position: "absolute",
+    top: 108,
+    left: spacing.md,
+    width: 48,
+    backgroundColor: "rgba(12, 12, 12, 0.85)",
+    borderRadius: radius.xl,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: 4,
+    gap: spacing.sm,
+    alignItems: "center",
+    zIndex: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
+  },
+  sidebarOptionBtn: {
+    width: 40,
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  sidebarOptionIcon: { fontSize: 13 },
+  sidebarOptionLabel: { fontSize: 8, color: "#fff", fontWeight: "bold", marginTop: 2 },
+  sidebarColorDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 1, borderColor: "#fff" },
+
+  /* PART 2: BOTTOM HORIZONTAL EFFECTS PANEL (300PT HEIGHT) */
+  bottomEffectsPanel: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 300,
+    backgroundColor: "rgba(12, 12, 12, 0.94)",
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    padding: spacing.md,
+    gap: spacing.xs + 2,
+    zIndex: 20,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.15)",
+  },
+  textInput: { backgroundColor: "rgba(255,255,255,0.08)", borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 10, color: "#fff", fontSize: typography.xs, borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
+  panelSection: { gap: 4 },
+  panelSectionTitle: { color: colors.primary, fontSize: 10, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 0.5 },
+  carouselScroll: { gap: spacing.xs, paddingVertical: 2 },
+  filterChip: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: radius.full, backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
+  filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterChipText: { color: "#fff", fontSize: 11, fontWeight: "600" },
+  filterChipTextActive: { color: "#000", fontWeight: "bold" },
+  stickerChip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.full, backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
+  stickerChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  stickerChipText: { color: "#fff", fontSize: 11, fontWeight: "bold" },
+  publishBtn: { backgroundColor: colors.primary, paddingVertical: 13, borderRadius: radius.full, alignItems: "center", marginTop: 4 },
   disabledBtn: { opacity: 0.6 },
   publishBtnText: { color: "#000", fontSize: typography.sm, fontWeight: typography.bold },
 });
