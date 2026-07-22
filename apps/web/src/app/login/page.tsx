@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Form, Input, Button, message, Divider } from "antd";
-import { UserOutlined, LockOutlined, GlobalOutlined } from "@ant-design/icons";
+import { UserOutlined, LockOutlined, GlobalOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import { ThemeProvider } from "../../components/ThemeProvider";
 import { OAuthProviderGrid, type OAuthProviderKey } from "../../components/OAuthProviderGrid";
 
@@ -24,7 +24,6 @@ export default function LoginPage() {
       if (!res.ok) throw new Error(data.error || "Login failed");
 
       message.success(`Welcome back, ${data.user.username}!`);
-      // Save token & redirect
       localStorage.setItem("accessToken", data.accessToken);
       window.location.href = "/";
     } catch (err: any) {
@@ -34,11 +33,18 @@ export default function LoginPage() {
     }
   };
 
+  const handleInstantDemoLogin = async () => {
+    form.setFieldsValue({
+      email: "dev@ahoj.app",
+      password: "password123",
+    });
+    handleEmailLogin({ email: "dev@ahoj.app", password: "password123" });
+  };
+
   const handleOAuthLogin = async (provider: OAuthProviderKey) => {
     setLoading(true);
     message.loading({ content: `Connecting to ${provider.toUpperCase()}...`, key: "oauth" });
 
-    // Simulate OAuth payload exchange for global providers
     const mockProviderId = `${provider}_user_${Math.floor(100000 + Math.random() * 900000)}`;
     const mockUsername = `${provider}_user`;
     const mockEmail = provider === "wechat" ? null : `${mockUsername}@example.com`;
@@ -110,9 +116,20 @@ export default function LoginPage() {
                 Sign in to ahoj
               </h1>
               <p className="text-sm text-white/50">
-                Enter your details or select a 3rd party identity provider
+                Use 1-click Demo Login or enter your credentials below
               </p>
             </div>
+
+            {/* Instant Demo Login Button */}
+            <button
+              type="button"
+              onClick={handleInstantDemoLogin}
+              disabled={loading}
+              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#00F2FE] to-[#00DCE6] text-black font-bold text-sm flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(0,242,254,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all"
+            >
+              <ThunderboltOutlined className="text-lg" />
+              ⚡ Instant Demo Sign-In (@dev_user)
+            </button>
 
             {/* Glass Container */}
             <div className="glass-panel p-6 sm:p-8 rounded-2xl space-y-6">
@@ -152,7 +169,7 @@ export default function LoginPage() {
                   htmlType="submit"
                   loading={loading}
                   block
-                  className="bg-[#00F2FE] hover:bg-[#00DCE6] text-black font-semibold h-11 border-none shadow-[0_0_20px_rgba(0,242,254,0.3)]"
+                  className="bg-white/10 hover:bg-white/20 text-white font-semibold h-11 border border-white/10"
                 >
                   Sign In with Email
                 </Button>

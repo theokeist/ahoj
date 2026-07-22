@@ -24,7 +24,8 @@ export default function LoginScreen() {
   const setAuth = useAuthStore((s) => s.setAuth);
 
   const loginMutation = useMutation({
-    mutationFn: () => authApi.login({ email, password }),
+    mutationFn: (credentials?: { email: string; password: string }) =>
+      authApi.login(credentials || { email, password }),
     onSuccess: (data: any) => {
       setAuth(data.user, data.accessToken, data.refreshToken);
       router.replace("/(app)/tabs/feed");
@@ -34,6 +35,12 @@ export default function LoginScreen() {
       Alert.alert("Login failed", msg);
     },
   });
+
+  const handleInstantDemoLogin = () => {
+    setEmail("dev@ahoj.app");
+    setPassword("password123");
+    loginMutation.mutate({ email: "dev@ahoj.app", password: "password123" });
+  };
 
   const oauthMutation = useMutation({
     mutationFn: (provider: string) => {
@@ -93,6 +100,16 @@ export default function LoginScreen() {
           <Text style={styles.subtitle}>Sign in to your ahoj account</Text>
         </View>
 
+        {/* ⚡ Instant Demo Sign-In Button */}
+        <TouchableOpacity
+          style={styles.demoButton}
+          onPress={handleInstantDemoLogin}
+          disabled={loginMutation.isPending}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.demoButtonText}>⚡ Instant Demo Sign-In (@dev_user)</Text>
+        </TouchableOpacity>
+
         {/* Form */}
         <View style={styles.form}>
           <View style={styles.inputGroup}>
@@ -132,7 +149,7 @@ export default function LoginScreen() {
             activeOpacity={0.85}
           >
             {loginMutation.isPending ? (
-              <ActivityIndicator color="#000" />
+              <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.buttonText}>Sign in with Email</Text>
             )}
@@ -210,7 +227,20 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     marginBottom: spacing.xs,
   },
-  subtitle: { fontSize: typography.base, color: colors.text.secondary, marginBottom: spacing.lg },
+  subtitle: { fontSize: typography.base, color: colors.text.secondary, marginBottom: spacing.md },
+  demoButton: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginBottom: spacing.lg,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  demoButtonText: { color: "#000", fontSize: typography.base, fontWeight: typography.bold },
   form: { gap: spacing.md },
   inputGroup: { gap: spacing.xs },
   label: { fontSize: typography.sm, fontWeight: typography.medium, color: colors.text.secondary },
@@ -225,19 +255,16 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   button: {
-    backgroundColor: colors.primary,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     borderRadius: radius.full,
-    paddingVertical: 16,
+    paddingVertical: 14,
     alignItems: "center",
     marginTop: spacing.xs,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
   },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: "#000", fontSize: typography.md, fontWeight: typography.bold },
+  buttonText: { color: "#FFF", fontSize: typography.base, fontWeight: typography.semibold },
   dividerContainer: { flexDirection: "row", alignItems: "center", marginVertical: spacing.md, gap: spacing.sm },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.borderLight },
   dividerText: { color: colors.text.tertiary, fontSize: typography.xs },
