@@ -11,6 +11,7 @@ import {
   integer,
   boolean,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 // ─── PostGIS custom type ──────────────────────────────────────────────────────
@@ -26,7 +27,7 @@ const geometry = customType<{
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
-export const privacyModeEnum = pgEnum("privacy_mode", ["PUBLIC", "PRIVATE"]);
+export const privacyModeEnum = pgEnum("privacy_mode", ["PUBLIC", "PRIVATE", "GHOST"]);
 export const mediaTypeEnum = pgEnum("media_type", ["IMAGE", "VIDEO"]);
 export const accessRequestStatusEnum = pgEnum("access_request_status", [
   "PENDING",
@@ -44,6 +45,14 @@ export const reportStatusEnum = pgEnum("report_status", [
   "DISMISSED",
   "ACTION_TAKEN",
 ]);
+export const sparkCategoryEnum = pgEnum("spark_category", [
+  "COFFEE",
+  "SPORTS",
+  "PARTY",
+  "STUDY",
+  "MEETUP",
+  "OTHER",
+]);
 
 // ─── Tables ───────────────────────────────────────────────────────────────────
 
@@ -52,8 +61,8 @@ export const users = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     username: varchar("username", { length: 30 }).notNull().unique(),
-    email: text("email").notNull().unique(),
-    passwordHash: text("password_hash").notNull(),
+    email: text("email").unique(), // Nullable to support WeChat & phone-only signups
+    passwordHash: text("password_hash"), // Nullable for OAuth users
     profilePhotoUrl: text("profile_photo_url"),
     bio: varchar("bio", { length: 160 }),
     website: text("website"),
@@ -63,11 +72,11 @@ export const users = pgTable(
       tiktok?: string;
     }>(),
     photoAlbum: jsonb("photo_album").$type<string[]>().default(sql`'[]'::jsonb`),
-    message: varchar("message", { length: 60 }).notNull(),
+    message: varchar("message", { length: 60 }).notNull().default("Ahoj!"),
     privacyMode: privacyModeEnum("privacy_mode").notNull().default("PUBLIC"),
     /** PostGIS GEOGRAPHY point — updated every 60s */
     location: geometry("location"),
-    dateOfBirth: timestamp("date_of_birth").notNull(),
+    dateOfBirth: timestamp("date_of_birth"),
     isVerified: boolean("is_verified").default(false),
     isBanned: boolean("is_banned").default(false),
     warningCount: integer("warning_count").default(0),
@@ -79,6 +88,26 @@ export const users = pgTable(
   (table) => ({
     locationIdx: index("idx_users_location").on(table.location),
     lastActiveIdx: index("idx_users_last_active").on(table.lastActive),
+  })
+);
+
+export const oauthConnections = pgTable(
+  "oauth_connections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    provider: varchar("provider", { length: 50 }).notNull(), // 'google', 'apple', 'meta', 'vk', 'yandex', 'wechat', 'line', 'kakao', 'netid'
+    providerUserId: varchar("provider_user_id", { length: 255 }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    uniqProviderUser: uniqueIndex("uniq_provider_user").on(
+      table.provider,
+      table.providerUserId
+    ),
+    userIdIdx: index("idx_oauth_user_id").on(table.userId),
   })
 );
 
@@ -177,6 +206,26 @@ export const messages = pgTable(
   (table) => ({
     chatIdIdx: index("idx_messages_chat_id").on(table.chatId),
     createdAtIdx: index("idx_messages_created_at").on(table.createdAt),
+  })
+);
+
+export const sparks = pgTable(
+  "sparks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: varchar("title", { length: 60 }).notNull(),
+    description: text("description"),
+    category: sparkCategoryEnum("category").notNull().default("MEETUP"),
+    location: geometry("location").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    locationIdx: index("idx_sparks_location").on(table.location),
+    expiresAtIdx: index("idx_sparks_expires_at").on(table.expiresAt),
   })
 );
 

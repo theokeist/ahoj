@@ -5,6 +5,7 @@ import { z } from "zod";
 export const PrivacyMode = {
   PUBLIC: "PUBLIC",
   PRIVATE: "PRIVATE",
+  GHOST: "GHOST",
 } as const;
 
 export type PrivacyMode = (typeof PrivacyMode)[keyof typeof PrivacyMode];
@@ -33,6 +34,20 @@ export const MessageType = {
 
 export type MessageType = (typeof MessageType)[keyof typeof MessageType];
 
+export const OAuthProvider = {
+  GOOGLE: "google",
+  APPLE: "apple",
+  META: "meta",
+  NETID: "netid",
+  VK: "vk",
+  YANDEX: "yandex",
+  WECHAT: "wechat",
+  LINE: "line",
+  KAKAO: "kakao",
+} as const;
+
+export type OAuthProvider = (typeof OAuthProvider)[keyof typeof OAuthProvider];
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 export const AHOJ_CONSTANTS = {
@@ -47,6 +62,7 @@ export const AHOJ_CONSTANTS = {
   MAX_LOGIN_ATTEMPTS: 5,
   LOGIN_RATE_LIMIT_WINDOW_MIN: 15,
   API_RATE_LIMIT_PER_MIN: 100,
+  SPARK_DURATION_HOURS: 2,
 } as const;
 
 // ─── Zod Schemas ──────────────────────────────────────────────────────────────
@@ -64,12 +80,26 @@ export const RegisterSchema = z.object({
     .regex(/^[a-zA-Z0-9_]+$/, "Only letters, numbers and underscores"),
   email: z.string().email(),
   password: z.string().min(8).max(128),
-  dateOfBirth: z.string().date(), // ISO date string for age verification
+  dateOfBirth: z.string().date().optional(), // ISO date string
 });
 
 export const LoginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
+});
+
+export const OAuthAuthSchema = z.object({
+  provider: z.nativeEnum(OAuthProvider),
+  providerUserId: z.string().min(1),
+  email: z.string().email().optional().nullable(),
+  username: z
+    .string()
+    .min(2)
+    .max(30)
+    .regex(/^[a-zA-Z0-9_]+$/)
+    .optional(),
+  avatarUrl: z.string().url().optional().nullable(),
+  bio: z.string().max(AHOJ_CONSTANTS.BIO_MAX_LENGTH).optional().nullable(),
 });
 
 export const UpdateProfileSchema = z.object({
@@ -82,7 +112,7 @@ export const UpdateProfileSchema = z.object({
       tiktok: z.string().optional(),
     })
     .optional(),
-  privacyMode: z.enum(["PUBLIC", "PRIVATE"]).optional(),
+  privacyMode: z.enum(["PUBLIC", "PRIVATE", "GHOST"]).optional(),
   profilePhotoUrl: z.string().url().optional().or(z.literal("")).nullable(),
   photoAlbum: z.array(z.string()).optional(),
 });
@@ -109,6 +139,14 @@ export const FeedQuerySchema = z.object({
   limit: z.coerce.number().min(1).max(50).default(20),
 });
 
+export const CreateSparkSchema = z.object({
+  title: z.string().min(3).max(60),
+  description: z.string().max(300).optional(),
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  category: z.enum(["COFFEE", "SPORTS", "PARTY", "STUDY", "MEETUP", "OTHER"]).default("MEETUP"),
+});
+
 // ─── Response Types ───────────────────────────────────────────────────────────
 
 export type UserPublic = {
@@ -126,6 +164,7 @@ export type UserPublic = {
 };
 
 export type UserProfile = UserPublic & {
+  email: string | null;
   website: string | null;
   socialLinks: {
     instagram?: string;
@@ -133,6 +172,7 @@ export type UserProfile = UserPublic & {
     tiktok?: string;
   };
   photoAlbum: string[] | null;
+  oauthProviders?: string[];
 };
 
 export type StoryPublic = {
@@ -163,12 +203,28 @@ export type AccessRequest = {
   createdAt: string;
 };
 
+export type SparkPublic = {
+  id: string;
+  userId: string;
+  username: string;
+  userAvatarUrl: string | null;
+  title: string;
+  description: string | null;
+  category: "COFFEE" | "SPORTS" | "PARTY" | "STUDY" | "MEETUP" | "OTHER";
+  lat: number;
+  lng: number;
+  distanceMeters: number;
+  createdAt: string;
+  expiresAt: string;
+};
+
 // ─── Socket.io Events ─────────────────────────────────────────────────────────
 
 export type ServerToClientEvents = {
   "feed:update": (users: UserPublic[]) => void;
   "message:new": (message: ChatMessage) => void;
   "story:new": (data: { userId: string }) => void;
+  "spark:new": (spark: SparkPublic) => void;
   "access:approved": (data: { requestId: string; userId: string }) => void;
   "access:denied": (data: { requestId: string }) => void;
   "user:typing": (data: { chatId: string; userId: string }) => void;

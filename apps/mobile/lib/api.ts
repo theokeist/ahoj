@@ -67,11 +67,20 @@ export const authApi = {
     username: string;
     email: string;
     password: string;
-    dateOfBirth: string;
+    dateOfBirth?: string;
   }) => api.post("/auth/register", body).then((r) => r.data),
 
   login: (body: { email: string; password: string }) =>
     api.post("/auth/login", body).then((r) => r.data),
+
+  oauth: (body: {
+    provider: string;
+    providerUserId: string;
+    email?: string | null;
+    username?: string | null;
+    avatarUrl?: string | null;
+    bio?: string | null;
+  }) => api.post("/auth/oauth", body).then((r) => r.data),
 
   logout: () => api.post("/auth/logout").then((r) => r.data),
 };
@@ -114,6 +123,19 @@ export const storiesApi = {
       })
       .then((r) => r.data);
   },
+};
+
+export const sparksApi = {
+  getSparks: (params: { lat: number; lng: number; radius?: number }) =>
+    api.get("/sparks", { params }).then((r) => r.data),
+  createSpark: (body: {
+    title: string;
+    description?: string;
+    category?: string;
+    lat: number;
+    lng: number;
+  }) => api.post("/sparks", body).then((r) => r.data),
+  deleteSpark: (id: string) => api.delete(`/sparks/${id}`).then((r) => r.data),
 };
 
 export const usersApi = {

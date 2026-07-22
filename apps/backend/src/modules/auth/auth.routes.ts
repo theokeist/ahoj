@@ -1,8 +1,9 @@
 import type { FastifyPluginAsync } from "fastify";
-import { RegisterSchema, LoginSchema } from "@ahoj/shared";
+import { RegisterSchema, LoginSchema, OAuthAuthSchema } from "@ahoj/shared";
 import {
   registerUser,
   loginUser,
+  loginOrRegisterOAuthUser,
   signAccessToken,
   signRefreshToken,
   saveRefreshToken,
@@ -18,7 +19,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       tags: ["auth"],
       body: {
         type: "object",
-        required: ["username", "email", "password", "dateOfBirth"],
+        required: ["username", "email", "password"],
         properties: {
           username: { type: "string" },
           email: { type: "string", format: "email" },
@@ -52,6 +53,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
             username: user.username,
             email: user.email,
             message: user.message,
+            profilePhotoUrl: user.profilePhotoUrl,
           },
         });
       } catch (err: unknown) {
@@ -117,6 +119,52 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         if (msg === "INVALID_CREDENTIALS") {
           return reply.status(401).send({ error: "Invalid email or password" });
         }
+        if (msg === "ACCOUNT_BANNED") {
+          return reply.status(403).send({ error: "Account suspended" });
+        }
+        throw err;
+      }
+    },
+  });
+
+  // POST /auth/oauth — Global 3rd Party OAuth handler (US, EU, RU, Asia)
+  app.post("/oauth", {
+    schema: {
+      description: "Sign in or register using a 3rd party OAuth provider",
+      tags: ["auth"],
+    },
+    handler: async (request, reply) => {
+      const body = OAuthAuthSchema.parse(request.body);
+
+      try {
+        const user = await loginOrRegisterOAuthUser(body);
+        const accessToken = await signAccessToken(user.id);
+        const refreshToken = await signRefreshToken(user.id);
+        await saveRefreshToken(user.id, refreshToken);
+
+        reply.setCookie("refresh_token", refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: 60 * 60 * 24 * 30,
+          path: "/auth/refresh",
+        });
+
+        return reply.status(200).send({
+          accessToken,
+          refreshToken,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            message: user.message,
+            privacyMode: user.privacyMode,
+            profilePhotoUrl: user.profilePhotoUrl,
+            bio: user.bio,
+          },
+        });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
         if (msg === "ACCOUNT_BANNED") {
           return reply.status(403).send({ error: "Account suspended" });
         }

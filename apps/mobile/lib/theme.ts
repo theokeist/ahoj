@@ -1,24 +1,24 @@
-// ahoj Design Tokens
+// ahoj Design Tokens — Electric Teal & Volcanic Dark Theme
 
 export const colors = {
   // Backgrounds
   background: {
-    primary: "#1A0A2E",    // Deep violet — main bg
-    secondary: "#240D40",  // Slightly lighter
-    card: "#2A1050",       // Card bg
-    overlay: "rgba(26, 10, 46, 0.85)",
+    primary: "#0C0C0C",    // Volcanic dark — main bg
+    secondary: "#121212",  // Surface card
+    card: "rgba(255, 255, 255, 0.04)",       // Glass card bg
+    overlay: "rgba(12, 12, 12, 0.85)",
   },
 
   // Brand
-  primary: "#7B2FE7",     // Electric purple
-  primaryDark: "#5A1FB8",
-  primaryLight: "#9B5AF0",
+  primary: "#00F2FE",     // Electric Teal
+  primaryDark: "#00DCE6",
+  primaryLight: "#70F7FF",
 
   accent: "#FF6B6B",      // Coral — notifications, CTAs
   accentAlt: "#FFB347",   // Amber — stories ring secondary
 
   // Story ring gradient
-  storyRing: ["#7B2FE7", "#FF6B6B"],
+  storyRing: ["#00F2FE", "#FF6B6B"],
 
   // Text
   text: {
@@ -29,15 +29,15 @@ export const colors = {
   },
 
   // UI
-  border: "rgba(123, 47, 231, 0.3)",
+  border: "rgba(0, 242, 254, 0.3)",
   borderLight: "rgba(255, 255, 255, 0.1)",
-  glass: "rgba(123, 47, 231, 0.1)",
+  glass: "rgba(255, 255, 255, 0.03)",
 
   // Status
   success: "#4CAF50",
   warning: "#FF9800",
   error: "#F44336",
-  online: "#4ADE80",
+  online: "#00F2FE",
 } as const;
 
 export const spacing = {
@@ -78,7 +78,7 @@ export const typography = {
 
 export const shadows = {
   glow: {
-    shadowColor: "#7B2FE7",
+    shadowColor: "#00F2FE",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: 12,

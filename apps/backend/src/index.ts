@@ -27,6 +27,7 @@ import { feedRoutes } from "./modules/feed/feed.routes.js";
 import { storiesRoutes } from "./modules/stories/stories.routes.js";
 import { chatsRoutes } from "./modules/chats/chats.routes.js";
 import { accessRequestsRoutes } from "./modules/access-requests/access-requests.routes.js";
+import { sparksRoutes } from "./modules/sparks/sparks.routes.js";
 import { registerSocketHandlers } from "./modules/realtime/socket.handler.js";
 import type {
   ServerToClientEvents,
@@ -129,6 +130,7 @@ async function buildApp() {
   await app.register(storiesRoutes, { prefix: "/stories" });
   await app.register(chatsRoutes, { prefix: "/chats" });
   await app.register(accessRequestsRoutes, { prefix: "/access-requests" });
+  await app.register(sparksRoutes, { prefix: "/sparks" });
 
   // ─── Health check ──────────────────────────────────────────────────────────
 

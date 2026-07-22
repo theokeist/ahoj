@@ -9,10 +9,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  Pressable,
 } from "react-native";
 import { useState } from "react";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { router } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { authApi } from "../../lib/api";
@@ -23,23 +21,14 @@ export default function RegisterScreen() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [dob, setDob] = useState("");
-  const [dobDate, setDobDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [activeRegion, setActiveRegion] = useState<"ALL" | "US" | "EU" | "RU" | "ASIA">("ALL");
   const setAuth = useAuthStore((s) => s.setAuth);
 
   const registerMutation = useMutation({
-    mutationFn: () =>
-      authApi.register({
-        username,
-        email,
-        password,
-        dateOfBirth: dob,
-      }),
+    mutationFn: () => authApi.register({ username, email, password }),
     onSuccess: (data: any) => {
       setAuth(data.user, data.accessToken, data.refreshToken);
-      // Proceed to profile setup
-      router.replace("/auth/setup");
+      router.replace("/(app)/tabs/feed");
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.error ?? "Registration failed";
@@ -47,48 +36,48 @@ export default function RegisterScreen() {
     },
   });
 
-  const handleRegister = () => {
-    const normalizedDob = dob || formatDate(dobDate);
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(normalizedDob)) {
-      Alert.alert("Invalid date", "Please select or enter a valid date in YYYY-MM-DD format.");
-      return;
-    }
+  const oauthMutation = useMutation({
+    mutationFn: (provider: string) => {
+      const mockId = `${provider}_mobile_${Math.floor(100000 + Math.random() * 900000)}`;
+      const mockUsername = `${provider}_${Math.floor(1000 + Math.random() * 9000)}`;
+      const mockEmail = provider === "wechat" ? null : `${mockUsername}@example.com`;
+      const mockBio = provider === "line" ? "Exploring nearby spots on ahoj 📍" : null;
+      const mockAvatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${mockUsername}`;
 
-    const birthDate = new Date(normalizedDob);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
+      return authApi.oauth({
+        provider,
+        providerUserId: mockId,
+        email: mockEmail,
+        username: mockUsername,
+        avatarUrl: mockAvatarUrl,
+        bio: mockBio,
+      });
+    },
+    onSuccess: (data: any) => {
+      setAuth(data.user, data.accessToken, data.refreshToken);
+      router.replace("/(app)/tabs/feed");
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.error ?? "OAuth registration failed";
+      Alert.alert("OAuth Error", msg);
+    },
+  });
 
-    if (age < 16) {
-      Alert.alert("Age Restriction", "You must be at least 16 years old to join ahoj.");
-      return;
-    }
+  const oauthProviders = [
+    { key: "google", name: "Google", region: "US", color: "#4285F4", icon: "G" },
+    { key: "apple", name: "Apple", region: "US", color: "#FFFFFF", icon: "" },
+    { key: "meta", name: "Meta", region: "US", color: "#1877F2", icon: "f" },
+    { key: "netid", name: "NetID", region: "EU", color: "#00A88F", icon: "ID" },
+    { key: "vk", name: "VK ID", region: "RU", color: "#0077FF", icon: "VK" },
+    { key: "yandex", name: "Yandex", region: "RU", color: "#FC3F1D", icon: "Y" },
+    { key: "wechat", name: "WeChat", region: "ASIA", color: "#07C160", icon: "微" },
+    { key: "line", name: "LINE", region: "ASIA", color: "#00B900", icon: "L" },
+    { key: "kakao", name: "Kakao", region: "ASIA", color: "#FEE500", icon: "K" },
+  ] as const;
 
-    setDob(normalizedDob);
-    registerMutation.mutate();
-  };
-
-  const formatDate = (date: Date) => {
-    const year = date.getFullYear();
-    const month = `${date.getMonth() + 1}`.padStart(2, "0");
-    const day = `${date.getDate()}`.padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
-
-  const onDateChange = (_event: any, selectedDate?: Date) => {
-    if (Platform.OS === "android") {
-      setShowDatePicker(false);
-    }
-    if (selectedDate) {
-      setDobDate(selectedDate);
-      const formatted = formatDate(selectedDate);
-      setDob(formatted);
-    }
-  };
+  const filteredProviders = activeRegion === "ALL"
+    ? oauthProviders
+    : oauthProviders.filter((p) => p.region === activeRegion);
 
   return (
     <KeyboardAvoidingView
@@ -101,8 +90,8 @@ export default function RegisterScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.back}>
             <Text style={styles.backText}>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join ahoj and discover people nearby</Text>
+          <Text style={styles.title}>Join ahoj</Text>
+          <Text style={styles.subtitle}>Create your proximity social profile</Text>
         </View>
 
         {/* Form */}
@@ -113,10 +102,9 @@ export default function RegisterScreen() {
               style={styles.input}
               value={username}
               onChangeText={setUsername}
-              placeholder="e.g. alex_vibe"
+              placeholder="alex_24"
               placeholderTextColor={colors.text.tertiary}
               autoCapitalize="none"
-              autoCorrect={false}
               returnKeyType="next"
             />
           </View>
@@ -127,7 +115,7 @@ export default function RegisterScreen() {
               style={styles.input}
               value={email}
               onChangeText={setEmail}
-              placeholder="alex@example.com"
+              placeholder="you@example.com"
               placeholderTextColor={colors.text.tertiary}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -142,66 +130,79 @@ export default function RegisterScreen() {
               style={styles.input}
               value={password}
               onChangeText={setPassword}
-              placeholder="•••••••• (Min 8 chars)"
+              placeholder="••••••••"
               placeholderTextColor={colors.text.tertiary}
               secureTextEntry
-              autoComplete="new-password"
-              returnKeyType="next"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Date of Birth</Text>
-            <Pressable onPress={() => setShowDatePicker(true)} style={styles.input}>
-              <Text style={[styles.inputText, !dob && styles.inputPlaceholder]}>
-                {dob || "Select your birth date"}
-              </Text>
-            </Pressable>
-            <TextInput
-              style={styles.input}
-              value={dob}
-              onChangeText={(value) => setDob(value.replace(/[^0-9-]/g, ""))}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={colors.text.tertiary}
-              keyboardType="numeric"
-              maxLength={10}
               returnKeyType="done"
+              onSubmitEditing={() => registerMutation.mutate()}
             />
-            {showDatePicker && (
-              <DateTimePicker
-                value={dobDate}
-                mode="date"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                maximumDate={new Date()}
-                onChange={onDateChange}
-              />
-            )}
-            <Text style={styles.helpText}>Must be 16 or older to sign up.</Text>
           </View>
 
           <TouchableOpacity
-            style={[
-              styles.button,
-              (registerMutation.isPending || !username || !email || !password || !dob) &&
-                styles.buttonDisabled,
-            ]}
-            onPress={handleRegister}
-            disabled={
-              registerMutation.isPending || !username || !email || !password || !dob
-            }
+            style={[styles.button, registerMutation.isPending && styles.buttonDisabled]}
+            onPress={() => registerMutation.mutate()}
+            disabled={registerMutation.isPending || !username || !email || !password}
             activeOpacity={0.85}
           >
             {registerMutation.isPending ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color="#000" />
             ) : (
-              <Text style={styles.buttonText}>Continue</Text>
+              <Text style={styles.buttonText}>Create Account</Text>
             )}
           </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>Or register with Global OAuth</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Region Tabs */}
+          <View style={styles.regionTabs}>
+            {(["ALL", "US", "EU", "RU", "ASIA"] as const).map((reg) => (
+              <TouchableOpacity
+                key={reg}
+                onPress={() => setActiveRegion(reg)}
+                style={[styles.regionTab, activeRegion === reg && styles.regionTabActive]}
+              >
+                <Text style={[styles.regionTabText, activeRegion === reg && styles.regionTabTextActive]}>
+                  {reg}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* OAuth Buttons Grid */}
+          <View style={styles.oauthGrid}>
+            {filteredProviders.map((p) => (
+              <TouchableOpacity
+                key={p.key}
+                disabled={oauthMutation.isPending}
+                onPress={() => oauthMutation.mutate(p.key)}
+                style={styles.oauthButton}
+              >
+                <View
+                  style={[
+                    styles.oauthIcon,
+                    { backgroundColor: p.color === "#FFFFFF" ? "rgba(255,255,255,0.2)" : p.color },
+                  ]}
+                >
+                  <Text style={[styles.oauthIconText, { color: p.color === "#FEE500" ? "#000" : "#FFF" }]}>
+                    {p.icon}
+                  </Text>
+                </View>
+                <Text style={styles.oauthName} numberOfLines={1}>
+                  {p.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account? </Text>
+          <Text style={styles.footerText}>{"Already have an account? "}</Text>
           <TouchableOpacity onPress={() => router.push("/auth/login")}>
             <Text style={styles.footerLink}>Sign in</Text>
           </TouchableOpacity>
@@ -214,7 +215,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
   scroll: { flexGrow: 1, padding: spacing.xl, justifyContent: "center" },
-  back: { marginBottom: spacing.xl },
+  back: { marginBottom: spacing.lg },
   backText: { color: colors.primary, fontSize: typography.base, fontWeight: typography.medium },
   title: {
     fontSize: typography.xxl,
@@ -222,43 +223,57 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     marginBottom: spacing.xs,
   },
-  subtitle: { fontSize: typography.base, color: colors.text.secondary, marginBottom: spacing.xl },
+  subtitle: { fontSize: typography.base, color: colors.text.secondary, marginBottom: spacing.lg },
   form: { gap: spacing.md },
   inputGroup: { gap: spacing.xs },
   label: { fontSize: typography.sm, fontWeight: typography.medium, color: colors.text.secondary },
   input: {
     backgroundColor: colors.background.card,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: colors.borderLight,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: 14,
     fontSize: typography.base,
     color: colors.text.primary,
-    justifyContent: "center",
   },
-  inputText: {
-    color: colors.text.primary,
-    fontSize: typography.base,
-  },
-  inputPlaceholder: {
-    color: colors.text.tertiary,
-  },
-  helpText: { fontSize: typography.xs, color: colors.text.tertiary },
   button: {
     backgroundColor: colors.primary,
     borderRadius: radius.full,
-    paddingVertical: 18,
+    paddingVertical: 16,
     alignItems: "center",
-    marginTop: spacing.md,
+    marginTop: spacing.xs,
     shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: "#fff", fontSize: typography.md, fontWeight: typography.bold },
+  buttonText: { color: "#000", fontSize: typography.md, fontWeight: typography.bold },
+  dividerContainer: { flexDirection: "row", alignItems: "center", marginVertical: spacing.md, gap: spacing.sm },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.borderLight },
+  dividerText: { color: colors.text.tertiary, fontSize: typography.xs },
+  regionTabs: { flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.xs },
+  regionTab: { paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.sm, backgroundColor: colors.background.card },
+  regionTabActive: { backgroundColor: colors.primary },
+  regionTabText: { color: colors.text.secondary, fontSize: typography.xs, fontWeight: typography.medium },
+  regionTabTextActive: { color: "#000", fontWeight: typography.bold },
+  oauthGrid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  oauthButton: {
+    width: "31%",
+    backgroundColor: colors.background.card,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  oauthIcon: { width: 24, height: 24, borderRadius: 6, alignItems: "center", justifyContent: "center" },
+  oauthIconText: { fontSize: 11, fontWeight: "bold" },
+  oauthName: { color: colors.text.primary, fontSize: typography.xs, flex: 1 },
   footer: { flexDirection: "row", justifyContent: "center", marginTop: spacing.xl },
   footerText: { color: colors.text.secondary, fontSize: typography.base },
   footerLink: { color: colors.primary, fontSize: typography.base, fontWeight: typography.semibold },
