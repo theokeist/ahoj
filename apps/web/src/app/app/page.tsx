@@ -27,7 +27,6 @@ import {
   Image as ImageIcon,
   CheckCircle2,
 } from "lucide-react";
-import Navigation from "../../components/Navigation";
 import { webApi } from "../../lib/api";
 import { MOCK_NEARBY_USERS } from "../../lib/mockData";
 
@@ -203,6 +202,12 @@ export default function FullWebAppDashboard() {
   }, [selectedStoryUser]);
 
   // Handlers
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    window.location.href = "/login";
+  };
+
   const handleSendMessage = async () => {
     if (!typedMessage.trim() || !activeChatUser) return;
     const text = typedMessage.trim();
@@ -317,7 +322,41 @@ export default function FullWebAppDashboard() {
 
   return (
     <div className="min-h-screen bg-[#0C0C0C] text-white flex flex-col font-sans">
-      <Navigation />
+      
+      {/* AUTHENTICATED APP HEADER (NON-OVERLAPPING) */}
+      <header className="sticky top-0 z-40 bg-[#0C0C0C]/90 backdrop-blur-md border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-2 group select-none">
+              <span className="text-2xl font-black text-[#00F2FE] tracking-tighter">/A\</span>
+              <span className="text-lg font-bold tracking-tight text-white">ahoj</span>
+            </Link>
+            <span className="text-[10px] bg-[#00F2FE]/15 text-[#00F2FE] font-bold px-2 py-0.5 rounded-full border border-[#00F2FE]/30 hidden sm:inline-block">
+              Web App Dashboard
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5">
+              <img
+                src={myUser?.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=dev_user"}
+                alt="My profile"
+                className="w-6 h-6 rounded-full object-cover"
+              />
+              <span className="text-xs font-bold text-white hidden sm:inline-block">@{myUser?.username || "dev_user"}</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border border-white/10 transition-colors"
+              title="Sign Out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </header>
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
         
@@ -417,9 +456,8 @@ export default function FullWebAppDashboard() {
         {/* MAIN FEED & CHAT CANVAS */}
         <div className="lg:col-span-9 flex flex-col bg-[#121212] rounded-3xl border border-white/10 overflow-hidden min-h-[650px] relative">
           
-          {/* Header Bar */}
-          <div className="h-16 px-5 border-b border-white/10 flex items-center justify-between bg-[#121212]/90 backdrop-blur-md sticky top-0 z-20">
-            <span className="text-xl font-black text-[#00F2FE] tracking-tighter">/A\ ahoj</span>
+          {/* Dashboard Control Bar */}
+          <div className="h-14 px-5 border-b border-white/10 flex items-center justify-between bg-[#121212]/90 backdrop-blur-md sticky top-0 z-20">
             <span className="text-sm font-bold capitalize text-white flex items-center gap-2">
               {activeTab}
             </span>
@@ -823,7 +861,7 @@ export default function FullWebAppDashboard() {
                       type="button"
                       onClick={() => setStoryFilter(f.id)}
                       className={`px-3 py-1 rounded-full text-[11px] font-semibold shrink-0 border transition-all cursor-pointer ${
-                        storyFilter === f.id ? "bg-[#00F2FE] text-black border-[#00F2FE] font-bold" : "bg-white/5 border-white/10 text-white/70"
+                        storyFilter === f.id ? "bg-[#00F2FE] text-[#0C0C0C] border-[#00F2FE] font-bold" : "bg-white/5 border-white/10 text-white/70"
                       }`}
                     >
                       {f.name}
@@ -840,7 +878,7 @@ export default function FullWebAppDashboard() {
                     type="button"
                     onClick={() => setStorySticker(null)}
                     className={`px-3 py-1 rounded-full text-[11px] font-semibold shrink-0 border cursor-pointer ${
-                      !storySticker ? "bg-[#00F2FE] text-black border-[#00F2FE]" : "bg-white/5 border-white/10 text-white/70"
+                      !storySticker ? "bg-[#00F2FE] text-[#0C0C0C] border-[#00F2FE]" : "bg-white/5 border-white/10 text-white/70"
                     }`}
                   >
                     ✕ None
@@ -851,7 +889,7 @@ export default function FullWebAppDashboard() {
                       type="button"
                       onClick={() => setStorySticker(stk)}
                       className={`px-3 py-1 rounded-full text-[11px] font-semibold shrink-0 border cursor-pointer ${
-                        storySticker === stk ? "bg-[#00F2FE] text-black border-[#00F2FE]" : "bg-white/5 border-white/10 text-white/70"
+                        storySticker === stk ? "bg-[#00F2FE] text-[#0C0C0C] border-[#00F2FE]" : "bg-white/5 border-white/10 text-white/70"
                       }`}
                     >
                       {stk}
@@ -864,7 +902,7 @@ export default function FullWebAppDashboard() {
             <button
               type="button"
               onClick={handlePublishStory}
-              className="w-full py-3 rounded-xl bg-[#00F2FE] text-black font-bold text-xs shadow-[0_0_20px_rgba(0,242,254,0.4)] cursor-pointer"
+              className="w-full py-3 rounded-xl bg-[#00F2FE] text-[#0C0C0C] font-bold text-xs shadow-[0_0_20px_rgba(0,242,254,0.4)] cursor-pointer"
             >
               Publish to 24h Stories ⚡
             </button>
@@ -890,7 +928,7 @@ export default function FullWebAppDashboard() {
             <button
               type="button"
               onClick={handleCreateSpark}
-              className="w-full py-3 rounded-xl bg-[#00F2FE] text-black font-bold text-xs cursor-pointer"
+              className="w-full py-3 rounded-xl bg-[#00F2FE] text-[#0C0C0C] font-bold text-xs cursor-pointer"
             >
               Publish Spark (2h Expiry)
             </button>
