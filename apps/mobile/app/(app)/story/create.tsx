@@ -19,6 +19,7 @@ import { storiesApi } from "../../../lib/api";
 import { colors, spacing, typography, radius } from "../../../lib/theme";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
+import { AntDesign } from "@expo/vector-icons";
 
 const { width, height } = Dimensions.get("window");
 
@@ -41,18 +42,24 @@ const MOCK_STORY_TEMPLATES = [
   },
 ];
 
-const EMOJI_STICKERS = ["📍 Brno", "⚡ Spark", "🔥 Hot", "☕ Coffee", "🏔️ Trip", "🎧 Vibe", "🎉 Party", "✨ Glow"];
-
-const FILTERS = [
-  { id: "none", name: "Original 📷" },
-  { id: "beauty", name: "Beauty Glow 💄" },
-  { id: "bokeh", name: "Portrait Bokeh 🤖" },
-  { id: "greenscreen", name: "Green Screen 🌿" },
-  { id: "cyber", name: "Cyberpunk ⚡" },
-  { id: "retro", name: "Retro 📻" },
-  { id: "neon", name: "Neon 🌅" },
-  { id: "noir", name: "Noir B&W 🖤" },
-] as const;
+// Unified Effects & Overlays Catalog
+const EFFECTS_AND_OVERLAYS = [
+  { type: "FILTER", id: "none", name: "Original 📷" },
+  { type: "FILTER", id: "beauty", name: "Beauty Glow 💄" },
+  { type: "FILTER", id: "bokeh", name: "Portrait Bokeh 🤖" },
+  { type: "FILTER", id: "greenscreen", name: "Green Screen 🌿" },
+  { type: "FILTER", id: "cyber", name: "Cyberpunk ⚡" },
+  { type: "FILTER", id: "retro", name: "Retro 📻" },
+  { type: "FILTER", id: "neon", name: "Neon 🌅" },
+  { type: "FILTER", id: "noir", name: "Noir B&W 🖤" },
+  { type: "STICKER", id: "brno", name: "📍 Brno" },
+  { type: "STICKER", id: "spark", name: "⚡ Spark" },
+  { type: "STICKER", id: "hot", name: "🔥 Hot" },
+  { type: "STICKER", id: "coffee", name: "☕ Coffee" },
+  { type: "STICKER", id: "trip", name: "🏔️ Trip" },
+  { type: "STICKER", id: "vibe", name: "🎧 Vibe" },
+  { type: "STICKER", id: "party", name: "🎉 Party" },
+];
 
 const TEXT_COLORS = ["#FFFFFF", "#00F2FE", "#FF6B6B", "#F59E0B", "#10B981"];
 const FONT_SIZES = [16, 22, 28, 34];
@@ -71,10 +78,10 @@ export default function StoryCreateScreen() {
 
   // Editor states
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [selectedFilter, setSelectedFilter] = useState<"none" | "beauty" | "bokeh" | "greenscreen" | "cyber" | "retro" | "neon" | "noir">("none");
+  const [selectedFilter, setSelectedFilter] = useState<string>("none");
+  const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
   const [overlayText, setOverlayText] = useState("");
   const [colorIdx, setColorIdx] = useState(1); // #00F2FE
-  const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
 
   // Advanced Text Format & Resizing States
   const [fontSizeIdx, setFontSizeIdx] = useState<number>(1); // 22px
@@ -251,7 +258,7 @@ export default function StoryCreateScreen() {
           <View style={[StyleSheet.absoluteFillObject, { zIndex: 10 }]} pointerEvents="box-none">
             <View style={styles.topControls}>
               <TouchableOpacity style={styles.circularBtn} onPress={() => router.back()}>
-                <Text style={styles.btnText}>✕</Text>
+                <AntDesign name="close" size={20} color="#fff" />
               </TouchableOpacity>
               
               <View style={styles.row}>
@@ -268,7 +275,7 @@ export default function StoryCreateScreen() {
                   style={[styles.circularBtn, showTemplates && styles.activeBtn]}
                   onPress={() => setShowTemplates(!showTemplates)}
                 >
-                  <Text style={styles.btnText}>🖼️</Text>
+                  <AntDesign name="picture" size={20} color="#fff" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -312,10 +319,10 @@ export default function StoryCreateScreen() {
           </View>
         </View>
       ) : (
-        /* MEDIA EDITOR 3-PART SCREEN LAYOUT */
+        /* MEDIA EDITOR MODE */
         <View style={styles.editorWrapper}>
           
-          {/* PART 3 (FULL-PT AREA): CAPTURED PICTURE CANVAS */}
+          {/* FULL-PT PICTURE CANVAS */}
           <Image source={{ uri: photoUri }} style={styles.fullPictureArea} contentFit="cover" />
 
           {/* Filter Tint Overlays */}
@@ -341,14 +348,14 @@ export default function StoryCreateScreen() {
             <View style={[styles.filterOverlay, { backgroundColor: "rgba(0, 0, 0, 0.4)" }]} pointerEvents="none" />
           )}
 
-          {/* Draggable Floating Sticker / Badge */}
+          {/* Floating Sticker Overlay */}
           {selectedSticker && (
             <View style={styles.floatingStickerContainer}>
               <Text style={styles.floatingStickerText}>{selectedSticker}</Text>
             </View>
           )}
 
-          {/* Draggable Floating Text Caption Container */}
+          {/* Draggable Text Caption Container */}
           {overlayText.trim().length > 0 && (
             <View
               {...textPanResponder.panHandlers}
@@ -377,59 +384,68 @@ export default function StoryCreateScreen() {
             </View>
           )}
 
-          {/* EXIF Security Badge */}
-          <View style={styles.exifBadge}>
-            <Text style={styles.exifBadgeText}>🛡️ EXIF Cleared (GPS Metadata Stripped)</Text>
+          {/* Active Effect & Privacy Header Tag */}
+          <View style={styles.headerTagRow}>
+            <View style={styles.exifBadge}>
+              <AntDesign name="safetycertificate" size={10} color={colors.success} />
+              <Text style={styles.exifBadgeText}>EXIF Clean (GPS Privacy)</Text>
+            </View>
+
+            {selectedFilter !== "none" && (
+              <View style={styles.effectPreviewTag}>
+                <Text style={styles.effectPreviewText}>✨ {selectedFilter.toUpperCase()}</Text>
+              </View>
+            )}
           </View>
 
-          {/* Editor Header */}
+          {/* Header Bar */}
           <View style={styles.topControls}>
             <TouchableOpacity style={styles.circularBtn} onPress={resetCamera}>
-              <Text style={styles.btnText}>←</Text>
+              <AntDesign name="arrowleft" size={20} color="#fff" />
             </TouchableOpacity>
-            <Text style={styles.editorTitle}>Story Camera Editor</Text>
+            <Text style={styles.editorTitle}>Story Editor</Text>
             <View style={{ width: 44 }} />
           </View>
 
-          {/* PART 1 (LEFT 40-48PT VERTICAL SIDEBAR): STYLISTIC & RESIZING EDIT OPTIONS */}
-          <View style={styles.leftStylisticSidebar}>
+          {/* RIGHT-SIDE VERTICAL STYLISTIC TOOLBAR (10PT INSET FROM RIGHT EDGE) */}
+          <View style={styles.rightStylisticSidebar}>
             {/* Font Size Resizer */}
             <TouchableOpacity
               style={styles.sidebarOptionBtn}
               onPress={() => setFontSizeIdx((prev) => (prev + 1) % FONT_SIZES.length)}
             >
-              <Text style={styles.sidebarOptionIcon}>📏</Text>
+              <AntDesign name="fontsize" size={18} color="#00F2FE" />
               <Text style={styles.sidebarOptionLabel}>{fontSize}px</Text>
             </TouchableOpacity>
 
-            {/* Text Alignment */}
+            {/* Alignment */}
             <TouchableOpacity
               style={styles.sidebarOptionBtn}
               onPress={() => setAlignIdx((prev) => (prev + 1) % ALIGNMENTS.length)}
             >
-              <Text style={styles.sidebarOptionIcon}>📐</Text>
+              <AntDesign name="aligncenter" size={18} color="#00F2FE" />
               <Text style={styles.sidebarOptionLabel}>{textAlign[0].toUpperCase()}</Text>
             </TouchableOpacity>
 
-            {/* Banner Style */}
+            {/* Banner Background */}
             <TouchableOpacity
               style={styles.sidebarOptionBtn}
               onPress={() => setBannerIdx((prev) => (prev + 1) % BANNERS.length)}
             >
-              <Text style={styles.sidebarOptionIcon}>🖼️</Text>
+              <AntDesign name="picture" size={18} color="#00F2FE" />
               <Text style={styles.sidebarOptionLabel}>{textBannerStyle}</Text>
             </TouchableOpacity>
 
-            {/* Text Color Swatch Toggle */}
+            {/* Color Swatch */}
             <TouchableOpacity
               style={styles.sidebarOptionBtn}
               onPress={() => setColorIdx((prev) => (prev + 1) % TEXT_COLORS.length)}
             >
-              <View style={[styles.sidebarColorDot, { backgroundColor: textColor }]} />
+              <AntDesign name="bg-colors" size={18} color={textColor} />
               <Text style={styles.sidebarOptionLabel}>Color</Text>
             </TouchableOpacity>
 
-            {/* Font Style Format */}
+            {/* Font Format */}
             <TouchableOpacity
               style={styles.sidebarOptionBtn}
               onPress={() =>
@@ -438,60 +454,50 @@ export default function StoryCreateScreen() {
                 )
               }
             >
-              <Text style={styles.sidebarOptionIcon}>✍️</Text>
+              <AntDesign name="edit" size={18} color="#00F2FE" />
               <Text style={styles.sidebarOptionLabel}>{fontFormat}</Text>
             </TouchableOpacity>
           </View>
 
-          {/* PART 2 (BOTTOM 300PT HORIZONTAL PANEL): EFFECTS, OVERLAYS & PHOTO STYLES */}
+          {/* CONSOLIDATED BOTTOM EFFECTS & OVERLAYS PANEL */}
           <View style={styles.bottomEffectsPanel}>
             {/* Caption Input */}
             <TextInput
               style={styles.textInput}
               value={overlayText}
               onChangeText={setOverlayText}
-              placeholder="Add text overlay caption (Drag on screen to reposition)..."
+              placeholder="Add text caption (Drag on screen to move)..."
               placeholderTextColor="rgba(255, 255, 255, 0.4)"
               maxLength={60}
             />
 
-            {/* Effects & Filters Carousel */}
+            {/* Consolidated Effects & Overlays Selector */}
             <View style={styles.panelSection}>
-              <Text style={styles.panelSectionTitle}>Effects & Photo Styles</Text>
+              <Text style={styles.panelSectionTitle}>Effects & Overlays</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselScroll}>
-                {FILTERS.map((f) => (
-                  <TouchableOpacity
-                    key={f.id}
-                    style={[styles.filterChip, selectedFilter === f.id && styles.filterChipActive]}
-                    onPress={() => setSelectedFilter(f.id)}
-                  >
-                    <Text style={[styles.filterChipText, selectedFilter === f.id && styles.filterChipTextActive]}>
-                      {f.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
+                {EFFECTS_AND_OVERLAYS.map((item) => {
+                  const isActive = item.type === "FILTER"
+                    ? selectedFilter === item.id
+                    : selectedSticker === item.name;
 
-            {/* Overlays & Stickers Carousel */}
-            <View style={styles.panelSection}>
-              <Text style={styles.panelSectionTitle}>Stickers & Overlays</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselScroll}>
-                <TouchableOpacity
-                  style={[styles.stickerChip, !selectedSticker && styles.stickerChipActive]}
-                  onPress={() => setSelectedSticker(null)}
-                >
-                  <Text style={styles.stickerChipText}>✕ None</Text>
-                </TouchableOpacity>
-                {EMOJI_STICKERS.map((stk) => (
-                  <TouchableOpacity
-                    key={stk}
-                    style={[styles.stickerChip, selectedSticker === stk && styles.stickerChipActive]}
-                    onPress={() => setSelectedSticker(stk)}
-                  >
-                    <Text style={styles.stickerChipText}>{stk}</Text>
-                  </TouchableOpacity>
-                ))}
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={[styles.consolidatedChip, isActive && styles.consolidatedChipActive]}
+                      onPress={() => {
+                        if (item.type === "FILTER") {
+                          setSelectedFilter(item.id);
+                        } else {
+                          setSelectedSticker(selectedSticker === item.name ? null : item.name);
+                        }
+                      }}
+                    >
+                      <Text style={[styles.consolidatedChipText, isActive && styles.consolidatedChipTextActive]}>
+                        {item.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </ScrollView>
             </View>
 
@@ -504,7 +510,7 @@ export default function StoryCreateScreen() {
               {uploadStoryMutation.isPending || isUploading ? (
                 <ActivityIndicator color="#000" />
               ) : (
-                <Text style={styles.publishBtnText}>Publish to 24h Stories ⚡</Text>
+                <Text style={styles.publishBtnText}>Publish Story ⚡</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -526,7 +532,7 @@ const styles = StyleSheet.create({
   cancelLink: { paddingVertical: 8 },
   cancelLinkText: { color: colors.text.tertiary, fontSize: typography.base },
   cameraWrapper: { flex: 1 },
-  topControls: { position: "absolute", top: 48, left: spacing.md, right: spacing.md, flexDirection: "row", justifyContent: "space-between", alignItems: "center", zIndex: 25 },
+  topControls: { position: "absolute", top: 48, left: spacing.md, right: spacing.md, flexDirection: "row", justify.content: "space-between", alignItems: "center", zIndex: 25 },
   row: { flexDirection: "row", gap: spacing.sm },
   circularBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
   activeBtn: { backgroundColor: colors.primary, borderColor: colors.primary },
@@ -543,8 +549,7 @@ const styles = StyleSheet.create({
   sideBtnText: { color: "#fff", fontSize: typography.sm, fontWeight: typography.semibold },
   shutterContainer: { width: 84, height: 84, borderRadius: 42, borderWidth: 4, borderColor: colors.primary, justifyContent: "center", alignItems: "center", shadowColor: colors.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 12 },
   shutterInner: { width: 68, height: 68, borderRadius: 34, backgroundColor: "#fff" },
-  
-  /* EDITOR 3-PART SCREEN LAYOUT STYLES */
+
   editorWrapper: { flex: 1, position: "relative", backgroundColor: "#000" },
   fullPictureArea: { width, height, position: "absolute", inset: 0 },
   filterOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 5 },
@@ -558,17 +563,21 @@ const styles = StyleSheet.create({
   bannerBlack: { backgroundColor: "#000000" },
   draggableText: { fontWeight: "bold" },
 
-  exifBadge: { position: "absolute", top: 104, alignSelf: "center", zIndex: 12, backgroundColor: "rgba(16, 185, 129, 0.2)", borderColor: colors.success, borderWidth: 1, paddingHorizontal: spacing.md, paddingVertical: 4, borderRadius: radius.full },
-  exifBadgeText: { color: colors.success, fontSize: 10, fontWeight: "bold" },
+  headerTagRow: { position: "absolute", top: 102, left: spacing.md, right: spacing.md, flexDirection: "row", gap: spacing.xs, zIndex: 18 },
+  exifBadge: { backgroundColor: "rgba(16, 185, 129, 0.2)", borderColor: colors.success, borderWidth: 1, paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.full, flexDirection: "row", alignItems: "center", gap: 4 },
+  exifBadgeText: { color: colors.success, fontSize: 9, fontWeight: "bold" },
+  effectPreviewTag: { backgroundColor: "rgba(0, 242, 254, 0.2)", borderColor: colors.primary, borderWidth: 1, paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.full },
+  effectPreviewText: { color: colors.primary, fontSize: 9, fontWeight: "bold" },
+
   editorTitle: { color: "#fff", fontSize: typography.base, fontWeight: typography.bold },
 
-  /* PART 1: LEFT VERTICAL STYLISTIC SIDEBAR (ABOUT 44PT WIDE) */
-  leftStylisticSidebar: {
+  /* RIGHT-SIDE STYLISTIC SIDEBAR (10PT INSET FROM RIGHT EDGE) */
+  rightStylisticSidebar: {
     position: "absolute",
     top: 108,
-    left: spacing.md,
+    right: 10,
     width: 48,
-    backgroundColor: "rgba(12, 12, 12, 0.85)",
+    backgroundColor: "rgba(12, 12, 12, 0.88)",
     borderRadius: radius.xl,
     paddingVertical: spacing.sm,
     paddingHorizontal: 4,
@@ -584,21 +593,19 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: "rgba(255,255,255,0.06)",
     alignItems: "center",
-    justifyContent: "center",
+    justify.content: "center",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
   },
-  sidebarOptionIcon: { fontSize: 13 },
   sidebarOptionLabel: { fontSize: 8, color: "#fff", fontWeight: "bold", marginTop: 2 },
-  sidebarColorDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 1, borderColor: "#fff" },
 
-  /* PART 2: BOTTOM HORIZONTAL EFFECTS PANEL (300PT HEIGHT) */
+  /* CONSOLIDATED BOTTOM EFFECTS & OVERLAYS PANEL */
   bottomEffectsPanel: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    height: 300,
+    height: 250,
     backgroundColor: "rgba(12, 12, 12, 0.94)",
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
@@ -612,13 +619,10 @@ const styles = StyleSheet.create({
   panelSection: { gap: 4 },
   panelSectionTitle: { color: colors.primary, fontSize: 10, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 0.5 },
   carouselScroll: { gap: spacing.xs, paddingVertical: 2 },
-  filterChip: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: radius.full, backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
-  filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterChipText: { color: "#fff", fontSize: 11, fontWeight: "600" },
-  filterChipTextActive: { color: "#000", fontWeight: "bold" },
-  stickerChip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.full, backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
-  stickerChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  stickerChipText: { color: "#fff", fontSize: 11, fontWeight: "bold" },
+  consolidatedChip: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: radius.full, backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
+  consolidatedChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  consolidatedChipText: { color: "#fff", fontSize: 11, fontWeight: "600" },
+  consolidatedChipTextActive: { color: "#000", fontWeight: "bold" },
   publishBtn: { backgroundColor: colors.primary, paddingVertical: 13, borderRadius: radius.full, alignItems: "center", marginTop: 4 },
   disabledBtn: { opacity: 0.6 },
   publishBtnText: { color: "#000", fontSize: typography.sm, fontWeight: typography.bold },
