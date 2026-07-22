@@ -1,5 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { RegisterSchema, LoginSchema, OAuthAuthSchema } from "@ahoj/shared";
+import { eq } from "drizzle-orm";
+import { users } from "../../db/schema.js";
 import {
   registerUser,
   loginUser,
@@ -9,9 +11,48 @@ import {
   saveRefreshToken,
   revokeRefreshToken,
   verifyRefreshToken,
+  verifyAccessToken,
 } from "./auth.service.js";
 
+async function requireAuth(request: any, reply: any) {
+  const authHeader = request.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) {
+    return reply.status(401).send({ error: "Authentication required" });
+  }
+  try {
+    const payload = await verifyAccessToken(authHeader.slice(7));
+    request.userId = payload.sub;
+  } catch {
+    return reply.status(401).send({ error: "Invalid or expired token" });
+  }
+}
+
 export const authRoutes: FastifyPluginAsync = async (app) => {
+  // GET /auth/me — Current User Details
+  app.get("/me", { preHandler: requireAuth }, async (request: any, reply) => {
+    const [user] = await app.db
+      .select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        profilePhotoUrl: users.profilePhotoUrl,
+        bio: users.bio,
+        website: users.website,
+        socialLinks: users.socialLinks,
+        photoAlbum: users.photoAlbum,
+        message: users.message,
+        privacyMode: users.privacyMode,
+        lastActive: users.lastActive,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .where(eq(users.id, request.userId))
+      .limit(1);
+
+    if (!user) return reply.status(404).send({ error: "User not found" });
+    return reply.status(200).send({ user });
+  });
+
   // POST /auth/register
   app.post("/register", async (request, reply) => {
     const body = RegisterSchema.parse(request.body);
