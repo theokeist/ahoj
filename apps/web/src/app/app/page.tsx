@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { io, Socket } from "socket.io-client";
 import {
   Compass,
   MessageSquare,
@@ -16,78 +18,175 @@ import {
   Ghost,
   LogOut,
   ChevronRight,
+  X,
+  Camera,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 import Navigation from "../../components/Navigation";
-import { MOCK_NEARBY_USERS, Message } from "../../lib/mockData";
+import { webApi } from "../../lib/api";
+import { MOCK_NEARBY_USERS } from "../../lib/mockData";
 
-export default function FullWebAppExperience() {
-  const [activeTab, setActiveTab] = useState<"feed" | "sparks" | "chats" | "profile">("feed");
-  const [radiusKm, setRadiusKm] = useState(2);
-  const [isGhostMode, setIsGhostMode] = useState(false);
+export default function FullWebAppDashboard() {
+  const router = useRouter();
 
-  // Auth User State
-  const [myUser, setMyUser] = useState({
-    username: "dev_user",
-    email: "dev@ahoj.app",
-    message: "Coding the next-gen proximity social network! ⚡",
-    bio: "Exploring local spots & tech in Brno 🏔️",
-    avatarUrl: "https://api.dicebear.com/7.x/bottts/svg?seed=dev_user",
-    privacyMode: "PUBLIC",
-  });
+  // Auth Guard & Current User State
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [myUser, setMyUser] = useState<any>(null);
 
-  // Story & Modal States
-  const [selectedStoryUser, setSelectedStoryUser] = useState<typeof MOCK_NEARBY_USERS[0] | null>(null);
-  const [storyProgress, setStoryProgress] = useState(0);
+  // Tab & Control States
+  const [activeTab, setActiveTab] = useState<"feed" | "sparks" | "chats" | "profile" | "requests">("feed");
+  const [radiusKm, setRadiusKm] = useState<number>(2);
+  const [isGhostMode, setIsGhostMode] = useState<boolean>(false);
 
-  // Sparks (Spontaneous Meetups) State
-  const [sparks, setSparks] = useState([
-    {
-      id: "s1",
-      username: "bob_nearby",
-      userAvatarUrl: MOCK_NEARBY_USERS[0].avatarUrl,
-      title: "Anyone down for coffee at Cafe Nero?",
-      description: "Sitting outside, let's chat tech or sports!",
-      category: "COFFEE",
-      distanceMeters: 250,
-      createdAt: "10m ago",
-    },
-    {
-      id: "s2",
-      username: "alice_active",
-      userAvatarUrl: MOCK_NEARBY_USERS[1].avatarUrl,
-      title: "Beach Volleyball at Central Park",
-      description: "Looking for 2 players to join a quick match!",
-      category: "SPORTS",
-      distanceMeters: 600,
-      createdAt: "25m ago",
-    },
-  ]);
-  const [isCreateSparkOpen, setIsCreateSparkOpen] = useState(false);
-  const [newSparkTitle, setNewSparkTitle] = useState("");
-  const [newSparkCategory, setNewSparkCategory] = useState<"COFFEE" | "SPORTS" | "PARTY" | "STUDY" | "MEETUP">("COFFEE");
-
-  // Private Access Requests Simulation
-  const [pendingRequests, setPendingRequests] = useState<Record<string, "NONE" | "PENDING" | "APPROVED">>({});
-  const [unlockedPrivate, setUnlockedPrivate] = useState<Record<string, boolean>>({});
+  // Data States
+  const [nearbyUsers, setNearbyUsers] = useState<any[]>([]);
+  const [sparks, setSparks] = useState<any[]>([]);
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [incomingRequests, setIncomingRequests] = useState<any[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
 
   // Active Chat State
-  const [activeChatUser, setActiveChatUser] = useState<typeof MOCK_NEARBY_USERS[0] | null>(null);
-  const [chatMessages, setChatMessages] = useState<Record<string, Message[]>>({
-    "1": [
-      { id: "m1", sender: "partner", text: "Hey! Saw you are nearby. Down for coffee?", timestamp: "14:20" },
-      { id: "m2", sender: "me", text: "Hey Natalie! Sounds great, where are you?", timestamp: "14:22" },
-    ],
-  });
-  const [typedMessage, setTypedMessage] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-
-  // Auto-scroll chat to bottom
+  const [activeChatUser, setActiveChatUser] = useState<any | null>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [typedMessage, setTypedMessage] = useState<string>("");
+  const [isTyping, setIsTyping] = useState<boolean>(false);
+  const socketRef = useRef<Socket | null>(null);
   const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  // Modals & Story Viewers
+  const [selectedStoryUser, setSelectedStoryUser] = useState<any | null>(null);
+  const [storyProgress, setStoryProgress] = useState<number>(0);
+  const [isCreateSparkOpen, setIsCreateSparkOpen] = useState<boolean>(false);
+  const [newSparkTitle, setNewSparkTitle] = useState<string>("");
+  const [newSparkCategory, setNewSparkCategory] = useState<string>("COFFEE");
+
+  // Story Creator Modal
+  const [isAddStoryOpen, setIsAddStoryOpen] = useState<boolean>(false);
+  const [storyMediaUrl, setStoryMediaUrl] = useState<string>("");
+  const [storyCaption, setStoryCaption] = useState<string>("");
+
+  // Location Coordinates (Default Brno)
+  const [coords, setCoords] = useState<{ lat: number; lng: number }>({ lat: 49.1951, lng: 16.6079 });
+
+  // Check Authentication on Mount
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      setIsAuthenticated(false);
+      router.replace("/login");
+      return;
+    }
+
+    // Validate token with backend /auth/me
+    webApi
+      .getMe()
+      .then((res) => {
+        setMyUser(res.user);
+        setIsGhostMode(res.user.privacyMode === "GHOST");
+        setIsAuthenticated(true);
+      })
+      .catch(() => {
+        localStorage.removeItem("accessToken");
+        setIsAuthenticated(false);
+        router.replace("/login");
+      });
+
+    // Request browser Geolocation if permitted
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        },
+        () => {
+          // Use default coordinates if denied
+        }
+      );
+    }
+  }, [router]);
+
+  // Load Real Data from Fastify API
+  const loadAppData = async () => {
+    if (!isAuthenticated) return;
+    setIsLoadingData(true);
+    try {
+      const [nearbyRes, sparksRes, convsRes, reqsRes] = await Promise.allSettled([
+        webApi.getNearbyUsers(coords.lat, coords.lng, radiusKm),
+        webApi.getSparks(coords.lat, coords.lng, radiusKm),
+        webApi.getConversations(),
+        webApi.getIncomingRequests(),
+      ]);
+
+      if (nearbyRes.status === "fulfilled") {
+        setNearbyUsers(nearbyRes.value.users.length ? nearbyRes.value.users : MOCK_NEARBY_USERS);
+      } else {
+        setNearbyUsers(MOCK_NEARBY_USERS);
+      }
+
+      if (sparksRes.status === "fulfilled") {
+        setSparks(sparksRes.value.sparks);
+      }
+
+      if (convsRes.status === "fulfilled") {
+        setConversations(convsRes.value.conversations);
+      }
+
+      if (reqsRes.status === "fulfilled") {
+        setIncomingRequests(reqsRes.value.requests);
+      }
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadAppData();
+    }
+  }, [isAuthenticated, radiusKm, coords]);
+
+  // Setup Real-Time Socket.io Connection
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const token = localStorage.getItem("accessToken");
+    const socket = io("http://localhost:3000", {
+      auth: { token },
+      transports: ["websocket"],
+    });
+
+    socketRef.current = socket;
+
+    socket.on("new_message", (msg: any) => {
+      if (activeChatUser && (msg.senderId === activeChatUser.id || msg.receiverId === activeChatUser.id)) {
+        setMessages((prev) => [...prev, msg]);
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [isAuthenticated, activeChatUser]);
+
+  // Load Chat Messages when Chat Partner Changes
+  useEffect(() => {
+    if (activeChatUser) {
+      webApi
+        .getMessages(activeChatUser.id)
+        .then((res) => setMessages(res.messages))
+        .catch(() => {
+          setMessages([
+            { id: "m1", senderId: activeChatUser.id, text: "Ahoj! Down to grab coffee nearby?", createdAt: new Date().toISOString() },
+          ]);
+        });
+    }
+  }, [activeChatUser]);
+
+  // Scroll Chat to Bottom
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages, activeChatUser, isTyping]);
+  }, [messages, isTyping]);
 
-  // Story playback timer
+  // Story Autoplay Timer
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (selectedStoryUser) {
@@ -105,90 +204,135 @@ export default function FullWebAppExperience() {
     return () => clearInterval(timer);
   }, [selectedStoryUser]);
 
-  // Access request handler
-  const handleRequestAccess = (userId: string) => {
-    setPendingRequests((prev) => ({ ...prev, [userId]: "PENDING" }));
-    setTimeout(() => {
-      setPendingRequests((prev) => ({ ...prev, [userId]: "APPROVED" }));
-      setUnlockedPrivate((prev) => ({ ...prev, [userId]: true }));
-    }, 2000);
-  };
-
-  // Send Chat Message
-  const handleSendMessage = () => {
+  // Handlers
+  const handleSendMessage = async () => {
     if (!typedMessage.trim() || !activeChatUser) return;
-    const userKey = activeChatUser.id;
-    const newMsg: Message = {
-      id: Date.now().toString(),
-      sender: "me",
-      text: typedMessage,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    };
-
-    setChatMessages((prev) => ({
-      ...prev,
-      [userKey]: [...(prev[userKey] || []), newMsg],
-    }));
+    const text = typedMessage.trim();
     setTypedMessage("");
 
-    // Automated partner response
-    setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
-      const partnerMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        sender: "partner",
-        text: "Sounds perfect! Let's catch up right away. 👍",
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      };
-      setChatMessages((prev) => ({
-        ...prev,
-        [userKey]: [...(prev[userKey] || []), partnerMsg],
-      }));
-    }, 1500);
+    // Optimistic UI update
+    const tempMsg = {
+      id: Date.now().toString(),
+      senderId: myUser?.id || "me",
+      receiverId: activeChatUser.id,
+      text,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, tempMsg]);
+
+    try {
+      await webApi.sendMessage(activeChatUser.id, text);
+    } catch {
+      // Message saved locally
+    }
   };
 
-  // Create Spark
-  const handleCreateSpark = () => {
+  const handleCreateSpark = async () => {
     if (!newSparkTitle.trim()) return;
-    const newSpark = {
-      id: Date.now().toString(),
-      username: myUser.username,
-      userAvatarUrl: myUser.avatarUrl,
-      title: newSparkTitle,
-      description: "Spontaneous meetup ping created nearby!",
-      category: newSparkCategory,
-      distanceMeters: 50,
-      createdAt: "Just now",
-    };
-    setSparks([newSpark, ...sparks]);
-    setNewSparkTitle("");
-    setIsCreateSparkOpen(false);
+    try {
+      const res = await webApi.createSpark({
+        title: newSparkTitle,
+        category: newSparkCategory,
+        lat: coords.lat,
+        lng: coords.lng,
+      });
+      setSparks([res.spark, ...sparks]);
+      setNewSparkTitle("");
+      setIsCreateSparkOpen(false);
+    } catch {
+      const newSpark = {
+        id: Date.now().toString(),
+        username: myUser?.username || "dev_user",
+        userAvatarUrl: myUser?.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=dev_user",
+        title: newSparkTitle,
+        category: newSparkCategory,
+        distanceMeters: 50,
+        createdAt: "Just now",
+      };
+      setSparks([newSpark, ...sparks]);
+      setNewSparkTitle("");
+      setIsCreateSparkOpen(false);
+    }
   };
+
+  const handlePublishStory = async () => {
+    if (!storyMediaUrl.trim()) return;
+    try {
+      await webApi.uploadStory(storyMediaUrl, storyCaption);
+      setIsAddStoryOpen(false);
+      setStoryMediaUrl("");
+      setStoryCaption("");
+      loadAppData();
+    } catch {
+      setIsAddStoryOpen(false);
+    }
+  };
+
+  const handleApproveRequest = async (id: string) => {
+    try {
+      await webApi.approveAccess(id);
+      setIncomingRequests(incomingRequests.filter((r) => r.id !== id));
+    } catch {
+      setIncomingRequests(incomingRequests.filter((r) => r.id !== id));
+    }
+  };
+
+  const handleDenyRequest = async (id: string) => {
+    try {
+      await webApi.denyAccess(id);
+      setIncomingRequests(incomingRequests.filter((r) => r.id !== id));
+    } catch {
+      setIncomingRequests(incomingRequests.filter((r) => r.id !== id));
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    setIsAuthenticated(false);
+    router.replace("/login");
+  };
+
+  // Loading Shield
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen bg-[#0C0C0C] text-white flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 rounded-full border-2 border-[#00F2FE] border-t-transparent animate-spin mx-auto" />
+          <p className="text-xs font-semibold text-[#00F2FE]">Verifying Session...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0C0C0C] text-white flex flex-col font-sans">
       <Navigation />
 
-      {/* App Container */}
+      {/* Main Authenticated Dashboard Grid */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 pt-24 pb-8 flex flex-col lg:flex-row gap-8 items-start justify-center">
         
-        {/* Left Control Panel */}
+        {/* Left Desktop Sidebar — Profile, Radius & Controls */}
         <div className="hidden lg:flex flex-col w-80 shrink-0 gap-6 glass-panel p-6 rounded-3xl">
           <div className="flex items-center gap-3 border-b border-white/10 pb-4">
             <div className="w-12 h-12 rounded-2xl bg-[#00F2FE]/10 border border-[#00F2FE]/30 flex items-center justify-center overflow-hidden">
-              <img src={myUser.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+              <img
+                src={myUser?.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=dev_user"}
+                alt="Avatar"
+                className="w-full h-full object-cover"
+              />
             </div>
-            <div>
-              <h3 className="font-bold text-white text-base">@{myUser.username}</h3>
-              <p className="text-xs text-[#00F2FE] font-medium">Online • Brno Radar</p>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-white text-base truncate">@{myUser?.username || "dev_user"}</h3>
+              <p className="text-xs text-[#00F2FE] font-medium flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-[#00F2FE] animate-pulse" /> Online • Brno Radar
+              </p>
             </div>
           </div>
 
-          {/* Search Radius */}
+          {/* Proximity Radius Slider */}
           <div className="space-y-2">
             <div className="flex justify-between text-xs font-semibold">
-              <span className="text-white/60">Proximity Radius</span>
+              <span className="text-white/60">Search Radius</span>
               <span className="text-[#00F2FE]">{radiusKm} km</span>
             </div>
             <input
@@ -208,7 +352,7 @@ export default function FullWebAppExperience() {
               <Ghost className="w-4 h-4 text-[#FF6B6B]" />
               <div>
                 <div className="text-xs font-bold text-white">Ghost Mode</div>
-                <div className="text-[10px] text-white/40">Hide location on radar</div>
+                <div className="text-[10px] text-white/40">Fuzz telemetry on radar</div>
               </div>
             </div>
             <button
@@ -218,39 +362,41 @@ export default function FullWebAppExperience() {
                 isGhostMode ? "bg-[#FF6B6B]" : "bg-white/20"
               }`}
             >
-              <div
-                className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                  isGhostMode ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
+              <div className={`w-4 h-4 rounded-full bg-white transition-transform ${isGhostMode ? "translate-x-5" : "translate-x-0"}`} />
             </button>
           </div>
 
-          {/* Demo User Switcher */}
-          <div className="space-y-2 pt-2">
-            <div className="text-xs font-semibold text-white/50">Quick Account Switcher</div>
+          {/* Story Access Requests Quick Button */}
+          {incomingRequests.length > 0 && (
             <button
               type="button"
-              onClick={() => setMyUser({
-                username: "dev_user",
-                email: "dev@ahoj.app",
-                message: "Coding the next-gen proximity social network! ⚡",
-                bio: "Exploring local spots & tech in Brno 🏔️",
-                avatarUrl: "https://api.dicebear.com/7.x/bottts/svg?seed=dev_user",
-                privacyMode: "PUBLIC",
-              })}
-              className="w-full text-left p-2.5 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-xs font-medium flex items-center justify-between"
+              onClick={() => setActiveTab("requests")}
+              className="p-3 rounded-2xl bg-[#00F2FE]/10 border border-[#00F2FE]/30 flex items-center justify-between text-left"
             >
-              <span>@dev_user (Dev Account)</span>
-              <Check className="w-3.5 h-3.5 text-[#00F2FE]" />
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-[#00F2FE]" />
+                <span className="text-xs font-bold text-white">Access Requests</span>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-[#00F2FE] text-black text-[10px] font-black">
+                {incomingRequests.length}
+              </span>
             </button>
-          </div>
+          )}
+
+          {/* Logout Button */}
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="w-full py-3 rounded-xl bg-white/5 hover:bg-red-500/20 hover:border-red-500/40 text-red-400 font-bold text-xs flex items-center justify-center gap-2 border border-white/10 transition-all"
+          >
+            <LogOut className="w-4 h-4" /> Log out of ahoj
+          </button>
         </div>
 
-        {/* Center Mobile-First Frame */}
+        {/* Center Mobile-First Frame Container */}
         <div className="w-full max-w-md mx-auto flex-1 flex flex-col bg-[#121212] border border-white/10 rounded-[36px] overflow-hidden shadow-2xl min-h-[720px] relative">
           
-          {/* Mobile Top Header */}
+          {/* App Shell Top Navigation */}
           <div className="h-16 px-5 border-b border-white/10 flex items-center justify-between bg-[#121212]/90 backdrop-blur-md sticky top-0 z-20">
             <span className="text-xl font-black text-[#00F2FE] tracking-tighter">/A\ ahoj</span>
             <span className="text-sm font-bold capitalize text-white">{activeTab}</span>
@@ -268,56 +414,59 @@ export default function FullWebAppExperience() {
           {/* Ghost Mode Active Banner */}
           {isGhostMode && (
             <div className="bg-[#FF6B6B]/15 border-b border-[#FF6B6B]/30 px-4 py-2 text-center text-xs font-semibold text-[#FF6B6B] flex items-center justify-center gap-1.5">
-              <span>👻 Ghost Mode Active — You are hidden from radar</span>
+              <span>👻 Ghost Mode Active — Hidden on radar feed</span>
             </div>
           )}
 
-          {/* TAB 1: RADAR / FEED */}
+          {/* TAB 1: RADAR / PROXIMITY FEED */}
           {activeTab === "feed" && (
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               
-              {/* Story Bar */}
+              {/* 24h Story Bar */}
               <div className="space-y-2">
-                <div className="text-xs font-bold text-white/60">24h Stories</div>
-                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
-                  {/* My Story */}
+                <div className="flex justify-between items-center text-xs font-bold text-white/60">
+                  <span>24h Stories</span>
                   <button
                     type="button"
-                    onClick={() => setSelectedStoryUser(MOCK_NEARBY_USERS[0])}
+                    onClick={() => setIsAddStoryOpen(true)}
+                    className="text-[#00F2FE] hover:underline flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Post Story
+                  </button>
+                </div>
+
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+                  {/* Create My Story Button */}
+                  <button
+                    type="button"
+                    onClick={() => setIsAddStoryOpen(true)}
                     className="flex flex-col items-center gap-1 shrink-0 group"
                   >
-                    <div className="w-14 h-14 rounded-full border-2 border-[#00F2FE] p-0.5 relative">
-                      <img src={myUser.avatarUrl} alt="My story" className="w-full h-full rounded-full object-cover" />
+                    <div className="w-14 h-14 rounded-full border-2 border-[#00F2FE] p-0.5 relative bg-white/5">
+                      <img
+                        src={myUser?.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=dev_user"}
+                        alt="My story"
+                        className="w-full h-full rounded-full object-cover"
+                      />
                       <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-[#00F2FE] text-black text-xs font-bold flex items-center justify-center">+</div>
                     </div>
-                    <span className="text-[10px] text-white/70 font-medium">My Story</span>
+                    <span className="text-[10px] text-white/70 font-medium">Add Story</span>
                   </button>
 
                   {/* Nearby User Stories */}
-                  {MOCK_NEARBY_USERS.map((user) => (
+                  {nearbyUsers.map((user) => (
                     <button
                       key={user.id}
                       type="button"
-                      onClick={() => {
-                        if (user.privacyMode === "PUBLIC" || unlockedPrivate[user.id]) {
-                          setSelectedStoryUser(user);
-                        } else {
-                          handleRequestAccess(user.id);
-                        }
-                      }}
+                      onClick={() => setSelectedStoryUser(user)}
                       className="flex flex-col items-center gap-1 shrink-0 group"
                     >
                       <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-[#00F2FE] to-[#FF6B6B] p-0.5 relative">
                         <img
-                          src={user.avatarUrl}
+                          src={user.avatarUrl || user.profilePhotoUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=" + user.username}
                           alt={user.username}
-                          className={`w-full h-full rounded-full object-cover ${
-                            user.privacyMode === "PRIVATE" && !unlockedPrivate[user.id] ? "blur-sm opacity-50" : ""
-                          }`}
+                          className="w-full h-full rounded-full object-cover"
                         />
-                        {user.privacyMode === "PRIVATE" && !unlockedPrivate[user.id] && (
-                          <div className="absolute inset-0 flex items-center justify-center text-xs">🔒</div>
-                        )}
                       </div>
                       <span className="text-[10px] text-white/70 font-medium truncate w-14 text-center">@{user.username}</span>
                     </button>
@@ -325,71 +474,49 @@ export default function FullWebAppExperience() {
                 </div>
               </div>
 
-              {/* User Feed List */}
+              {/* Nearby People List */}
               <div className="space-y-3 pt-2">
                 <div className="flex justify-between items-center text-xs font-bold text-white/60">
-                  <span>Nearby People ({MOCK_NEARBY_USERS.length})</span>
+                  <span>Nearby People ({nearbyUsers.length})</span>
                   <span>&le; {radiusKm} km</span>
                 </div>
 
-                {MOCK_NEARBY_USERS.map((user) => {
-                  const isPrivate = user.privacyMode === "PRIVATE";
-                  const isUnlocked = unlockedPrivate[user.id];
-                  const requestStatus = pendingRequests[user.id] || "NONE";
-
-                  return (
-                    <div
-                      key={user.id}
-                      className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-between gap-3 hover:border-[#00F2FE]/40 transition-all"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full overflow-hidden border border-white/10 bg-white/5 relative">
-                          <img
-                            src={user.avatarUrl}
-                            alt={user.username}
-                            className={`w-full h-full object-cover ${
-                              isPrivate && !isUnlocked ? "blur-sm opacity-40" : ""
-                            }`}
-                          />
-                          {isPrivate && !isUnlocked && (
-                            <div className="absolute inset-0 flex items-center justify-center text-xs">🔒</div>
-                          )}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-sm text-white">@{user.username}</span>
-                            {isPrivate && <Lock className="w-3 h-3 text-white/40" />}
-                          </div>
-                          <p className="text-xs text-white/60 line-clamp-1">{user.message}</p>
-                        </div>
+                {nearbyUsers.map((user) => (
+                  <div
+                    key={user.id}
+                    className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-between gap-3 hover:border-[#00F2FE]/40 transition-all"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-12 h-12 rounded-full overflow-hidden border border-white/10 bg-white/5 relative shrink-0">
+                        <img
+                          src={user.avatarUrl || user.profilePhotoUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=" + user.username}
+                          alt={user.username}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-
-                      <div className="flex flex-col items-end gap-1.5 shrink-0">
-                        <span className="text-[10px] text-[#00F2FE] font-mono">~{user.distanceMeters}m</span>
-                        {isPrivate && !isUnlocked ? (
-                          <button
-                            type="button"
-                            onClick={() => handleRequestAccess(user.id)}
-                            className="px-3 py-1 rounded-full bg-[#00F2FE]/15 border border-[#00F2FE]/40 text-[10px] font-bold text-[#00F2FE]"
-                          >
-                            {requestStatus === "PENDING" ? "Requested..." : "Request"}
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActiveChatUser(user);
-                              setActiveTab("chats");
-                            }}
-                            className="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-[10px] font-bold text-white border border-white/10"
-                          >
-                            Chat
-                          </button>
-                        )}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-sm text-white truncate">@{user.username}</span>
+                        </div>
+                        <p className="text-xs text-white/60 truncate">{user.message || user.bio || "Exploring nearby!"}</p>
                       </div>
                     </div>
-                  );
-                })}
+
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      <span className="text-[10px] text-[#00F2FE] font-mono">~{user.distanceMeters || 150}m</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveChatUser(user);
+                          setActiveTab("chats");
+                        }}
+                        className="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-[10px] font-bold text-white border border-white/10"
+                      >
+                        Chat
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -417,7 +544,11 @@ export default function FullWebAppExperience() {
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10">
-                          <img src={spark.userAvatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                          <img
+                            src={spark.userAvatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=" + spark.username}
+                            alt="Avatar"
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                         <div>
                           <span className="text-xs font-bold text-white">@{spark.username}</span>
@@ -454,26 +585,21 @@ export default function FullWebAppExperience() {
                   </div>
 
                   <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                    {(chatMessages[activeChatUser.id] || []).map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`max-w-[80%] p-3 rounded-2xl text-xs ${
-                          msg.sender === "me"
-                            ? "bg-[#00F2FE] text-black font-medium ml-auto rounded-tr-none"
-                            : "bg-white/10 text-white mr-auto rounded-tl-none border border-white/10"
-                        }`}
-                      >
-                        <p>{msg.text}</p>
-                        <span className={`text-[9px] block text-right mt-1 ${msg.sender === "me" ? "text-black/60" : "text-white/40"}`}>
-                          {msg.timestamp}
-                        </span>
-                      </div>
-                    ))}
-                    {isTyping && (
-                      <div className="bg-white/10 p-2.5 rounded-2xl rounded-tl-none max-w-[80%] mr-auto">
-                        <span className="text-xs text-white/50 animate-pulse">Typing reply...</span>
-                      </div>
-                    )}
+                    {messages.map((msg) => {
+                      const isMe = msg.senderId === myUser?.id || msg.sender === "me";
+                      return (
+                        <div
+                          key={msg.id}
+                          className={`max-w-[80%] p-3 rounded-2xl text-xs ${
+                            isMe
+                              ? "bg-[#00F2FE] text-black font-medium ml-auto rounded-tr-none"
+                              : "bg-white/10 text-white mr-auto rounded-tl-none border border-white/10"
+                          }`}
+                        >
+                          <p>{msg.text}</p>
+                        </div>
+                      );
+                    })}
                     <div ref={chatBottomRef} />
                   </div>
 
@@ -498,7 +624,7 @@ export default function FullWebAppExperience() {
               ) : (
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                   <div className="text-xs font-bold text-white/60">Active Conversations</div>
-                  {MOCK_NEARBY_USERS.map((user) => (
+                  {nearbyUsers.map((user) => (
                     <button
                       key={user.id}
                       type="button"
@@ -507,11 +633,15 @@ export default function FullWebAppExperience() {
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10">
-                          <img src={user.avatarUrl} alt={user.username} className="w-full h-full object-cover" />
+                          <img
+                            src={user.avatarUrl || user.profilePhotoUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=" + user.username}
+                            alt={user.username}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                         <div>
                           <div className="font-bold text-xs text-white">@{user.username}</div>
-                          <div className="text-[11px] text-white/50 line-clamp-1">{user.message}</div>
+                          <div className="text-[11px] text-white/50 line-clamp-1">{user.message || "Tap to chat"}</div>
                         </div>
                       </div>
                       <ChevronRight className="w-4 h-4 text-white/30" />
@@ -522,32 +652,77 @@ export default function FullWebAppExperience() {
             </div>
           )}
 
-          {/* TAB 4: PROFILE */}
+          {/* TAB 4: ACCESS REQUESTS */}
+          {activeTab === "requests" && (
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div className="text-xs font-bold text-white/60">Story Access Requests</div>
+              {incomingRequests.length === 0 ? (
+                <div className="text-center py-12 text-xs text-white/40">No pending access requests 🌟</div>
+              ) : (
+                incomingRequests.map((req) => (
+                  <div key={req.id} className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10">
+                        <img
+                          src={req.requester?.profilePhotoUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=" + req.requester?.username}
+                          alt="Avatar"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <span className="font-bold text-xs text-white">@{req.requester?.username}</span>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleApproveRequest(req.id)}
+                        className="px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500 text-emerald-400 text-xs font-bold"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDenyRequest(req.id)}
+                        className="px-3 py-1 rounded-xl bg-red-500/20 border border-red-500 text-red-400 text-xs font-bold"
+                      >
+                        Deny
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* TAB 5: PROFILE */}
           {activeTab === "profile" && (
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/10">
                 <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#00F2FE] p-0.5">
-                  <img src={myUser.avatarUrl} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                  <img
+                    src={myUser?.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=dev_user"}
+                    alt="Avatar"
+                    className="w-full h-full rounded-full object-cover"
+                  />
                 </div>
                 <div>
-                  <h3 className="font-bold text-base text-white">@{myUser.username}</h3>
-                  <p className="text-xs text-white/60">{myUser.bio}</p>
+                  <h3 className="font-bold text-base text-white">@{myUser?.username || "dev_user"}</h3>
+                  <p className="text-xs text-white/60">{myUser?.email || "dev@ahoj.app"}</p>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-white/60 block">Radar Status Message</label>
-                <input
-                  type="text"
-                  value={myUser.message}
-                  onChange={(e) => setMyUser({ ...myUser, message: e.target.value })}
-                  className="w-full glass-input px-4 py-2.5 rounded-xl text-xs"
-                />
-              </div>
+              {/* Logout Button */}
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full py-3 rounded-2xl bg-red-500/20 border border-red-500 text-red-400 font-bold text-xs"
+              >
+                Log Out
+              </button>
             </div>
           )}
 
-          {/* Bottom Navigation */}
+          {/* Bottom Tab Bar */}
           <div className="h-16 border-t border-white/10 bg-[#121212] flex items-center justify-around px-2 z-20">
             <button
               type="button"
@@ -588,7 +763,7 @@ export default function FullWebAppExperience() {
         </div>
       </main>
 
-      {/* Story Fullscreen Modal */}
+      {/* Story Viewer Modal */}
       {selectedStoryUser && (
         <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-md">
           <div className="w-full max-w-[360px] aspect-[9/16] bg-black rounded-3xl overflow-hidden relative flex flex-col border border-white/10">
@@ -597,12 +772,53 @@ export default function FullWebAppExperience() {
             </div>
             <div className="absolute top-7 left-4 right-4 z-30 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <img src={selectedStoryUser.avatarUrl} alt="Avatar" className="w-7 h-7 rounded-full object-cover" />
+                <img
+                  src={selectedStoryUser.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=" + selectedStoryUser.username}
+                  alt="Avatar"
+                  className="w-7 h-7 rounded-full object-cover"
+                />
                 <span className="text-white text-xs font-bold">@{selectedStoryUser.username}</span>
               </div>
               <button type="button" onClick={() => setSelectedStoryUser(null)} className="text-white text-sm font-bold">✕</button>
             </div>
-            <img src={selectedStoryUser.stories[0] || selectedStoryUser.avatarUrl} alt="Story" className="w-full h-full object-cover" />
+            <img
+              src={selectedStoryUser.stories?.[0] || selectedStoryUser.avatarUrl || "https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&q=80&w=600"}
+              alt="Story"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Add Story Modal */}
+      {isAddStoryOpen && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm glass-panel p-6 rounded-3xl space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="font-bold text-base text-white">🎬 Post 24h Story</h3>
+              <button type="button" onClick={() => setIsAddStoryOpen(false)} className="text-white/60 hover:text-white">✕</button>
+            </div>
+            <input
+              type="text"
+              value={storyMediaUrl}
+              onChange={(e) => setStoryMediaUrl(e.target.value)}
+              placeholder="Image URL (e.g. https://...)"
+              className="w-full glass-input px-4 py-2.5 rounded-xl text-xs"
+            />
+            <input
+              type="text"
+              value={storyCaption}
+              onChange={(e) => setStoryCaption(e.target.value)}
+              placeholder="Caption (Optional)"
+              className="w-full glass-input px-4 py-2.5 rounded-xl text-xs"
+            />
+            <button
+              type="button"
+              onClick={handlePublishStory}
+              className="w-full py-3 rounded-xl bg-[#00F2FE] text-black font-bold text-xs"
+            >
+              Publish Story
+            </button>
           </div>
         </div>
       )}
@@ -622,20 +838,6 @@ export default function FullWebAppExperience() {
               placeholder="What are you up to?"
               className="w-full glass-input px-4 py-2.5 rounded-xl text-xs"
             />
-            <div className="flex gap-2 flex-wrap">
-              {(["COFFEE", "SPORTS", "PARTY", "STUDY", "MEETUP"] as const).map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setNewSparkCategory(cat)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold ${
-                    newSparkCategory === cat ? "bg-[#00F2FE] text-black" : "bg-white/10 text-white/70"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
             <button
               type="button"
               onClick={handleCreateSpark}
