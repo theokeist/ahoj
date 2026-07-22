@@ -149,6 +149,9 @@ export const usersApi = {
     api.put("/users/me/location", { lat, lng }).then((r) => r.data),
   registerFcmToken: (fcmToken: string) =>
     api.post("/users/me/fcm", { fcmToken }).then((r) => r.data),
+  getSettings: () => api.get("/users/me/settings").then((r) => r.data),
+  updateSettings: (body: object) =>
+    api.put("/users/me/settings", body).then((r) => r.data),
 };
 
 export const chatsApi = {
