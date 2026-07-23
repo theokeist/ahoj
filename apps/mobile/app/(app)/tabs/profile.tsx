@@ -33,6 +33,7 @@ export default function ProfileScreen() {
 
   const [message, setMessage] = useState(user?.message || "");
   const [isEditingMessage, setIsEditingMessage] = useState(false);
+  const [profileTab, setProfileTab] = useState<"stories" | "sparks" | "settings" | "user" | "actions">("user");
 
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isUploadingAlbum, setIsUploadingAlbum] = useState(false);
@@ -261,8 +262,10 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: 96 + insets.bottom }]}
->
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingBottom: 96 + insets.bottom }]}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* User Card */}
         <View style={styles.profileCard}>
           <TouchableOpacity style={styles.avatar} onPress={handleUploadAvatar} activeOpacity={0.8}>
@@ -288,238 +291,295 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Icebreaker Message Editor */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Icebreaker Message</Text>
-          {isEditingMessage ? (
-            <View style={styles.editorRow}>
-              <TextInput
-                style={styles.input}
-                value={message}
-                onChangeText={setMessage}
-                maxLength={60}
-                placeholder="Icebreaker Message"
-                placeholderTextColor={colors.text.tertiary}
-              />
-              <View style={styles.buttonRow}>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.cancelBtn]}
-                  onPress={() => setIsEditingMessage(false)}
-                >
-                  <Text style={styles.actionBtnText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.saveBtn]}
-                  onPress={() => updateMessageMutation.mutate()}
-                  disabled={updateMessageMutation.isPending}
-                >
-                  {updateMessageMutation.isPending ? (
-                    <ActivityIndicator color="#fff" size="small" />
-                  ) : (
-                    <Text style={styles.actionBtnText}>Save</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : (
-            <View style={styles.messageBox}>
-              <Text style={styles.messageText}>"{profile?.message}"</Text>
-              <TouchableOpacity
-                style={styles.editBtn}
-                onPress={() => setIsEditingMessage(true)}
-              >
-                <Text style={styles.editBtnText}>✏️ Edit Message</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        {/* Privacy Settings & Live Preview */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Privacy Mode</Text>
-          <Text style={styles.privacyDescription}>
-            In Private Mode, other users must request permission to view your stories. Your icebreaker message remains visible, but your avatar is blurred/hidden in the feed.
-          </Text>
-
-          <View style={styles.toggleRow}>
+        {/* Ant Design Mobile Two-Part Splitter */}
+        <View style={styles.segmentSplitter}>
+          {[
+            { id: "user", label: "👤 User Profile" },
+            { id: "actions", label: "⚡ Feed Actions" },
+          ].map((tab) => (
             <TouchableOpacity
+              key={tab.id}
+              onPress={() => setProfileTab(tab.id as any)}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               style={[
-                styles.toggleButton,
-                profile?.privacyMode === "PUBLIC" && styles.toggleButtonActive,
+                styles.segmentItem,
+                (profileTab === tab.id || (profileTab === "stories" && tab.id === "user") || (profileTab === "sparks" && tab.id === "actions")) && styles.segmentItemActive,
               ]}
-              onPress={() => updatePrivacyMutation.mutate("PUBLIC")}
-              disabled={updatePrivacyMutation.isPending}
+              activeOpacity={0.7}
             >
               <Text
                 style={[
-                  styles.toggleButtonText,
-                  profile?.privacyMode === "PUBLIC" && styles.toggleButtonTextActive,
+                  styles.segmentText,
+                  (profileTab === tab.id || (profileTab === "stories" && tab.id === "user") || (profileTab === "sparks" && tab.id === "actions")) && styles.segmentTextActive,
                 ]}
               >
-                🔓 Public
+                {tab.label}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                profile?.privacyMode === "PRIVATE" && styles.toggleButtonActive,
-              ]}
-              onPress={() => updatePrivacyMutation.mutate("PRIVATE")}
-              disabled={updatePrivacyMutation.isPending}
-            >
-              <Text
-                style={[
-                  styles.toggleButtonText,
-                  profile?.privacyMode === "PRIVATE" && styles.toggleButtonTextActive,
-                ]}
-              >
-                🔒 Private
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Live Preview: How others see you */}
-          <Text style={styles.previewTitle}>How others see you in the feed</Text>
-          <View style={styles.previewCardContainer}>
-            <View style={styles.previewFeedItem}>
-              {/* Avatar */}
-              <View style={styles.avatarWrapper}>
-                <View style={[styles.previewAvatarRing, { borderColor: colors.borderLight }]} />
-                <View style={[styles.previewAvatar, profile?.privacyMode === "PRIVATE" && styles.avatarPrivate]}>
-                  {profile?.profilePhotoUrl && profile?.privacyMode === "PUBLIC" ? (
-                    <Image
-                      source={{ uri: profile.profilePhotoUrl }}
-                      style={styles.previewAvatarImage}
-                      contentFit="cover"
-                    />
-                  ) : (
-                    <View style={styles.avatarPlaceholder}>
-                      <Text style={styles.avatarInitial}>
-                        {profile?.username ? profile.username[0].toUpperCase() : "A"}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-
-              {/* Info */}
-              <View style={styles.userInfo}>
-                <View style={styles.userHeader}>
-                  <Text style={styles.previewUsername}>{profile?.username}</Text>
-                  {profile?.privacyMode === "PRIVATE" && (
-                    <View style={styles.privateBadge}>
-                      <Text style={styles.privateBadgeText}>🔒 Private</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={styles.previewMessage} numberOfLines={2}>
-                  {profile?.message || "No message set"}
-                </Text>
-              </View>
-
-              {/* Distance */}
-              <View style={styles.distanceContainer}>
-                <Text style={styles.distance}>~120 m</Text>
-              </View>
-            </View>
-          </View>
+          ))}
         </View>
 
-        {/* Incoming Requests */}
-        {profile?.privacyMode === "PRIVATE" && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Incoming Requests</Text>
-            {isRequestsLoading ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : incomingRequests?.length === 0 ? (
-              <Text style={styles.emptyRequestsText}>No pending requests</Text>
-            ) : (
-              incomingRequests?.map((req: any) => (
-                <View key={req.id} style={styles.requestItem}>
-                  <View style={styles.requestUser}>
-                    <View style={styles.requestAvatar}>
-                      {req.requester.profilePhotoUrl ? (
-                        <Image source={{ uri: req.requester.profilePhotoUrl }} style={styles.avatarImage} contentFit="cover" />
+        {/* PART 1: USER PROFILE & SETTINGS */}
+        {(profileTab === "user" || profileTab === "stories") && (
+          <>
+            {/* Icebreaker Message Editor */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Icebreaker Message</Text>
+              {isEditingMessage ? (
+                <View style={styles.editorRow}>
+                  <TextInput
+                    style={styles.input}
+                    value={message}
+                    onChangeText={setMessage}
+                    maxLength={60}
+                    placeholder="Icebreaker Message"
+                    placeholderTextColor={colors.text.tertiary}
+                  />
+                  <View style={styles.buttonRow}>
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.cancelBtn]}
+                      onPress={() => setIsEditingMessage(false)}
+                    >
+                      <Text style={styles.actionBtnText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.saveBtn]}
+                      onPress={() => updateMessageMutation.mutate()}
+                      disabled={updateMessageMutation.isPending}
+                    >
+                      {updateMessageMutation.isPending ? (
+                        <ActivityIndicator color="#fff" size="small" />
                       ) : (
-                        <Text style={styles.requestAvatarText}>{req.requester.username[0].toUpperCase()}</Text>
+                        <Text style={styles.actionBtnText}>Save</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.messageBox}>
+                  <Text style={styles.messageText}>"{profile?.message}"</Text>
+                  <TouchableOpacity
+                    style={styles.editBtn}
+                    onPress={() => setIsEditingMessage(true)}
+                  >
+                    <Text style={styles.editBtnText}>✏️ Edit Message</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+
+            {/* Privacy Settings & Live Preview */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Privacy Mode</Text>
+              <Text style={styles.privacyDescription}>
+                In Private Mode, other users must request permission to view your stories. Your icebreaker message remains visible, but your avatar is blurred/hidden in the feed.
+              </Text>
+
+              <View style={styles.toggleRow}>
+                <TouchableOpacity
+                  style={[
+                    styles.toggleButton,
+                    profile?.privacyMode === "PUBLIC" && styles.toggleButtonActive,
+                  ]}
+                  onPress={() => updatePrivacyMutation.mutate("PUBLIC")}
+                  disabled={updatePrivacyMutation.isPending}
+                >
+                  <Text
+                    style={[
+                      styles.toggleButtonText,
+                      profile?.privacyMode === "PUBLIC" && styles.toggleButtonTextActive,
+                    ]}
+                  >
+                    🔓 Public
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.toggleButton,
+                    profile?.privacyMode === "PRIVATE" && styles.toggleButtonActive,
+                  ]}
+                  onPress={() => updatePrivacyMutation.mutate("PRIVATE")}
+                  disabled={updatePrivacyMutation.isPending}
+                >
+                  <Text
+                    style={[
+                      styles.toggleButtonText,
+                      profile?.privacyMode === "PRIVATE" && styles.toggleButtonTextActive,
+                    ]}
+                  >
+                    🔒 Private
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Live Preview: How others see you */}
+              <Text style={styles.previewTitle}>How others see you in the feed</Text>
+              <View style={styles.previewCardContainer}>
+                <View style={styles.previewFeedItem}>
+                  {/* Avatar */}
+                  <View style={styles.avatarWrapper}>
+                    <View style={[styles.previewAvatarRing, { borderColor: colors.borderLight }]} />
+                    <View style={[styles.previewAvatar, profile?.privacyMode === "PRIVATE" && styles.avatarPrivate]}>
+                      {profile?.profilePhotoUrl && profile?.privacyMode === "PUBLIC" ? (
+                        <Image
+                          source={{ uri: profile.profilePhotoUrl }}
+                          style={styles.previewAvatarImage}
+                          contentFit="cover"
+                        />
+                      ) : (
+                        <View style={styles.avatarPlaceholder}>
+                          <Text style={styles.avatarInitial}>
+                            {profile?.username ? profile.username[0].toUpperCase() : "A"}
+                          </Text>
+                        </View>
                       )}
                     </View>
-                    <Text style={styles.requestUsername}>@{req.requester.username}</Text>
                   </View>
-                  <View style={styles.requestActions}>
-                    <TouchableOpacity
-                      style={[styles.reqBtn, styles.denyBtn]}
-                      onPress={() => denyMutation.mutate(req.id)}
-                      disabled={denyMutation.isPending}
-                    >
-                      <Text style={[styles.reqBtnText, { color: colors.error }]}>Deny</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.reqBtn, styles.approveBtn]}
-                      onPress={() => approveMutation.mutate(req.id)}
-                      disabled={approveMutation.isPending}
-                    >
-                      <Text style={[styles.reqBtnText, { color: "#fff" }]}>Approve</Text>
-                    </TouchableOpacity>
+
+                  {/* Info */}
+                  <View style={styles.userInfo}>
+                    <View style={styles.userHeader}>
+                      <Text style={styles.previewUsername}>{profile?.username}</Text>
+                      {profile?.privacyMode === "PRIVATE" && (
+                        <View style={styles.privateBadge}>
+                          <Text style={styles.privateBadgeText}>🔒 Private</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.previewMessage} numberOfLines={2}>
+                      {profile?.message || "No message set"}
+                    </Text>
+                  </View>
+
+                  {/* Distance */}
+                  <View style={styles.distanceContainer}>
+                    <Text style={styles.distance}>~120 m</Text>
                   </View>
                 </View>
-              ))
-            )}
-          </View>
+              </View>
+            </View>
+
+            {/* Info Details */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Account Details</Text>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Bio</Text>
+                <Text style={styles.infoValue}>{profile?.bio || "No bio yet"}</Text>
+              </View>
+              {profile?.website && (
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Website</Text>
+                  <Text style={styles.infoValue}>{profile.website}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Log Out CTA */}
+            <View style={styles.section}>
+              <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
+                <Text style={styles.logoutText}>🚪 Sign Out of ahoj</Text>
+              </TouchableOpacity>
+            </View>
+          </>
         )}
 
-        {/* Info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account Details</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Bio</Text>
-            <Text style={styles.infoValue}>{profile?.bio || "No bio yet"}</Text>
-          </View>
-          {profile?.website && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Website</Text>
-              <Text style={styles.infoValue}>{profile.website}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Fotoalbum Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📸 Můj Fotoalbum ({profile?.photoAlbum?.length || 0}/6)</Text>
-          <View style={styles.albumGrid}>
-            {profile?.photoAlbum?.map((photoUrl: string, idx: number) => (
-              <TouchableOpacity
-                key={idx}
-                style={styles.albumItem}
-                activeOpacity={0.9}
-                onPress={() => handleDeleteAlbumPhoto(idx)}
-              >
-                <Image source={{ uri: photoUrl }} style={styles.albumImage} contentFit="cover" />
-                <View style={styles.deletePhotoIndicator}>
-                  <Text style={styles.deletePhotoText}>✕</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-            
-            {/* Add Photo Card */}
-            {(!profile?.photoAlbum || profile.photoAlbum.length < 6) && (
-              <TouchableOpacity
-                style={styles.addPhotoCard}
-                onPress={handleAddAlbumPhoto}
-                disabled={isUploadingAlbum}
-              >
-                {isUploadingAlbum ? (
-                  <ActivityIndicator color={colors.primary} />
-                ) : (
-                  <>
-                    <Text style={styles.addPhotoIcon}>＋</Text>
-                    <Text style={styles.addPhotoLabel}>Přidat fotku</Text>
-                  </>
+        {/* PART 2: FEED ACTIONS & MEDIA */}
+        {(profileTab === "actions" || profileTab === "sparks") && (
+          <>
+            {/* Fotoalbum & Story Media */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>📸 My Media & Stories ({profile?.photoAlbum?.length || 0}/6)</Text>
+              <View style={styles.albumGrid}>
+                {profile?.photoAlbum?.map((photoUrl: string, idx: number) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={styles.albumItem}
+                    activeOpacity={0.9}
+                    onPress={() => handleDeleteAlbumPhoto(idx)}
+                  >
+                    <Image source={{ uri: photoUrl }} style={styles.albumImage} contentFit="cover" />
+                    <View style={styles.deletePhotoIndicator}>
+                      <Text style={styles.deletePhotoText}>✕</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+                
+                {/* Add Photo Card */}
+                {(!profile?.photoAlbum || profile.photoAlbum.length < 6) && (
+                  <TouchableOpacity
+                    style={styles.addPhotoCard}
+                    onPress={handleAddAlbumPhoto}
+                    disabled={isUploadingAlbum}
+                  >
+                    {isUploadingAlbum ? (
+                      <ActivityIndicator color={colors.primary} />
+                    ) : (
+                      <>
+                        <Text style={styles.addPhotoIcon}>＋</Text>
+                        <Text style={styles.addPhotoLabel}>Add Photo</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
                 )}
-              </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Incoming Access Requests */}
+            {profile?.privacyMode === "PRIVATE" && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Incoming Access Requests</Text>
+                {isRequestsLoading ? (
+                  <ActivityIndicator color={colors.primary} />
+                ) : incomingRequests?.length === 0 ? (
+                  <Text style={styles.emptyRequestsText}>No pending requests</Text>
+                ) : (
+                  incomingRequests?.map((req: any) => (
+                    <View key={req.id} style={styles.requestItem}>
+                      <View style={styles.requestUser}>
+                        <View style={styles.requestAvatar}>
+                          {req.requester.profilePhotoUrl ? (
+                            <Image source={{ uri: req.requester.profilePhotoUrl }} style={styles.avatarImage} contentFit="cover" />
+                          ) : (
+                            <Text style={styles.requestAvatarText}>{req.requester.username[0].toUpperCase()}</Text>
+                          )}
+                        </View>
+                        <Text style={styles.requestUsername}>@{req.requester.username}</Text>
+                      </View>
+                      <View style={styles.requestActions}>
+                        <TouchableOpacity
+                          style={[styles.reqBtn, styles.denyBtn]}
+                          onPress={() => denyMutation.mutate(req.id)}
+                          disabled={denyMutation.isPending}
+                        >
+                          <Text style={[styles.reqBtnText, { color: colors.error }]}>Deny</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.reqBtn, styles.approveBtn]}
+                          onPress={() => approveMutation.mutate(req.id)}
+                          disabled={approveMutation.isPending}
+                        >
+                          <Text style={[styles.reqBtnText, { color: "#fff" }]}>Approve</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))
+                )}
+              </View>
             )}
-          </View>
-        </View>
+
+            {/* Quick Feed Actions CTA */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>⚡ Quick Feed Actions</Text>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.saveBtn, { width: "100%", paddingVertical: 14, marginTop: 4 }]}
+                onPress={() => router.push("/(app)/tabs/sparks")}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.actionBtnText, { fontSize: 14, fontWeight: "bold" }]}>⚡ Create Spontaneous Spark</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
 
         {/* Logout */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -941,5 +1001,40 @@ const styles = StyleSheet.create({
   addPhotoLabel: {
     fontSize: 10,
     color: colors.text.secondary,
+  },
+  segmentSplitter: {
+    flexDirection: "row",
+    backgroundColor: colors.background.card,
+    borderRadius: radius.lg,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    marginVertical: spacing.md,
+    gap: 4,
+  },
+  segmentItem: {
+    flex: 1,
+    minHeight: 44,
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radius.md,
+  },
+  segmentItemActive: {
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  segmentText: {
+    fontSize: typography.xs,
+    fontWeight: typography.bold,
+    color: colors.text.secondary,
+  },
+  segmentTextActive: {
+    color: "#0C0C0C",
+    fontWeight: typography.black,
   },
 });

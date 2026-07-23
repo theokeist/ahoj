@@ -139,6 +139,17 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
+  // GET /auth/oauth/:provider/redirect — Full Page Redirect endpoint
+  app.get("/oauth/:provider/redirect", async (request, reply) => {
+    const { provider } = request.params as { provider: string };
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3001";
+    
+    // In production with provider credentials, redirect to official OAuth URL:
+    // e.g. https://accounts.google.com/o/oauth2/v2/auth?client_id=...&redirect_uri=...
+    // In dev / test mode, redirect directly to frontend callback page with provider parameter:
+    return reply.redirect(`${frontendUrl}/auth/callback?provider=${encodeURIComponent(provider)}&mock=true`);
+  });
+
   // POST /auth/oauth — Global 3rd Party OAuth handler (US, EU, RU, Asia)
   app.post("/oauth", async (request, reply) => {
     const body = OAuthAuthSchema.parse(request.body);

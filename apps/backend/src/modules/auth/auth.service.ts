@@ -212,6 +212,7 @@ export async function loginOrRegisterOAuthUser(input: {
     .values({
       username: targetUsername,
       email: input.email || null,
+      passwordHash: "OAUTH_USER_NO_PASSWORD",
       profilePhotoUrl: input.avatarUrl || null,
       bio: input.bio || null,
       message: `Hey, I'm ${targetUsername} 👋`,

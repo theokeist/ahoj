@@ -34,6 +34,8 @@ import type {
   ClientToServerEvents,
 } from "@ahoj/shared";
 
+import { ensureDbSchema } from "./db/init.js";
+
 async function buildApp() {
   const app = Fastify({
     logger: {
@@ -162,8 +164,9 @@ async function main() {
 
   registerSocketHandlers(io, db, redis);
 
-  // ─── Connect to services ──────────────────────────────────────────────────
+  // ─── Connect to services & sync DB schema ─────────────────────────────────
 
+  await ensureDbSchema();
   await redis.connect();
 
   // ─── Start server ─────────────────────────────────────────────────────────

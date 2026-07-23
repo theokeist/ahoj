@@ -66,6 +66,18 @@ export async function apiFetch<T>(endpoint: string, options: CustomRequestInit =
 export const webApi = {
   // Auth
   getMe: () => apiFetch<{ user: any }>("/auth/me"),
+  postOAuth: (body: {
+    provider: string;
+    providerUserId: string;
+    email?: string | null;
+    username?: string | null;
+    avatarUrl?: string | null;
+    bio?: string | null;
+  }) =>
+    apiFetch<{ accessToken: string; refreshToken: string; user: any }>("/auth/oauth", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 
   // Users & Profile Settings
   updateProfile: (body: { username?: string; bio?: string; privacyMode?: string; profilePhotoUrl?: string }) =>

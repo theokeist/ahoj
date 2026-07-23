@@ -14,10 +14,13 @@ const queryClient = new QueryClient({
   },
 });
 
+import { StatusBar } from "expo-status-bar";
+
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <View style={styles.root}>
+        <StatusBar style="light" backgroundColor={colors.background.primary} />
         <QueryClientProvider client={queryClient}>
           <Stack
             screenOptions={{

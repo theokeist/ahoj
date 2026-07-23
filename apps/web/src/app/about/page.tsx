@@ -1,64 +1,46 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, MapPin, Sparkles, Heart, Zap, Shield, Users } from "lucide-react";
 import Navigation from "../../components/Navigation";
-
-/* ── People data with free randomuser photos ──────────────────── */
-const PEOPLE = [
-  { id: 1, name: "Karolína V.", age: 24, city: "Brno", photo: "https://randomuser.me/api/portraits/women/44.jpg", distance: "320m", story: "Potkala jsem tu svou nejlepší kamarádku. Bydlíme 300 metrů od sebe a ani jsme o sobě nevěděly." },
-  { id: 2, name: "Tomáš P.", age: 28, city: "Praha", photo: "https://randomuser.me/api/portraits/men/32.jpg", distance: "1.2km", story: "Organizuju spontánní basketbalové zápasy přes Sparks. Vždy se najde 10 lidí během hodiny." },
-  { id: 3, name: "Tereza K.", age: 22, city: "Ostrava", photo: "https://randomuser.me/api/portraits/women/68.jpg", distance: "750m", story: "Ghost Mode je záchrana. Zapnu ho kdykoliv potřebuju klid, ale přesto vidím příběhy kolem sebe." },
-  { id: 4, name: "Lukáš M.", age: 31, city: "Plzeň", photo: "https://randomuser.me/api/portraits/men/75.jpg", distance: "500m", story: "Přes ahoj jsem našel partu na horolezení. Chodíme spolu každý víkend." },
-  { id: 5, name: "Anežka S.", age: 19, city: "Brno", photo: "https://randomuser.me/api/portraits/women/12.jpg", distance: "90m", story: "Bydlíme ve stejném domě! Sdílíme příběhy o kavárničkách a lokalitách, které milujeme." },
-  { id: 6, name: "Marek D.", age: 26, city: "Liberec", photo: "https://randomuser.me/api/portraits/men/54.jpg", distance: "2.1km", story: "Jako fotograf zbožňuju, jak ahoj propojuje lidi se sdílenou vášní bez nutnosti sledovat velká media." },
-  { id: 7, name: "Barbora N.", age: 33, city: "Olomouc", photo: "https://randomuser.me/api/portraits/women/89.jpg", distance: "410m", story: "Naše zahradní komunita vznikla přes ahoj. Sdílíme zeleninu a tipy na pěstování." },
-  { id: 8, name: "Ondřej F.", age: 25, city: "Praha", photo: "https://randomuser.me/api/portraits/men/22.jpg", distance: "880m", story: "Každý pátek organizuju impromptu jam sessions. ahoj je nejlepší způsob jak najít muzikanty nablízku." },
-];
-
-/* ── Masonry stats ────────────────────────────────────────────── */
-const STATS = [
-  { value: "48k+", label: "Aktivní uživatelé", icon: <Users size={20} /> },
-  { value: "320ms", label: "Průměrná odezva radaru", icon: <Zap size={20} /> },
-  { value: "94%", label: "Uživatelů se potkalo naživo", icon: <Heart size={20} /> },
-  { value: "12k+", label: "Sparks meetupů měsíčně", icon: <MapPin size={20} /> },
-];
-
-/* ── Feature cards (vary height) ─────────────────────────────── */
-const FEATURES = [
-  {
-    icon: <MapPin size={22} />,
-    color: "#00F2FE",
-    title: "Hyper-local radar",
-    body: "Nastav svůj dosah od 100 metrů do 5 kilometrů. Vidíš jen lidi, kteří jsou skutečně poblíž.",
-    size: "tall",
-  },
-  {
-    icon: <Zap size={22} />,
-    color: "#FFB347",
-    title: "Sparks meetupy",
-    body: "Vytvoř spontánní setkání — sport, káva, jam session. Vyprší po 2 hodinách.",
-    size: "short",
-  },
-  {
-    icon: <Shield size={22} />,
-    color: "#FF6B6B",
-    title: "Ghost Mode",
-    body: "Staň se neviditelným. Vidíš okolí, okolí nevidí tebe.",
-    size: "short",
-  },
-  {
-    icon: <Heart size={22} />,
-    color: "#C56BFF",
-    title: "Příběhy na 24h",
-    body: "Sdílej momenty bez permanentní digitální stopy. Příběhy mizí automaticky.",
-    size: "tall",
-  },
-];
+import { getTranslations, type SupportedLanguage } from "../../locales";
 
 export default function AboutPage() {
   const [hovered, setHovered] = useState<number | null>(null);
+  const [lang, setLang] = useState<SupportedLanguage>("cs");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("ahoj-lang") as SupportedLanguage;
+    if (saved) setLang(saved);
+
+    const handleLangChange = (e: any) => {
+      if (e.detail) setLang(e.detail);
+    };
+    window.addEventListener("ahoj-lang-change", handleLangChange);
+    return () => window.removeEventListener("ahoj-lang-change", handleLangChange);
+  }, []);
+
+  const t = getTranslations(lang).about;
+  const common = getTranslations(lang).common;
+
+  const peopleList = [
+    { id: 1, name: "Karolína V.", age: 24, city: "Brno", photo: "https://randomuser.me/api/portraits/women/44.jpg", distance: "320m", story: t.stories.karolina },
+    { id: 2, name: "Tomáš P.", age: 28, city: "Praha", photo: "https://randomuser.me/api/portraits/men/32.jpg", distance: "1.2km", story: t.stories.tomas },
+    { id: 3, name: "Tereza K.", age: 22, city: "Ostrava", photo: "https://randomuser.me/api/portraits/women/68.jpg", distance: "750m", story: t.stories.tereza },
+    { id: 4, name: "Lukáš M.", age: 31, city: "Plzeň", photo: "https://randomuser.me/api/portraits/men/75.jpg", distance: "500m", story: t.stories.lukas },
+    { id: 5, name: "Anežka S.", age: 19, city: "Brno", photo: "https://randomuser.me/api/portraits/women/12.jpg", distance: "90m", story: t.stories.anezka },
+    { id: 6, name: "Marek D.", age: 26, city: "Liberec", photo: "https://randomuser.me/api/portraits/men/54.jpg", distance: "2.1km", story: t.stories.marek },
+    { id: 7, name: "Barbora N.", age: 33, city: "Olomouc", photo: "https://randomuser.me/api/portraits/women/89.jpg", distance: "410m", story: t.stories.barbora },
+    { id: 8, name: "Ondřej F.", age: 25, city: "Praha", photo: "https://randomuser.me/api/portraits/men/22.jpg", distance: "880m", story: t.stories.ondrej },
+  ];
+
+  const statsList = [
+    { value: "48k+", label: t.stats.users, icon: <Users size={20} /> },
+    { value: "320ms", label: t.stats.radar, icon: <Zap size={20} /> },
+    { value: "94%", label: t.stats.metIrl, icon: <Heart size={20} /> },
+    { value: "12k+", label: t.stats.sparks, icon: <MapPin size={20} /> },
+  ];
 
   return (
     <div className="min-h-screen bg-[#0C0C0C] text-white flex flex-col relative overflow-hidden">
@@ -73,23 +55,23 @@ export default function AboutPage() {
         {/* ── Hero ──────────────────────────────────────────────── */}
         <div className="max-w-5xl mx-auto px-6 text-center mb-20 space-y-5">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#00F2FE]/10 border border-[#00F2FE]/25 text-xs font-bold text-[#00F2FE]">
-            <Sparkles size={12} /> Lidé blízko tebe
+            <Sparkles size={12} /> {t.badge}
           </span>
           <h1 className="text-5xl sm:text-7xl font-black tracking-tight leading-none">
-            Reálné spojení.<br />
+            {t.title1}<br />
             <span className="bg-gradient-to-r from-[#00F2FE] to-[#C56BFF] bg-clip-text text-transparent">
-              Reálná blízkost.
+              {t.title2}
             </span>
           </h1>
           <p className="text-white/60 text-lg max-w-2xl mx-auto leading-relaxed">
-            ahoj není o sledování celebrit. Je o lidech kolem tebe — sousedech, spolucestujících, nových přátelích na dosah ruky.
+            {t.heroDesc}
           </p>
           <div className="flex items-center justify-center gap-4 pt-2">
             <Link href="/register" className="px-7 py-3.5 rounded-2xl bg-[#00F2FE] text-black font-bold text-sm shadow-[0_0_25px_rgba(0,242,254,0.4)] hover:scale-[1.02] transition-all flex items-center gap-2">
-              Připojit se <ArrowRight size={15} />
+              {t.joinButton} <ArrowRight size={15} />
             </Link>
             <Link href="/login" className="px-7 py-3.5 rounded-2xl border border-white/10 bg-white/[0.03] text-white/70 hover:text-white text-sm font-semibold transition-all hover:border-white/20">
-              Přihlásit se
+              {t.signInButton}
             </Link>
           </div>
         </div>
@@ -105,7 +87,7 @@ export default function AboutPage() {
           >
 
             {/* ── People cards ──────────────────────────────── */}
-            {PEOPLE.map((p) => (
+            {peopleList.map((p) => (
               <div
                 key={p.id}
                 onMouseEnter={() => setHovered(p.id)}
@@ -166,10 +148,10 @@ export default function AboutPage() {
               padding: "24px",
             }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.40)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 20 }}>
-                ahoj v číslech
+                {t.statsTitle}
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                {STATS.map((s) => (
+                {statsList.map((s) => (
                   <div key={s.label}>
                     <div style={{ color: "#00F2FE", marginBottom: 4 }}>{s.icon}</div>
                     <div style={{ fontSize: 26, fontWeight: 900, color: "#fff", lineHeight: 1 }}>{s.value}</div>
@@ -178,37 +160,6 @@ export default function AboutPage() {
                 ))}
               </div>
             </div>
-
-            {/* ── Feature cards ─────────────────────────────── */}
-            {FEATURES.map((f) => (
-              <div
-                key={f.title}
-                style={{
-                  breakInside: "avoid",
-                  marginBottom: 16,
-                  borderRadius: 20,
-                  border: `1px solid rgba(255,255,255,0.08)`,
-                  background: "rgba(255,255,255,0.025)",
-                  padding: f.size === "tall" ? "28px 22px" : "20px 22px",
-                  transition: "border-color 0.2s",
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${f.color}40`; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
-              >
-                <div style={{
-                  width: 42, height: 42, borderRadius: 12,
-                  backgroundColor: `${f.color}15`,
-                  border: `1px solid ${f.color}30`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: f.color,
-                  marginBottom: 14,
-                }}>
-                  {f.icon}
-                </div>
-                <h3 style={{ fontSize: 15, fontWeight: 700, color: "#fff", marginBottom: 8 }}>{f.title}</h3>
-                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.6, margin: 0 }}>{f.body}</p>
-              </div>
-            ))}
 
             {/* ── Big quote card ────────────────────────────── */}
             <div style={{
@@ -221,7 +172,7 @@ export default function AboutPage() {
             }}>
               <div style={{ fontSize: 48, color: "#00F2FE", lineHeight: 1, marginBottom: 12, opacity: 0.4 }}>&ldquo;</div>
               <p style={{ fontSize: 16, fontWeight: 600, color: "#fff", lineHeight: 1.6, margin: "0 0 16px" }}>
-                Sociální sítě nás naučily sledovat cizince tisíce kilometrů daleko. ahoj tě učí vidět lidi vedle tebe.
+                {t.founderQuote}
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <img
@@ -230,8 +181,7 @@ export default function AboutPage() {
                   style={{ width: 36, height: 36, borderRadius: "50%", border: "2px solid rgba(0,242,254,0.5)" }}
                 />
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>Martin, zakladatel</div>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>Brno, Česká republika</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>{t.founderTitle}</div>
                 </div>
               </div>
             </div>
@@ -246,9 +196,9 @@ export default function AboutPage() {
               padding: "22px",
             }}>
               <Shield size={24} style={{ color: "#FF6B6B", marginBottom: 12 }} />
-              <h3 style={{ fontSize: 14, fontWeight: 700, color: "#fff", marginBottom: 8 }}>Tvoje soukromí, tvoje pravidla</h3>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: "#fff", marginBottom: 8 }}>{t.privacyTitle}</h3>
               <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
-                {["GPS souřadnice se nikdy neukládají", "Soukromé profily jsou rozmazané", "Ghost Mode — úplná neviditelnost", "Příběhy mizí po 24 hodinách"].map((item) => (
+                {t.privacyChecklist.map((item) => (
                   <li key={item} style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", display: "flex", gap: 8, alignItems: "flex-start" }}>
                     <span style={{ color: "#FF6B6B", marginTop: 2, flexShrink: 0 }}>✓</span>
                     {item}
@@ -269,10 +219,10 @@ export default function AboutPage() {
               gap: 14,
             }}>
               <div style={{ fontSize: 20, fontWeight: 900, color: "#000", lineHeight: 1.2 }}>
-                Připoj se k lidem kolem tebe dnes
+                {t.ctaTitle}
               </div>
               <p style={{ fontSize: 13, color: "rgba(0,0,0,0.65)", lineHeight: 1.5, margin: 0 }}>
-                Registrace je zdarma a trvá 30 sekund.
+                {t.ctaDesc}
               </p>
               <Link
                 href="/register"
@@ -288,7 +238,7 @@ export default function AboutPage() {
                   alignSelf: "flex-start",
                 }}
               >
-                Začít zdarma <ArrowRight size={14} />
+                {t.ctaButton} <ArrowRight size={14} />
               </Link>
             </div>
 
@@ -297,7 +247,7 @@ export default function AboutPage() {
       </main>
 
       <footer className="border-t border-white/10 py-8 text-center text-xs text-white/30">
-        ahoj app v0.1.0 • Made with 💜 in Brno •{" "}
+        ahoj app v0.1.0 • {common.footer.madeWith} •{" "}
         <Link href="/login" className="hover:text-white/60 transition-colors">Sign in</Link>
         {" · "}
         <Link href="/register" className="hover:text-white/60 transition-colors">Register</Link>

@@ -3,7 +3,7 @@
     "name": "ahoj",
     "slug": "ahoj",
     "version": "0.1.0",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "ahoj",
@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1A0A2E"
+      "backgroundColor": "#0C0C0C"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -19,6 +19,11 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.ahoj.mobile",
+      "splash": {
+        "image": "./assets/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#0C0C0C"
+      },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "ahoj needs your location to show nearby people.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "ahoj uses your location in the background to keep your proximity feed updated.",
@@ -31,9 +36,14 @@
       }
     },
     "android": {
+      "splash": {
+        "image": "./assets/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#0C0C0C"
+      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#1A0A2E"
+        "backgroundColor": "#0C0C0C"
       },
       "package": "app.ahoj.mobile",
       "permissions": [
@@ -62,14 +72,10 @@
           "locationAlwaysAndWhenInUsePermission": "ahoj uses your location to show nearby people."
         }
       ],
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/notification-icon.png",
-          "color": "#7B2FE7"
-        }
-      ],
-      "expo-secure-store"
+      "expo-notifications",
+      "expo-secure-store",
+      "expo-camera",
+      "expo-image-picker"
     ],
     "experiments": {
       "typedRoutes": true

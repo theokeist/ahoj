@@ -286,6 +286,8 @@ export default function SettingsScreen() {
                 <TouchableOpacity
                   key={m.id}
                   onPress={() => handleImmediateChange("privacyMode", m.id)}
+                  hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                  activeOpacity={0.7}
                   style={[
                     styles.segmentedSegment,
                     settings.privacyMode === m.id && styles.segmentedActive,
@@ -589,8 +591,11 @@ const styles = StyleSheet.create({
   },
   segmentedSegment: {
     flex: 1,
+    minHeight: 44,
     paddingVertical: 8,
+    paddingHorizontal: 4,
     alignItems: "center",
+    justifyContent: "center",
     borderRadius: radius.sm,
   },
   segmentedActive: {

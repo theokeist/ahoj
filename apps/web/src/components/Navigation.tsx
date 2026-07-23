@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Globe, ChevronDown, User, UserPlus } from "lucide-react";
-import { TRANSLATIONS, type SupportedLanguage } from "@ahoj/shared";
+import { getTranslations, type SupportedLanguage } from "../locales";
 import { webApi } from "../lib/api";
 
 const LANGUAGES: { code: SupportedLanguage; label: string; flag: string }[] = [
@@ -27,7 +27,7 @@ export default function Navigation() {
 
   useEffect(() => {
     const saved = localStorage.getItem("ahoj-lang") as SupportedLanguage;
-    if (saved && TRANSLATIONS[saved]) {
+    if (saved) {
       const found = LANGUAGES.find((l) => l.code === saved);
       if (found) setSelectedLang(found);
     }
@@ -61,7 +61,7 @@ export default function Navigation() {
     }
   };
 
-  const t = TRANSLATIONS[selectedLang.code]?.nav ?? TRANSLATIONS.cs.nav;
+  const t = getTranslations(selectedLang.code).common.nav;
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 bg-[#0C0C0C]/80 backdrop-blur-md border-b border-white/10">

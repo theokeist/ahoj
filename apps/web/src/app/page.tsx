@@ -1,12 +1,29 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Compass, Shield, Flame, Sparkles, ArrowRight } from "lucide-react";
 import Navigation from "../components/Navigation";
 import { MOCK_NEARBY_USERS } from "../lib/mockData";
+import { getTranslations, type SupportedLanguage } from "../locales";
 
 export default function WelcomingLandingPage() {
+  const [lang, setLang] = useState<SupportedLanguage>("cs");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("ahoj-lang") as SupportedLanguage;
+    if (saved) setLang(saved);
+
+    const handleLangChange = (e: any) => {
+      if (e.detail) setLang(e.detail);
+    };
+    window.addEventListener("ahoj-lang-change", handleLangChange);
+    return () => window.removeEventListener("ahoj-lang-change", handleLangChange);
+  }, []);
+
+  const t = getTranslations(lang).landing;
+  const common = getTranslations(lang).common;
+
   return (
     <div className="min-h-screen bg-[#0C0C0C] text-white flex flex-col font-sans relative overflow-hidden">
       {/* Dynamic Background Glows */}
@@ -23,15 +40,15 @@ export default function WelcomingLandingPage() {
           {/* Left: Text & CTAs */}
           <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#00F2FE]/10 border border-[#00F2FE]/30 text-xs font-bold text-[#00F2FE]">
-              <Sparkles className="w-3.5 h-3.5" /> Next-Gen Proximity Social Network
+              <Sparkles className="w-3.5 h-3.5" /> {t.heroBadge}
             </div>
 
             <h1 className="text-5xl sm:text-7xl font-black tracking-tight leading-none bg-gradient-to-r from-white via-zinc-100 to-[#00F2FE] bg-clip-text text-transparent">
-              Spoj se s lidmi,<br />kteří jsou blízko.
+              {t.heroTitle1}<br />{t.heroTitle2}
             </h1>
 
             <p className="text-white/70 text-base sm:text-lg leading-relaxed max-w-2xl">
-              <strong>ahoj</strong> je hyperlokální sociální síť stavící na reálné blízkosti. Zjisti, kdo je v tvém dosahu, prohlížej si mizející příběhy a začni chatovat jen s lidmi v tvém okolí.
+              {t.heroDesc}
             </p>
 
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
@@ -39,19 +56,19 @@ export default function WelcomingLandingPage() {
                 href="/register"
                 className="px-8 py-4 rounded-2xl bg-[#00F2FE] hover:bg-[#00DCE6] text-black font-bold text-sm flex items-center gap-2 shadow-[0_0_25px_rgba(0,242,254,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
-                Get Started <ArrowRight className="w-4 h-4" />
+                {t.getStarted} <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 href="/login"
                 className="px-8 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-semibold text-sm border border-white/10 hover:border-[#00F2FE]/40 transition-all"
               >
-                Sign In
+                {t.signIn}
               </Link>
               <Link
                 href="/about"
                 className="px-6 py-4 rounded-2xl text-white/60 hover:text-white text-sm font-semibold transition-colors"
               >
-                About & Tech
+                {t.aboutTech}
               </Link>
             </div>
           </div>
@@ -64,9 +81,9 @@ export default function WelcomingLandingPage() {
               {/* Simulated App Header */}
               <div className="flex items-center justify-between pt-5 pb-3 border-b border-white/10 px-2">
                 <span className="text-lg font-black text-[#00F2FE]">/A\</span>
-                <span className="text-xs font-bold text-white">Live Radar</span>
+                <span className="text-xs font-bold text-white">{t.mockupHeader}</span>
                 <span className="text-[10px] text-[#00F2FE] font-semibold flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-[#00F2FE] animate-pulse" /> Active
+                  <span className="w-2 h-2 rounded-full bg-[#00F2FE] animate-pulse" /> {t.mockupActive}
                 </span>
               </div>
 
@@ -102,9 +119,9 @@ export default function WelcomingLandingPage() {
             <div className="w-12 h-12 rounded-2xl bg-[#00F2FE]/10 border border-[#00F2FE]/30 flex items-center justify-center text-[#00F2FE]">
               <Compass className="w-6 h-6" />
             </div>
-            <h3 className="text-xl font-bold text-white">Proximity Radar</h3>
+            <h3 className="text-xl font-bold text-white">{t.features.radarTitle}</h3>
             <p className="text-xs text-white/70 leading-relaxed">
-              Objevuj lidi v reálném čase podle své aktuální polohy. Změň dosah vyhledávání od 500 metrů do 5 kilometrů a prozkoumej své okolí.
+              {t.features.radarDesc}
             </p>
           </div>
 
@@ -112,9 +129,9 @@ export default function WelcomingLandingPage() {
             <div className="w-12 h-12 rounded-2xl bg-[#FF6B6B]/10 border border-[#FF6B6B]/30 flex items-center justify-center text-[#FF6B6B]">
               <Shield className="w-6 h-6" />
             </div>
-            <h3 className="text-xl font-bold text-white">Ochrana soukromí</h3>
+            <h3 className="text-xl font-bold text-white">{t.features.privacyTitle}</h3>
             <p className="text-xs text-white/70 leading-relaxed">
-              Granulární soukromí. Soukromé účty jsou ve feedu rozmazané a vyžadují schválení žádosti o přístup. Nebo zapni Ghost Mode a staň se neviditelným.
+              {t.features.privacyDesc}
             </p>
           </div>
 
@@ -122,9 +139,9 @@ export default function WelcomingLandingPage() {
             <div className="w-12 h-12 rounded-2xl bg-amber-400/10 border border-amber-400/30 flex items-center justify-center text-amber-400">
               <Flame className="w-6 h-6" />
             </div>
-            <h3 className="text-xl font-bold text-white">Mizející příběhy</h3>
+            <h3 className="text-xl font-bold text-white">{t.features.storiesTitle}</h3>
             <p className="text-xs text-white/70 leading-relaxed">
-              Příběhy mizí po 24 hodinách. Sdílej bez obav z permanentní digitální stopy jen to, co tě baví a co děláš právě v tuto chvíli.
+              {t.features.storiesDesc}
             </p>
           </div>
         </section>
@@ -132,7 +149,7 @@ export default function WelcomingLandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-white/10 py-8 text-center text-xs text-white/40">
-        ahoj app v0.1.0 • Made with 💜 in Brno
+        ahoj app v0.1.0 • {common.footer.madeWith}
       </footer>
     </div>
   );

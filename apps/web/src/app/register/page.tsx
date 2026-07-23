@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ThemeProvider } from "../../components/ThemeProvider";
 import { OAuthProviderGrid, type OAuthProviderKey } from "../../components/OAuthProviderGrid";
 import { App } from "antd";
+import { getTranslations, type SupportedLanguage } from "../../locales";
 
 /* ── Shared custom input ─────────────────────────────────────────── */
 function Field({
@@ -76,7 +77,16 @@ function RegisterForm() {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ username?: string; email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
+  const [lang, setLang] = useState<SupportedLanguage>("cs");
   const { message } = App.useApp();
+
+  useEffect(() => {
+    const saved = localStorage.getItem("ahoj-lang") as SupportedLanguage;
+    if (saved) setLang(saved);
+  }, []);
+
+  const t = getTranslations(lang).auth;
+  const common = getTranslations(lang).common;
 
   const validate = () => {
     const e: typeof errors = {};
@@ -112,85 +122,56 @@ function RegisterForm() {
     }
   };
 
-  const handleOAuth = async (provider: OAuthProviderKey) => {
-    setLoading(true);
-    message.loading({ content: `Connecting to ${provider.toUpperCase()}...`, key: "oauth" });
-    const mockId = `${provider}_user_${Math.floor(100000 + Math.random() * 900000)}`;
-    const mockUsername = `${provider}_${Math.floor(1000 + Math.random() * 9000)}`;
-    const mockEmail = provider === "wechat" ? null : `${mockUsername}@example.com`;
-    const mockBio = "Hello from " + provider.toUpperCase();
-    const mockAvatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${mockUsername}`;
-    try {
-      const res = await fetch("http://localhost:3000/auth/oauth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider, providerUserId: mockId, email: mockEmail, username: mockUsername, avatarUrl: mockAvatarUrl, bio: mockBio }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "OAuth failed");
-      message.success({ content: `Registered as @${data.user.username}!`, key: "oauth" });
-      localStorage.setItem("accessToken", data.accessToken);
-      window.location.href = "/app";
-    } catch (err: any) {
-      message.error({ content: err.message || "OAuth failed", key: "oauth" });
-    } finally {
-      setLoading(false);
-    }
+  const handleOAuth = (provider: OAuthProviderKey) => {
+    // Option 2: Full Page Redirect (Traditional OAuth 2.0 Flow)
+    window.location.href = `http://localhost:3000/auth/oauth/${provider}/redirect`;
   };
 
   return (
     <div className="min-h-screen w-full flex bg-[#0C0C0C] text-white">
 
-      {/* ── Left: Atmosphere ───────────────────────────────────── */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-[#0C0C0C] via-[#0A192F] to-[#052930] items-center justify-center p-12 border-r border-white/10">
+      {/* ── Left: Atmospheric Atmosphere ───────────────────────── */}
+      <div className="hidden lg:flex lg:w-3/5 relative overflow-hidden bg-gradient-to-br from-[#0C0C0C] via-[#052930] to-[#0A192F] items-center justify-center p-12 border-r border-white/10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,242,254,0.12)_0,transparent_70%)] pointer-events-none" />
-        <div className="relative w-80 h-80 flex items-center justify-center">
+
+        <div className="relative w-96 h-96 flex items-center justify-center">
           <div className="absolute inset-0 rounded-full border border-[#00F2FE]/20 animate-radar" />
-          <div className="absolute w-60 h-60 rounded-full border border-[#00F2FE]/30 animate-pulse" />
-          <div className="absolute w-36 h-36 rounded-full border border-[#00F2FE]/20" />
-          <div className="w-20 h-20 rounded-full bg-[#00F2FE]/10 border border-[#00F2FE] flex items-center justify-center shadow-[0_0_40px_rgba(0,242,254,0.5)]">
-            <span className="text-xl font-black text-[#00F2FE]">/A\</span>
+          <div className="absolute w-72 h-72 rounded-full border border-[#00F2FE]/30 animate-pulse" />
+          <div className="w-24 h-24 rounded-full bg-[#00F2FE]/10 border border-[#00F2FE] flex items-center justify-center shadow-[0_0_40px_rgba(0,242,254,0.5)]">
+            <span className="text-2xl font-black text-[#00F2FE]">/A\</span>
           </div>
         </div>
 
-        {/* Feature pills */}
-        <div className="absolute inset-x-12 bottom-12 flex flex-col gap-3">
-          <div className="glass-panel p-5 rounded-2xl space-y-3">
-            <h3 className="text-lg font-bold text-white">Join the Radar</h3>
-            <p className="text-xs text-white/60 leading-relaxed">
-              Create your account and start discovering people around you instantly.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {["🌍 Proximity Radar", "💬 E2EE Chat", "⚡ Sparks", "👻 Ghost Mode"].map((f) => (
-                <span key={f} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#00F2FE]/10 text-[#00F2FE] border border-[#00F2FE]/20">
-                  {f}
-                </span>
-              ))}
-            </div>
+        <div className="absolute bottom-12 left-12 right-12 z-10 glass-panel p-6 rounded-2xl">
+          <div className="grid grid-cols-2 gap-3 text-xs text-white/70">
+            <div className="p-3 rounded-xl bg-white/5 border border-white/10 font-semibold">{t.features.radar}</div>
+            <div className="p-3 rounded-xl bg-white/5 border border-white/10 font-semibold">{t.features.chat}</div>
+            <div className="p-3 rounded-xl bg-white/5 border border-white/10 font-semibold">{t.features.sparks}</div>
+            <div className="p-3 rounded-xl bg-white/5 border border-white/10 font-semibold">{t.features.ghost}</div>
           </div>
         </div>
       </div>
 
-      {/* ── Right: Form Panel ─────────────────────────────────── */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-10 relative overflow-y-auto">
-        <div className="w-full max-w-md space-y-7 my-auto">
+      {/* ── Right: Register Form Panel ─────────────────────────── */}
+      <div className="w-full lg:w-2/5 flex items-center justify-center p-6 sm:p-10 relative overflow-y-auto">
+        <div className="w-full max-w-md space-y-6">
 
-          {/* Logo + heading */}
+          {/* Logo + Heading */}
           <div className="text-center space-y-3">
             <Link href="/" className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#00F2FE]/10 border border-[#00F2FE]/30 text-[#00F2FE] font-black text-2xl shadow-[0_0_20px_rgba(0,242,254,0.2)] hover:scale-105 transition-transform">
               /A\
             </Link>
             <div>
-              <h1 className="text-2xl font-black tracking-tight text-white">Create your account</h1>
-              <p className="text-sm text-white/40 mt-1">Free forever · Join nearby friends</p>
+              <h1 className="text-2xl font-black tracking-tight text-white">{t.registerTitle}</h1>
+              <p className="text-sm text-white/40 mt-1">{t.registerSubtitle}</p>
             </div>
           </div>
 
-          {/* Custom form */}
+          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <Field
-              label="Username"
-              placeholder="e.g. alex_24"
+              label={t.usernameLabel}
+              placeholder={t.usernamePlaceholder}
               value={username}
               onChange={setUsername}
               error={errors.username}
@@ -202,7 +183,7 @@ function RegisterForm() {
               }
             />
             <Field
-              label="Email"
+              label={t.emailLabel}
               type="email"
               placeholder="your@email.com"
               value={email}
@@ -216,7 +197,7 @@ function RegisterForm() {
               }
             />
             <Field
-              label="Password"
+              label={t.passwordLabel}
               type="password"
               placeholder="Minimum 8 characters"
               value={password}
@@ -248,7 +229,7 @@ function RegisterForm() {
                   ))}
                 </div>
                 <p className="text-[10px] text-white/30">
-                  {password.length < 4 ? "Weak" : password.length < 8 ? "Fair" : password.length < 12 ? "Good" : "Strong"}
+                  {password.length < 4 ? t.passwordStrength.weak : password.length < 8 ? t.passwordStrength.fair : password.length < 12 ? t.passwordStrength.good : t.passwordStrength.strong}
                 </p>
               </div>
             )}
@@ -258,11 +239,11 @@ function RegisterForm() {
               disabled={loading}
               className="w-full py-3.5 rounded-2xl font-bold text-sm bg-[#00F2FE] hover:bg-[#00DCE6] text-black transition-all cursor-pointer disabled:opacity-60 shadow-[0_0_20px_rgba(0,242,254,0.3)] hover:shadow-[0_0_30px_rgba(0,242,254,0.45)] hover:scale-[1.01] active:scale-[0.99]"
             >
-              {loading ? "Creating account…" : "Create Account →"}
+              {loading ? "..." : t.createAccountButton}
             </button>
 
             <p className="text-center text-[11px] text-white/25">
-              By registering you agree to our Terms of Service
+              {t.termsNotice}
             </p>
           </form>
 
@@ -270,16 +251,16 @@ function RegisterForm() {
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-white/10" />
-              <span className="text-xs text-white/30 font-medium">or sign up with</span>
+              <span className="text-xs text-white/30 font-medium">{t.orOAuth}</span>
               <div className="flex-1 h-px bg-white/10" />
             </div>
             <OAuthProviderGrid onSelectProvider={handleOAuth} loading={loading} />
           </div>
 
           <p className="text-center text-xs text-white/35">
-            Already have an account?{" "}
+            {t.alreadyHaveAccount}{" "}
             <Link href="/login" className="text-[#00F2FE] hover:underline font-semibold">
-              Sign in here
+              {t.signInHere}
             </Link>
           </p>
 
@@ -292,7 +273,7 @@ function RegisterForm() {
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M19 12H5M12 5l-7 7 7 7"/>
               </svg>
-              Back to ahoj home
+              {common.footer.backToHome}
             </Link>
           </div>
         </div>
