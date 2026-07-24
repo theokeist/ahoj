@@ -972,116 +972,134 @@ export default function FullWebAppDashboard() {
                   </div>
                 </div>
               ) : (
-                /* Multi-Card Stream (Privacy-Aware User Cards - Showing User Info According to Settings) */
+                /* Multi-Card Stream (twttr Prototype Design — Nested Speech-Bubble Cards with User Bio, Nearby Distance & Media) */
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {nearbyUsers.map((user) => {
-                    const pOne = plusOneState[user.id] || { count: 14, clicked: false };
+                  {nearbyUsers.map((user, idx) => {
+                    const pOne = plusOneState[user.id] || { count: 14 + idx * 3, clicked: false };
                     const isGhost = user.privacyMode === "GHOST";
                     const isPrivate = user.privacyMode === "PRIVATE";
+                    const userBio = user.bio || "Proximity mesh network participant in Brno center. Building real-time interactive apps.";
 
                     return (
                       <article
                         key={user.id}
-                        className="p-5 rounded-3xl bg-[#121212] border border-white/10 hover:border-[#00F2FE]/50 transition-all flex flex-col justify-between shadow-xl hover:shadow-[0_0_25px_rgba(0,242,254,0.18)] group relative overflow-hidden"
+                        className="p-5 rounded-[26px] bg-[#121212] border border-white/12 hover:border-[#00F2FE]/50 transition-all flex flex-col justify-between shadow-xl hover:shadow-[0_0_30px_rgba(0,242,254,0.15)] group relative overflow-hidden space-y-4"
                       >
-                        {/* Distinct Top Accent Bar */}
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#00F2FE]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        {/* twttr Prototype Status Header Badge */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white/70 font-mono">
+                            <span className="w-2 h-2 rounded-full bg-[#00F2FE]" />
+                            {isGhost ? "Ghost Node 👻" : isPrivate ? "Protected Node 🔒" : "Nearby Node 📡"}
+                          </div>
+                          <span className="text-[10px] font-mono text-white/40">{user.lastActive || "Just now"}</span>
+                        </div>
 
-                        <div className="space-y-3.5">
-                          {/* User Header Row */}
-                          <div className="flex items-center justify-between">
-                            <div
-                              onClick={() => setSelectedProfileUser(user)}
-                              className="flex items-center gap-3 cursor-pointer group/user min-w-0"
-                              title="View Profile (Splitter)"
-                            >
-                              <div className="relative shrink-0">
-                                <img
-                                  src={user.avatarUrl}
-                                  alt={user.username}
-                                  className={`w-12 h-12 rounded-2xl object-cover border transition-all ${
-                                    isGhost
-                                      ? "border-purple-500/60 blur-[0.5px]"
-                                      : isPrivate
-                                      ? "border-amber-400/60"
-                                      : "border-white/15 group-hover/user:border-[#00F2FE]"
-                                  }`}
-                                />
-                                <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-[#121212] flex items-center justify-center text-[8px] font-bold text-white ${
-                                  isGhost ? "bg-purple-600" : isPrivate ? "bg-amber-500" : "bg-[#00F2FE]"
-                                }`}>
-                                  {isGhost ? "👻" : isPrivate ? "🔒" : "✓"}
-                                </div>
-                              </div>
-
-                              <div className="min-w-0">
-                                <div className="font-extrabold text-sm text-white flex items-center gap-1.5 group-hover/user:text-[#00F2FE] transition-colors truncate">
-                                  @{user.username}
-                                  {user.oauthProviderLabel && (
-                                    <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#00F2FE]/15 text-[#00F2FE] border border-[#00F2FE]/30 shrink-0">
-                                      {user.oauthProviderLabel}
-                                    </span>
-                                  )}
-                                </div>
-
-                                <div className="flex items-center gap-2 text-[11px] text-white/60 font-medium pt-0.5">
-                                  <span className="text-[#00F2FE] font-bold flex items-center gap-1">
-                                    <MapPin size={11} />
-                                    {isGhost
-                                      ? `~${user.distanceMeters + 180}m (Ghost 👻)`
-                                      : `~${user.distanceMeters}m away`}
-                                  </span>
-                                  <span>·</span>
-                                  <span className="text-white/40">{user.lastActive || "2m ago"}</span>
-                                </div>
-                              </div>
+                        {/* twttr User Main Profile & Bio Header */}
+                        <div className="flex items-start gap-3">
+                          <div
+                            onClick={() => setSelectedProfileUser(user)}
+                            className="relative shrink-0 cursor-pointer group/avatar"
+                          >
+                            <img
+                              src={user.avatarUrl}
+                              alt={user.username}
+                              className={`w-13 h-13 rounded-2xl object-cover border transition-all ${
+                                isGhost
+                                  ? "border-purple-500/60 blur-[0.5px]"
+                                  : isPrivate
+                                  ? "border-amber-400/60"
+                                  : "border-white/15 group-hover/avatar:border-[#00F2FE]"
+                              }`}
+                            />
+                            <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-[#121212] flex items-center justify-center text-[8px] font-bold text-white ${
+                              isGhost ? "bg-purple-600" : isPrivate ? "bg-amber-500" : "bg-[#00F2FE]"
+                            }`}>
+                              {isGhost ? "👻" : isPrivate ? "🔒" : "✓"}
                             </div>
-
-                            <button
-                              type="button"
-                              onClick={() => setSelectedProfileUser(user)}
-                              className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-[#00F2FE]/15 text-white/80 hover:text-[#00F2FE] border border-white/10 text-[11px] font-bold transition-all cursor-pointer shrink-0"
-                            >
-                              Profile 👤
-                            </button>
                           </div>
 
-                          {/* Distinct Icebreaker Quote Box */}
-                          <div className="bg-white/[0.03] p-3.5 rounded-2xl border-l-2 border-l-[#00F2FE] border border-white/5 space-y-2">
-                            <p className="text-xs text-white/90 italic font-medium leading-relaxed">
-                              &ldquo;{user.message}&rdquo;
-                            </p>
-
-                            {/* Media Story Attachment (Only displayed when active and permitted by privacy settings) */}
-                            {user.stories && user.stories.length > 0 && !isPrivate && (
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex items-center justify-between">
                               <div
                                 onClick={() => setSelectedProfileUser(user)}
-                                className="relative mt-2 rounded-xl overflow-hidden border border-white/10 group/img cursor-pointer"
+                                className="font-extrabold text-sm text-white flex items-center gap-1.5 cursor-pointer hover:text-[#00F2FE] transition-colors truncate"
                               >
-                                <img
-                                  src={user.stories[0]}
-                                  alt="Media Story Attachment"
-                                  className="w-full h-32 object-cover group-hover/img:scale-105 transition-transform duration-300"
-                                />
-                                <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur-md text-[10px] font-bold text-white flex items-center gap-1 border border-white/20">
-                                  📷 Proximity Media Story
-                                </div>
+                                @{user.username}
+                                {user.oauthProviderLabel && (
+                                  <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#00F2FE]/15 text-[#00F2FE] border border-[#00F2FE]/30 shrink-0">
+                                    {user.oauthProviderLabel}
+                                  </span>
+                                )}
                               </div>
-                            )}
 
-                            {isPrivate && (
-                              <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-bold flex items-center justify-between">
-                                <span>🔒 Private Profile Details</span>
-                                <span className="text-[10px] underline cursor-pointer" onClick={() => setSelectedProfileUser(user)}>
-                                  Request Access
-                                </span>
-                              </div>
-                            )}
+                              <span className="text-[11px] font-bold text-[#00F2FE] flex items-center gap-1 shrink-0 font-mono">
+                                <MapPin size={11} />
+                                {isGhost ? `~${user.distanceMeters + 180}m 👻` : `~${user.distanceMeters}m`}
+                              </span>
+                            </div>
+
+                            {/* User Bio Line (twttr Prototype feature) */}
+                            <p className="text-[11px] text-white/60 line-clamp-2 leading-tight">
+                              {userBio}
+                            </p>
                           </div>
                         </div>
 
-                        {/* Distinct Social Action Toolbar */}
-                        <div className="pt-3 border-t border-white/10 flex items-center justify-between mt-3">
+                        {/* twttr Prototype Icebreaker Speech Bubble */}
+                        <div className="bg-white/[0.03] p-4 rounded-2xl border-l-3 border-l-[#00F2FE] border border-white/5 space-y-3">
+                          <p className="text-xs text-white/90 font-medium italic leading-relaxed">
+                            &ldquo;{user.message}&rdquo;
+                          </p>
+
+                          {/* Media Attachment (Photo Story or Spark) */}
+                          {user.stories && user.stories.length > 0 && !isPrivate && (
+                            <div
+                              onClick={() => setSelectedProfileUser(user)}
+                              className="relative rounded-xl overflow-hidden border border-white/10 group/img cursor-pointer"
+                            >
+                              <img
+                                src={user.stories[0]}
+                                alt="Story Attachment"
+                                className="w-full h-36 object-cover group-hover/img:scale-105 transition-transform duration-300"
+                              />
+                              <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-black/80 backdrop-blur-md text-[10px] font-bold text-white flex items-center gap-1.5 border border-white/20">
+                                📷 Media Story Attachment
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Spark Meetup Callout Banner (If available) */}
+                          {!isPrivate && idx % 2 === 0 && (
+                            <div className="p-2.5 rounded-xl bg-[#00F2FE]/10 border border-[#00F2FE]/30 flex items-center justify-between text-xs text-white">
+                              <span className="font-bold flex items-center gap-1.5 text-[#00F2FE]">
+                                ⚡ Active Spark: Specialty Coffee Chat
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setActiveTab("sparks")}
+                                className="px-2.5 py-1 rounded-lg bg-[#00F2FE] text-black font-extrabold text-[10px]"
+                              >
+                                Join Spark
+                              </button>
+                            </div>
+                          )}
+
+                          {isPrivate && (
+                            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-bold flex items-center justify-between">
+                              <span>🔒 Protected Profile & Stories</span>
+                              <button
+                                type="button"
+                                onClick={() => alert(`Access request sent to @${user.username}`)}
+                                className="px-2.5 py-1 rounded-lg bg-amber-500 text-black font-extrabold text-[10px]"
+                              >
+                                Request Access
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* twttr Broad Action Toolbar */}
+                        <div className="pt-3 border-t border-white/10 flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             {/* +1 Endorse Button */}
                             <button
@@ -1105,6 +1123,7 @@ export default function FullWebAppDashboard() {
                                   { id: `msg-1-${user.id}`, senderId: user.id, content: `Ahoj! &ldquo;${user.message}&rdquo;` },
                                   { id: `msg-2-${user.id}`, senderId: myUser?.id || "me", content: "Ahoj! Great to connect nearby on Ahoj." },
                                 ]);
+                                setActiveTab("chats");
                               }}
                               className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 border border-white/10 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
                             >
@@ -1112,9 +1131,13 @@ export default function FullWebAppDashboard() {
                             </button>
                           </div>
 
-                          <span className="text-[10px] text-white/40 font-mono">
-                            {isGhost ? "Ghost 👻" : isPrivate ? "Private 🔒" : "Public 🌐"}
-                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedProfileUser(user)}
+                            className="px-3.5 py-1.5 rounded-xl bg-[#00F2FE] text-black font-extrabold text-xs hover:scale-105 transition-all shadow-[0_0_12px_rgba(0,242,254,0.3)] cursor-pointer"
+                          >
+                            Profile 👤
+                          </button>
                         </div>
                       </article>
                     );
