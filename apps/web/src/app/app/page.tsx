@@ -482,11 +482,34 @@ export default function FullWebAppDashboard() {
 
   const handleSendMessage = async (text: string) => {
     if (!text.trim() || !activeChatUser) return;
-    try {
-      const res = await webApi.sendMessage(activeChatUser.id, text);
-      setMessages((prev) => [...prev, res.message]);
-      setTypedMessage("");
-    } catch {}
+    const newMsg = {
+      id: `msg-${Date.now()}`,
+      senderId: myUser?.id || "me",
+      content: text.trim(),
+    };
+    setMessages((prev) => [...prev, newMsg]);
+    setTypedMessage("");
+
+    // Simulated live auto-reply for demo sandbox chat accounts
+    if (!activeChatUser.isSystem && !activeChatUser.isOwnProfileSpace) {
+      setTimeout(() => {
+        const demoReplies = [
+          "Ahoj! Super message. Let's grab coffee at Monogram soon! ☕",
+          "Sounds great! I'm nearby Brno center right now. ⚡",
+          "Awesome! Check out my profile splitter for more details. 🎨",
+          "Yo! Let's connect on Ahoj radar meetup! 🏀",
+        ];
+        const randomReply = demoReplies[Math.floor(Math.random() * demoReplies.length)];
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `reply-${Date.now()}`,
+            senderId: activeChatUser.id,
+            content: `⚡ @${activeChatUser.username}: ${randomReply}`,
+          },
+        ]);
+      }, 1000);
+    }
   };
 
   const handleCreateSpark = async () => {
@@ -1103,6 +1126,37 @@ export default function FullWebAppDashboard() {
                       className="w-full glass-input pl-8 pr-3 py-1.5 rounded-xl text-xs text-white placeholder-white/40"
                     />
                     <Search size={13} className="absolute left-2.5 top-2.5 text-white/40" />
+                  </div>
+
+                  {/* Demo Accounts Quick Sandbox Switcher */}
+                  <div className="bg-white/[0.03] p-2 rounded-2xl border border-white/10 space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-bold text-[#00F2FE]">
+                      <span className="flex items-center gap-1">⚡ Demo Sandbox Accounts</span>
+                      <span className="text-white/40 font-normal">Click to chat</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
+                      {nearbyUsers.map((u) => (
+                        <button
+                          key={u.id}
+                          type="button"
+                          onClick={() => {
+                            setActiveChatUser(u);
+                            setMessages([
+                              { id: `msg-1-${u.id}`, senderId: u.id, content: `Ahoj! &ldquo;${u.message}&rdquo;` },
+                              { id: `msg-2-${u.id}`, senderId: myUser?.id || "me", content: "Ahoj! Great to connect nearby on Ahoj." },
+                            ]);
+                          }}
+                          className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold shrink-0 transition-all cursor-pointer ${
+                            activeChatUser?.id === u.id
+                              ? "bg-[#00F2FE] text-black shadow-[0_0_10px_rgba(0,242,254,0.4)] font-extrabold"
+                              : "bg-white/5 text-white/70 hover:text-white border border-white/10"
+                          }`}
+                        >
+                          <img src={u.avatarUrl} alt={u.username} className="w-4 h-4 rounded-full object-cover" />
+                          <span>@{u.username}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
