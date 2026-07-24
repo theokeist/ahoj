@@ -808,89 +808,60 @@ export default function FullWebAppDashboard() {
                 </div>
               </div>
 
-              {/* ── Conditional View Mode: Radar View ("Kruh radaru" Full Map-like Viewport) vs Grid Cards ── */}
+              {/* ── Conditional View Mode: Radar Orbit View vs Privacy-Aware User Cards ── */}
               {viewMode === "radar" ? (
                 <div className="w-full min-h-[580px] h-[calc(100vh-220px)] rounded-3xl border border-white/15 bg-[#090909] relative overflow-hidden flex items-center justify-center shadow-2xl">
                   {/* Map Grid Pattern Background */}
                   <div className="absolute inset-0 bg-[radial-gradient(#00F2FE_1px,transparent_1px)] [background-size:24px_24px] opacity-15 pointer-events-none" />
 
                   {/* Floating Map Control Bar (Top Left) */}
-                  <div className="absolute top-4 left-4 z-30 flex items-center gap-2 bg-black/80 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/15 text-xs text-white">
+                  <div className="absolute top-4 left-4 z-30 flex items-center gap-2 bg-black/80 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/15 text-xs text-white shadow-xl">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#00F2FE] animate-ping" />
-                    <span className="font-bold flex items-center gap-1.5">
-                      <MapPin size={14} className="text-[#00F2FE]" /> Live Radar Map (Brno)
+                    <span className="font-extrabold flex items-center gap-1.5">
+                      <MapPin size={14} className="text-[#00F2FE]" /> Live Proximity Radar (Brno)
                     </span>
                     <span className="text-[10px] font-mono text-[#00F2FE] bg-[#00F2FE]/10 px-2 py-0.5 rounded-full border border-[#00F2FE]/30">
-                      {radiusKm} km · {nearbyUsers.length} Users
+                      {radiusKm} km · {nearbyUsers.length} Active Nodes
                     </span>
                   </div>
 
-                  {/* Floating Map Category Filters (Top Right) */}
-                  <div className="absolute top-4 right-4 z-30 hidden sm:flex items-center gap-1.5 bg-black/80 backdrop-blur-md p-1.5 rounded-2xl border border-white/15">
-                    {["All", "☕ Coffee", "🏀 Sports", "💻 Tech", "🎧 Music"].map((cat, i) => (
-                      <button
-                        key={cat}
-                        type="button"
-                        className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all ${
-                          i === 0 ? "bg-[#00F2FE] text-black" : "text-white/70 hover:text-white hover:bg-white/10"
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Floating Map Zoom & Action Controls (Bottom Right) */}
-                  <div className="absolute bottom-4 right-4 z-30 flex flex-col gap-2">
-                    <button
-                      type="button"
-                      onClick={() => alert("Zooming in on radar map...")}
-                      className="w-9 h-9 rounded-xl bg-black/80 backdrop-blur-md text-white border border-white/15 font-black text-sm flex items-center justify-center hover:bg-white/20 transition-all shadow-lg"
-                      title="Zoom In"
-                    >
-                      +
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => alert("Zooming out on radar map...")}
-                      className="w-9 h-9 rounded-xl bg-black/80 backdrop-blur-md text-white border border-white/15 font-black text-sm flex items-center justify-center hover:bg-white/20 transition-all shadow-lg"
-                      title="Zoom Out"
-                    >
-                      −
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => alert("Recentered on your location")}
-                      className="w-9 h-9 rounded-xl bg-[#00F2FE] text-black font-bold text-xs flex items-center justify-center shadow-[0_0_15px_rgba(0,242,254,0.4)] hover:scale-105 transition-all"
-                      title="Recenter"
-                    >
-                      🎯
-                    </button>
+                  {/* Floating Privacy Status Indicator (Top Right) */}
+                  <div className="absolute top-4 right-4 z-30 hidden sm:flex items-center gap-2 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-white/15 text-xs text-white">
+                    <span className="text-[10px] font-bold text-white/60">Your Mode:</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-mono border ${
+                      settingsForm.privacyMode === "GHOST"
+                        ? "bg-purple-500/20 text-purple-300 border-purple-500/40"
+                        : settingsForm.privacyMode === "PRIVATE"
+                        ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                        : "bg-[#00F2FE]/15 text-[#00F2FE] border-[#00F2FE]/30"
+                    }`}>
+                      {settingsForm.privacyMode === "GHOST" ? "Ghost Fuzzing 👻 (300m)" : settingsForm.privacyMode === "PRIVATE" ? "Private 🔒" : "Public 🌐"}
+                    </span>
                   </div>
 
                   {/* Floating Legend / Quick Hint (Bottom Left) */}
-                  <div className="absolute bottom-4 left-4 z-30 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/15 text-[11px] text-white/60 font-medium hidden sm:block">
-                    Click any avatar blip to open full Profile Splitter
+                  <div className="absolute bottom-4 left-4 z-30 bg-black/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15 text-[11px] text-white/70 font-medium hidden sm:flex items-center gap-2 shadow-lg">
+                    <span>💡 Tap any radar node for instant media preview & profile splitter</span>
                   </div>
 
-                  {/* Full-Size Interactive Circular Radar Field */}
+                  {/* Full-Size Interactive Circular Radar Orbit Field */}
                   <div className="relative w-[92%] max-w-[620px] aspect-square rounded-full border border-[#00F2FE]/25 flex items-center justify-center bg-[radial-gradient(circle_at_center,rgba(0,242,254,0.12)_0,transparent_75%)] shadow-[0_0_80px_rgba(0,242,254,0.15)] overflow-hidden">
-                    {/* Concentric Distance Circles */}
+                    {/* Concentric Distance Orbit Circles */}
                     <div className="absolute inset-0 rounded-full border border-[#00F2FE]/15 pointer-events-none" />
                     <div className="absolute w-4/5 h-4/5 rounded-full border border-[#00F2FE]/25 pointer-events-none flex items-start justify-center">
-                      <span className="text-[10px] font-mono font-bold text-[#00F2FE]/70 mt-2 bg-black/60 px-2 py-0.5 rounded-full border border-[#00F2FE]/30">500m</span>
+                      <span className="text-[10px] font-mono font-bold text-[#00F2FE]/70 mt-2 bg-black/80 px-2 py-0.5 rounded-full border border-[#00F2FE]/30">500m Orbit</span>
                     </div>
                     <div className="absolute w-3/5 h-3/5 rounded-full border border-[#00F2FE]/35 pointer-events-none flex items-start justify-center">
-                      <span className="text-[10px] font-mono font-bold text-[#00F2FE]/80 mt-2 bg-black/60 px-2 py-0.5 rounded-full border border-[#00F2FE]/30">250m</span>
+                      <span className="text-[10px] font-mono font-bold text-[#00F2FE]/80 mt-2 bg-black/80 px-2 py-0.5 rounded-full border border-[#00F2FE]/30">250m Orbit</span>
                     </div>
                     <div className="absolute w-2/5 h-2/5 rounded-full border border-[#00F2FE]/45 pointer-events-none flex items-start justify-center">
-                      <span className="text-[10px] font-mono font-bold text-[#00F2FE] mt-2 bg-black/60 px-2 py-0.5 rounded-full border border-[#00F2FE]/30">100m</span>
+                      <span className="text-[10px] font-mono font-bold text-[#00F2FE] mt-2 bg-black/80 px-2 py-0.5 rounded-full border border-[#00F2FE]/30">100m Orbit</span>
                     </div>
                     <div className="absolute w-1/5 h-1/5 rounded-full border border-[#00F2FE]/60 pointer-events-none" />
 
                     {/* Axis Crosshairs */}
-                    <div className="absolute inset-x-0 top-1/2 h-px bg-[#00F2FE]/25 pointer-events-none" />
-                    <div className="absolute inset-y-0 left-1/2 w-px bg-[#00F2FE]/25 pointer-events-none" />
+                    <div className="absolute inset-x-0 top-1/2 h-px bg-[#00F2FE]/20 pointer-events-none" />
+                    <div className="absolute inset-y-0 left-1/2 w-px bg-[#00F2FE]/20 pointer-events-none" />
 
                     {/* Animated 360 Sweep Beam */}
                     <div
@@ -905,21 +876,24 @@ export default function FullWebAppDashboard() {
                     <div
                       onClick={() => setActiveTab("profile")}
                       className="relative z-20 w-12 h-12 rounded-full bg-[#00F2FE] text-black font-black text-xs flex flex-col items-center justify-center shadow-[0_0_25px_rgba(0,242,254,0.9)] cursor-pointer hover:scale-110 transition-transform"
-                      title="Your Location (Click for Profile)"
+                      title="Your Location (Click for Profile Splitter)"
                     >
-                      <span className="leading-none text-sm">/A\</span>
+                      <span className="leading-none text-sm font-extrabold">/A\</span>
                       <span className="text-[8px] font-extrabold uppercase">You</span>
                     </div>
 
-                    {/* Positioned Nearby User Blips across Map Field */}
+                    {/* Positioned Nearby User Nodes across Radar Orbit */}
                     {nearbyUsers.map((u, idx) => {
-                      const angles = [45, 135, 210, 315, 75, 260];
-                      const distancesPx = [180, 220, 240, 140, 210, 190];
+                      const angles = [45, 135, 210, 315, 75, 260, 160, 290];
+                      const distancesPx = [180, 220, 240, 140, 210, 190, 160, 230];
                       const angle = angles[idx % angles.length];
                       const dist = distancesPx[idx % distancesPx.length];
                       const rad = (angle * Math.PI) / 180;
                       const x = Math.cos(rad) * dist;
                       const y = Math.sin(rad) * dist;
+
+                      const isGhost = u.privacyMode === "GHOST";
+                      const isPrivate = u.privacyMode === "PRIVATE";
 
                       return (
                         <div
@@ -929,21 +903,68 @@ export default function FullWebAppDashboard() {
                           style={{
                             transform: `translate(${x}px, ${y}px)`,
                           }}
-                          title={`@${u.username} (${u.distanceMeters}m)`}
                         >
                           <div className="relative">
                             <img
                               src={u.avatarUrl}
                               alt={u.username}
-                              className="w-10 h-10 rounded-full object-cover border-2 border-[#00F2FE] shadow-[0_0_20px_rgba(0,242,254,0.7)]"
+                              className={`w-10 h-10 rounded-full object-cover border-2 shadow-lg transition-all ${
+                                isGhost
+                                  ? "border-purple-500 blur-[0.5px] opacity-80"
+                                  : isPrivate
+                                  ? "border-amber-400"
+                                  : "border-[#00F2FE] shadow-[0_0_15px_rgba(0,242,254,0.6)]"
+                              }`}
                             />
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#00F2FE] border-2 border-[#090909]" />
+                            {/* Privacy Badge Icon */}
+                            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#0C0C0C] border border-white/30 flex items-center justify-center text-[9px] text-white shadow">
+                              {isGhost ? "👻" : isPrivate ? "🔒" : "🌐"}
+                            </div>
                           </div>
 
-                          {/* Map User Label Pill */}
-                          <div className="absolute top-11 left-1/2 -translate-x-1/2 bg-black/85 backdrop-blur-md px-2 py-0.5 rounded-lg border border-[#00F2FE]/40 text-[10px] font-bold text-white whitespace-nowrap shadow-lg flex items-center gap-1">
-                            <span className="text-[#00F2FE]">@{u.username}</span>
-                            <span className="text-white/50 text-[9px]">~{u.distanceMeters}m</span>
+                          {/* Hover Media & User Card Tooltip */}
+                          <div className="absolute top-12 left-1/2 -translate-x-1/2 bg-black/90 backdrop-blur-xl p-3 rounded-2xl border border-white/20 text-xs text-white opacity-0 group-hover:opacity-100 transition-all pointer-events-none group-hover:pointer-events-auto shadow-2xl z-40 w-48 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="font-extrabold text-xs text-white">@{u.username}</span>
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-[#00F2FE] font-mono">
+                                {isGhost ? "Ghost Mode 👻" : isPrivate ? "Private 🔒" : "Public 🌐"}
+                              </span>
+                            </div>
+
+                            <p className="text-[11px] text-white/80 italic line-clamp-2">&ldquo;{u.message}&rdquo;</p>
+
+                            <div className="text-[10px] text-[#00F2FE] font-mono font-bold flex items-center gap-1">
+                              <MapPin size={10} />
+                              {isGhost ? `~${u.distanceMeters + 180}m fuzzed` : `~${u.distanceMeters}m away`}
+                            </div>
+
+                            {u.hasActiveStories && u.stories && u.stories[0] && (
+                              <div className="relative rounded-lg overflow-hidden border border-white/15 h-16">
+                                <img src={u.stories[0]} alt="Story Preview" className="w-full h-full object-cover" />
+                                <div className="absolute bottom-1 left-1 bg-black/70 px-1.5 py-0.5 rounded text-[8px] font-bold text-white">
+                                  📸 Story Active
+                                </div>
+                              </div>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedProfileUser(u);
+                              }}
+                              className="w-full py-1 rounded-lg bg-[#00F2FE] text-black font-extrabold text-[10px] text-center"
+                            >
+                              Open Profile Splitter 👤
+                            </button>
+                          </div>
+
+                          {/* Standard Minimal Label Pill */}
+                          <div className="mt-1 bg-black/85 backdrop-blur-md px-2 py-0.5 rounded-lg border border-white/15 text-[10px] font-bold text-white whitespace-nowrap shadow-lg flex items-center gap-1">
+                            <span className="text-white">@{u.username}</span>
+                            <span className="text-white/40 text-[9px]">
+                              {isGhost ? `~300m 👻` : `~${u.distanceMeters}m`}
+                            </span>
                           </div>
                         </div>
                       );
@@ -951,10 +972,12 @@ export default function FullWebAppDashboard() {
                   </div>
                 </div>
               ) : (
-                /* Multi-Card Stream (Distinct Modern Radar User Cards) */
+                /* Multi-Card Stream (Privacy-Aware User Cards - Showing User Info According to Settings) */
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {nearbyUsers.map((user) => {
                     const pOne = plusOneState[user.id] || { count: 14, clicked: false };
+                    const isGhost = user.privacyMode === "GHOST";
+                    const isPrivate = user.privacyMode === "PRIVATE";
 
                     return (
                       <article
@@ -969,27 +992,44 @@ export default function FullWebAppDashboard() {
                           <div className="flex items-center justify-between">
                             <div
                               onClick={() => setSelectedProfileUser(user)}
-                              className="flex items-center gap-3 cursor-pointer group/user"
+                              className="flex items-center gap-3 cursor-pointer group/user min-w-0"
                               title="View Profile (Splitter)"
                             >
                               <div className="relative shrink-0">
                                 <img
                                   src={user.avatarUrl}
                                   alt={user.username}
-                                  className="w-12 h-12 rounded-2xl object-cover border border-white/15 group-hover/user:border-[#00F2FE] group-hover/user:scale-105 transition-all"
+                                  className={`w-12 h-12 rounded-2xl object-cover border transition-all ${
+                                    isGhost
+                                      ? "border-purple-500/60 blur-[0.5px]"
+                                      : isPrivate
+                                      ? "border-amber-400/60"
+                                      : "border-white/15 group-hover/user:border-[#00F2FE]"
+                                  }`}
                                 />
-                                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#00F2FE] border-2 border-[#121212]" />
+                                <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-[#121212] flex items-center justify-center text-[8px] font-bold text-white ${
+                                  isGhost ? "bg-purple-600" : isPrivate ? "bg-amber-500" : "bg-[#00F2FE]"
+                                }`}>
+                                  {isGhost ? "👻" : isPrivate ? "🔒" : "✓"}
+                                </div>
                               </div>
 
                               <div className="min-w-0">
-                                <div className="font-extrabold text-sm text-white flex items-center gap-1.5 group-hover/user:text-[#00F2FE] transition-colors">
+                                <div className="font-extrabold text-sm text-white flex items-center gap-1.5 group-hover/user:text-[#00F2FE] transition-colors truncate">
                                   @{user.username}
-                                  <span className="text-[#00F2FE] text-[10px] font-bold">✓ Nearby</span>
-                                  {user.privacyMode === "PRIVATE" && <Lock size={11} className="text-amber-400" />}
+                                  {user.oauthProviderLabel && (
+                                    <span className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#00F2FE]/15 text-[#00F2FE] border border-[#00F2FE]/30 shrink-0">
+                                      {user.oauthProviderLabel}
+                                    </span>
+                                  )}
                                 </div>
-                                <div className="flex items-center gap-2 text-[11px] text-white/60 font-medium">
+
+                                <div className="flex items-center gap-2 text-[11px] text-white/60 font-medium pt-0.5">
                                   <span className="text-[#00F2FE] font-bold flex items-center gap-1">
-                                    <MapPin size={11} /> ~{user.distanceMeters}m away
+                                    <MapPin size={11} />
+                                    {isGhost
+                                      ? `~${user.distanceMeters + 180}m (Ghost 👻)`
+                                      : `~${user.distanceMeters}m away`}
                                   </span>
                                   <span>·</span>
                                   <span className="text-white/40">{user.lastActive || "2m ago"}</span>
@@ -1000,7 +1040,7 @@ export default function FullWebAppDashboard() {
                             <button
                               type="button"
                               onClick={() => setSelectedProfileUser(user)}
-                              className="px-3 py-1.5 rounded-xl bg-[#00F2FE]/10 hover:bg-[#00F2FE]/20 text-[#00F2FE] border border-[#00F2FE]/30 text-[11px] font-bold transition-all cursor-pointer"
+                              className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-[#00F2FE]/15 text-white/80 hover:text-[#00F2FE] border border-white/10 text-[11px] font-bold transition-all cursor-pointer shrink-0"
                             >
                               Profile 👤
                             </button>
@@ -1012,20 +1052,29 @@ export default function FullWebAppDashboard() {
                               &ldquo;{user.message}&rdquo;
                             </p>
 
-                            {/* Story Thumbnail Attachment */}
-                            {user.stories && user.stories.length > 0 && (
+                            {/* Media Story Attachment (Only displayed when active and permitted by privacy settings) */}
+                            {user.stories && user.stories.length > 0 && !isPrivate && (
                               <div
                                 onClick={() => setSelectedProfileUser(user)}
                                 className="relative mt-2 rounded-xl overflow-hidden border border-white/10 group/img cursor-pointer"
                               >
                                 <img
                                   src={user.stories[0]}
-                                  alt="Post attachment"
+                                  alt="Media Story Attachment"
                                   className="w-full h-32 object-cover group-hover/img:scale-105 transition-transform duration-300"
                                 />
                                 <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur-md text-[10px] font-bold text-white flex items-center gap-1 border border-white/20">
-                                  📷 Story Moment
+                                  📷 Proximity Media Story
                                 </div>
+                              </div>
+                            )}
+
+                            {isPrivate && (
+                              <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-bold flex items-center justify-between">
+                                <span>🔒 Private Profile Details</span>
+                                <span className="text-[10px] underline cursor-pointer" onClick={() => setSelectedProfileUser(user)}>
+                                  Request Access
+                                </span>
                               </div>
                             )}
                           </div>
@@ -1050,25 +1099,22 @@ export default function FullWebAppDashboard() {
 
                             <button
                               type="button"
-                              onClick={() => alert("Share user profile link")}
-                              className="p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-colors text-xs"
-                              title="Share"
+                              onClick={() => {
+                                setActiveChatUser(user);
+                                setMessages([
+                                  { id: `msg-1-${user.id}`, senderId: user.id, content: `Ahoj! &ldquo;${user.message}&rdquo;` },
+                                  { id: `msg-2-${user.id}`, senderId: myUser?.id || "me", content: "Ahoj! Great to connect nearby on Ahoj." },
+                                ]);
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 border border-white/10 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
                             >
-                              <Share2 size={13} />
+                              Message 💬
                             </button>
                           </div>
 
-                          {/* Direct Message Button */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActiveChatUser(user);
-                              setActiveTab("chats");
-                            }}
-                            className="px-4 py-1.5 rounded-xl bg-[#00F2FE] hover:bg-[#00DCE6] text-black font-extrabold text-xs flex items-center gap-1.5 shadow-[0_0_15px_rgba(0,242,254,0.25)] transition-all cursor-pointer"
-                          >
-                            <MessageSquare size={13} /> {t.chatBtn}
-                          </button>
+                          <span className="text-[10px] text-white/40 font-mono">
+                            {isGhost ? "Ghost 👻" : isPrivate ? "Private 🔒" : "Public 🌐"}
+                          </span>
                         </div>
                       </article>
                     );
