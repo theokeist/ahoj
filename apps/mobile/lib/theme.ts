@@ -40,6 +40,12 @@ export const colors = {
   online: "#00F2FE",
 } as const;
 
+export function getThemeAccentColor(theme?: "CURRENT" | "GREY" | "HATRIX"): string {
+  if (theme === "GREY") return "#3B82F6"; // Chrome OS Blue
+  if (theme === "HATRIX") return "#00FF66"; // Matrix Green
+  return "#00F2FE"; // Current Cyan
+}
+
 export const spacing = {
   xs: 4,
   sm: 8,

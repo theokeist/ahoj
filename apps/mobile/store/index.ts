@@ -87,6 +87,8 @@ export const useLocationStore = create<LocationState>()(
 type SettingsState = {
   showStoryBar: boolean;
   setShowStoryBar: (enabled: boolean) => void;
+  appTheme: "CURRENT" | "GREY" | "HATRIX";
+  setAppTheme: (theme: "CURRENT" | "GREY" | "HATRIX") => void;
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -94,12 +96,15 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       showStoryBar: true,
       setShowStoryBar: (showStoryBar) => set({ showStoryBar }),
+      appTheme: "CURRENT",
+      setAppTheme: (appTheme) => set({ appTheme }),
     }),
     {
       name: "ahoj-settings",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         showStoryBar: state.showStoryBar,
+        appTheme: state.appTheme,
       }),
     }
   )

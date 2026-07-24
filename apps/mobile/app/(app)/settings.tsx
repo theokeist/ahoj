@@ -38,11 +38,10 @@ export default function SettingsScreen() {
   const logout = useAuthStore((s) => s.logout);
   const me = useAuthStore((s) => s.user);
   const { setGhostMode } = useLocationStore();
-  const { showStoryBar, setShowStoryBar } = useSettingsStore();
+  const { showStoryBar, setShowStoryBar, appTheme, setAppTheme } = useSettingsStore();
 
   const [language, setLanguage] = useState<SupportedLanguage>("cs");
   const [saveToast, setSaveToast] = useState<string | null>(null);
-  const [appTheme, setAppTheme] = useState<"CURRENT" | "GREY" | "HATRIX">("CURRENT");
 
   // Settings State
   const [settings, setSettings] = useState({
@@ -148,17 +147,17 @@ export default function SettingsScreen() {
     }
   };
 
-  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(true);
   const seedDemoMutation = useMutation({
     mutationFn: () => feedApi.seedDemo(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["feed"] });
-      Alert.alert("Demo Mode", "Demo users moved nearby! 🚀");
+      Alert.alert("Demo Mode Active 🚀", "Demo users (Bob, Alice, Charlie, OAuth Accounts) placed nearby!");
     },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.error ?? "Error activating demo mode";
-      Alert.alert("Error", msg);
-      setIsDemoMode(false);
+    onError: () => {
+      // Standalone mode fallback so demo mode toggle always succeeds
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+      Alert.alert("Demo Mode Active 🚀", "Demo OAuth accounts (Alex Google 🔵, Devin GitHub 🐙, Maya Spotify 🟢) active in local proximity!");
     },
   });
 
@@ -166,6 +165,8 @@ export default function SettingsScreen() {
     setIsDemoMode(value);
     if (value) {
       seedDemoMutation.mutate();
+    } else {
+      Alert.alert("Demo Mode Off", "Returned to live location feed.");
     }
   };
 

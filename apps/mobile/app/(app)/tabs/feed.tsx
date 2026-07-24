@@ -28,7 +28,7 @@ import { StoriesBar } from "../../../components/feed/StoriesBar";
 
 const splashImage = require("../../../assets/splash.png");
 import { useLocationStore, useAuthStore, useSettingsStore } from "../../../store";
-import { colors, spacing, typography, radius } from "../../../lib/theme";
+import { colors, spacing, typography, radius, getThemeAccentColor } from "../../../lib/theme";
 import type { UserPublic } from "@ahoj/shared";
 
 function formatDistance(meters: number): string {
@@ -168,8 +168,11 @@ function FeedItem({
 
 export default function FeedScreen() {
   const { lat, lng, isGhostMode, setLocation, setGhostMode } = useLocationStore();
-  const { showStoryBar } = useSettingsStore();
+  const { showStoryBar, appTheme } = useSettingsStore();
   const insets = useSafeAreaInsets();
+  const activeAccentColor = getThemeAccentColor(appTheme);
+
+  const [viewMode, setViewMode] = useState<"grid" | "radar">("grid");
 
   const fabScale = useRef(new Animated.Value(isGhostMode ? 0.85 : 1)).current;
   const fabOpacity = useRef(new Animated.Value(isGhostMode ? 0.7 : 1)).current;
@@ -323,7 +326,23 @@ export default function FeedScreen() {
         <TouchableOpacity onPress={() => router.push("/(app)/story/create")}>
           <Text style={styles.headerIcon}>➕</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Nearby</Text>
+        
+        {/* Mode Selector Segment */}
+        <View style={{ flexDirection: "row", backgroundColor: "rgba(255,255,255,0.08)", padding: 3, borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }}>
+          <TouchableOpacity
+            onPress={() => setViewMode("grid")}
+            style={{ paddingHorizontal: 12, paddingVertical: 4, borderRadius: 9, backgroundColor: viewMode === "grid" ? activeAccentColor : "transparent" }}
+          >
+            <Text style={{ fontSize: 11, fontWeight: "800", color: viewMode === "grid" ? "#000" : "#FFF" }}>📜 Stream</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setViewMode("radar")}
+            style={{ paddingHorizontal: 12, paddingVertical: 4, borderRadius: 9, backgroundColor: viewMode === "radar" ? activeAccentColor : "transparent" }}
+          >
+            <Text style={{ fontSize: 11, fontWeight: "800", color: viewMode === "radar" ? "#000" : "#FFF" }}>📡 Radar</Text>
+          </TouchableOpacity>
+        </View>
+
         <TouchableOpacity onPress={() => setIsProfileMenuOpen(true)}>
           <View style={styles.headerAvatarWrapper}>
             {me?.profilePhotoUrl ? (
@@ -348,7 +367,66 @@ export default function FeedScreen() {
 
       {shouldShowDataLoading ? (
         <View style={styles.loadingState}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={activeAccentColor} />
+        </View>
+      ) : viewMode === "radar" ? (
+        /* Full-Size Interactive Circular Mobile Radar Map */
+        <View style={{ flex: 1, margin: 12, borderRadius: 24, backgroundColor: "#070B0E", borderWidth: 1, borderColor: activeAccentColor + "40", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" }}>
+          {/* Concentric Distance Rings */}
+          <View style={{ position: "absolute", width: "90%", height: "90%", borderRadius: 999, borderWidth: 1, borderColor: activeAccentColor + "20", alignItems: "center", justifyContent: "flex-start" }}>
+            <Text style={{ fontSize: 9, color: activeAccentColor, fontWeight: "700", marginTop: 4, backgroundColor: "#000", paddingHorizontal: 6, borderRadius: 6 }}>1km Orbit</Text>
+          </View>
+          <View style={{ position: "absolute", width: "66%", height: "66%", borderRadius: 999, borderWidth: 1, borderColor: activeAccentColor + "35", alignItems: "center", justifyContent: "flex-start" }}>
+            <Text style={{ fontSize: 9, color: activeAccentColor, fontWeight: "700", marginTop: 4, backgroundColor: "#000", paddingHorizontal: 6, borderRadius: 6 }}>500m Orbit</Text>
+          </View>
+          <View style={{ position: "absolute", width: "42%", height: "42%", borderRadius: 999, borderWidth: 1, borderColor: activeAccentColor + "50", alignItems: "center", justifyContent: "flex-start" }}>
+            <Text style={{ fontSize: 9, color: activeAccentColor, fontWeight: "700", marginTop: 4, backgroundColor: "#000", paddingHorizontal: 6, borderRadius: 6 }}>100m Inner</Text>
+          </View>
+          
+          {/* Axis Crosshairs */}
+          <View style={{ position: "absolute", left: 0, right: 0, height: 1, backgroundColor: activeAccentColor + "25" }} />
+          <View style={{ position: "absolute", top: 0, bottom: 0, width: 1, backgroundColor: activeAccentColor + "25" }} />
+
+          {/* Center Self Node */}
+          <TouchableOpacity
+            onPress={() => setIsProfileMenuOpen(true)}
+            style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: activeAccentColor, alignItems: "center", justifyContent: "center", zIndex: 10, shadowColor: activeAccentColor, shadowRadius: 12, shadowOpacity: 0.8 }}
+          >
+            <Text style={{ fontSize: 13, fontWeight: "900", color: "#000" }}>/A\</Text>
+            <Text style={{ fontSize: 8, fontWeight: "900", color: "#000" }}>YOU</Text>
+          </TouchableOpacity>
+
+          {/* Nearby User Blips */}
+          {users.map((u, idx) => {
+            const angles = [40, 130, 215, 310, 70, 255, 165, 295];
+            const distances = [120, 145, 155, 95, 130, 115, 100, 150];
+            const angle = angles[idx % angles.length];
+            const dist = distances[idx % distances.length];
+            const rad = (angle * Math.PI) / 180;
+            const x = Math.cos(rad) * dist;
+            const y = Math.sin(rad) * dist;
+
+            return (
+              <TouchableOpacity
+                key={u.id}
+                onPress={() => router.push({ pathname: "/(app)/user/[id]", params: { id: u.id } })}
+                style={{ position: "absolute", transform: [{ translateX: x }, { translateY: y }], alignItems: "center", zIndex: 20 }}
+              >
+                <View style={{ width: 42, height: 42, borderRadius: 21, borderWidth: 2, borderColor: activeAccentColor, overflow: "hidden", backgroundColor: "#121212" }}>
+                  {u.profilePhotoUrl ? (
+                    <Image source={{ uri: u.profilePhotoUrl }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
+                  ) : (
+                    <View style={{ width: "100%", height: "100%", alignItems: "center", justifyContent: "center", backgroundColor: activeAccentColor + "30" }}>
+                      <Text style={{ color: activeAccentColor, fontWeight: "800", fontSize: 12 }}>{u.username[0].toUpperCase()}</Text>
+                    </View>
+                  )}
+                </View>
+                <View style={{ marginTop: 2, backgroundColor: "rgba(0,0,0,0.85)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" }}>
+                  <Text style={{ fontSize: 9, fontWeight: "800", color: "#FFF" }}>@{u.username}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       ) : (
         <View style={styles.feedContent}>
@@ -366,7 +444,7 @@ export default function FeedScreen() {
               <RefreshControl
                 refreshing={isRefetching}
                 onRefresh={handleRefresh}
-                tintColor={colors.primary}
+                tintColor={activeAccentColor}
               />
             }
             onEndReached={() => hasNextPage && fetchNextPage()}
