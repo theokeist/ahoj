@@ -1284,26 +1284,26 @@ export default function FullWebAppDashboard() {
                     </div>
                   ) : activeChatUser.isSystem || activeChatUser.id === "ahoj-notifications" ? (
                     <>
-                      {/* Clean & Simple Notifications Header */}
+                      {/* Traditional Notification Center Header */}
                       <div className="p-4 border-b border-white/10 flex items-center justify-between bg-[#121212] shrink-0 z-10">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-2xl bg-[#00F2FE]/10 border border-[#00F2FE]/30 flex items-center justify-center text-[#00F2FE]">
-                            <Bell size={18} />
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#00F2FE]/20 to-purple-600/20 border border-[#00F2FE]/40 flex items-center justify-center text-[#00F2FE] shadow-[0_0_12px_rgba(0,242,254,0.15)]">
+                            <Bell size={20} />
                           </div>
                           <div>
-                            <div className="font-extrabold text-sm text-white flex items-center gap-2">
+                            <div className="font-extrabold text-base text-white flex items-center gap-2">
                               Notifications
                               {inAppNotifications.filter((n) => n.unread).length > 0 && (
-                                <span className="px-2 py-0.5 rounded-full bg-[#00F2FE] text-black font-extrabold text-[10px]">
-                                  {inAppNotifications.filter((n) => n.unread).length} new
+                                <span className="px-2 py-0.5 rounded-full bg-[#00F2FE] text-black font-extrabold text-[11px] shadow-[0_0_10px_rgba(0,242,254,0.4)]">
+                                  {inAppNotifications.filter((n) => n.unread).length} unread
                                 </span>
                               )}
                             </div>
-                            <div className="text-[10px] text-white/50">Proximity alerts, sparks & system updates</div>
+                            <div className="text-[11px] text-white/50">Proximity updates, social requests & system alerts</div>
                           </div>
                         </div>
 
-                        {/* Simple Mark All Read Button */}
+                        {/* Mark All Read Button */}
                         {inAppNotifications.some((n) => n.unread) && (
                           <button
                             type="button"
@@ -1312,92 +1312,108 @@ export default function FullWebAppDashboard() {
                               setNotificationToast("All notifications marked as read.");
                               setTimeout(() => setNotificationToast(null), 3000);
                             }}
-                            className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-[#00F2FE]/15 text-white/70 hover:text-[#00F2FE] border border-white/10 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                            className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-[#00F2FE]/15 text-white/70 hover:text-[#00F2FE] border border-white/10 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
                           >
-                            <CheckCircle2 size={13} /> Mark all read
+                            <CheckCircle2 size={14} /> Mark all as read
                           </button>
                         )}
                       </div>
 
-                      {/* Simple, Clean Notifications Stream */}
-                      <div className="flex-1 min-h-0 p-4 sm:p-5 overflow-y-auto space-y-3">
+                      {/* Traditional Notification Feed List */}
+                      <div className="flex-1 min-h-0 divide-y divide-white/5 overflow-y-auto">
                         {notificationToast && (
-                          <div className="p-3 rounded-2xl bg-[#00F2FE]/20 border border-[#00F2FE] text-[#00F2FE] text-xs font-bold flex items-center gap-2 animate-fadeIn sticky top-0 z-20 backdrop-blur-md shadow-lg">
-                            <CheckCircle2 size={15} /> {notificationToast}
+                          <div className="m-4 p-3.5 rounded-2xl bg-[#00F2FE]/20 border border-[#00F2FE] text-[#00F2FE] text-xs font-bold flex items-center gap-2 animate-fadeIn sticky top-2 z-20 backdrop-blur-md shadow-lg">
+                            <CheckCircle2 size={16} /> {notificationToast}
                           </div>
                         )}
 
-                        {inAppNotifications.map((n) => (
-                          <div
-                            key={n.id}
-                            className={`p-4 rounded-2xl border transition-all space-y-2.5 ${
-                              n.unread
-                                ? "bg-[#121212] border-[#00F2FE]/40 border-l-4 border-l-[#00F2FE] shadow-[0_0_15px_rgba(0,242,254,0.1)]"
-                                : "bg-[#121212]/60 border-white/10 hover:bg-[#121212]"
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex items-center gap-3 min-w-0">
+                        {inAppNotifications.map((n) => {
+                          let badgeIcon = "ℹ️";
+                          if (n.category === "SPARK") badgeIcon = "⚡";
+                          if (n.category === "RADAR") badgeIcon = "📍";
+                          if (n.category === "USER") badgeIcon = "👤";
+
+                          return (
+                            <div
+                              key={n.id}
+                              className={`p-4 transition-all flex items-start gap-3.5 relative ${
+                                n.unread
+                                  ? "bg-[#00F2FE]/[0.06] border-l-4 border-l-[#00F2FE]"
+                                  : "hover:bg-white/[0.02]"
+                              }`}
+                            >
+                              {/* Nice Round Avatar with Overlaid Type Badge */}
+                              <div className="relative shrink-0 pt-0.5">
                                 {n.avatarUrl ? (
                                   <img
                                     src={n.avatarUrl}
                                     alt="Avatar"
-                                    className="w-9 h-9 rounded-2xl object-cover border border-white/15 shrink-0"
+                                    className="w-11 h-11 rounded-full object-cover border-2 border-[#00F2FE]/40 shadow-md"
                                   />
                                 ) : (
-                                  <div className="w-9 h-9 rounded-2xl bg-[#00F2FE]/10 border border-[#00F2FE]/30 flex items-center justify-center text-[#00F2FE] text-xs font-bold shrink-0">
+                                  <div className="w-11 h-11 rounded-full bg-[#00F2FE]/10 border-2 border-[#00F2FE]/40 flex items-center justify-center text-[#00F2FE] font-black text-xs shadow-md">
                                     /A\
                                   </div>
                                 )}
-
-                                <div className="min-w-0">
-                                  <div className="font-extrabold text-xs text-white truncate flex items-center gap-2">
-                                    {n.title}
-                                    {n.unread && <span className="w-2 h-2 rounded-full bg-[#00F2FE] animate-pulse shrink-0" />}
-                                  </div>
-                                  <span className="text-[10px] font-mono text-white/40">{n.categoryLabel || n.category}</span>
+                                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#0C0C0C] border border-[#00F2FE]/60 flex items-center justify-center text-[10px] shadow">
+                                  {badgeIcon}
                                 </div>
                               </div>
 
-                              <span className="text-[10px] text-white/40 font-mono shrink-0 pt-0.5">{n.timestamp}</span>
-                            </div>
+                              {/* Notification Content Body */}
+                              <div className="flex-1 min-w-0 space-y-1.5">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2 flex-wrap min-w-0">
+                                    <span className="font-extrabold text-sm text-white truncate">{n.title}</span>
+                                    <span className="px-2 py-0.5 rounded-full bg-white/10 text-[#00F2FE] text-[10px] font-bold font-mono">
+                                      {n.categoryLabel || n.category}
+                                    </span>
+                                  </div>
 
-                            <p className="text-xs text-white/80 leading-relaxed font-normal pl-1">
-                              {n.body}
-                            </p>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className="text-[11px] text-white/40 font-mono">{n.timestamp}</span>
+                                    {n.unread && <span className="w-2.5 h-2.5 rounded-full bg-[#00F2FE] animate-pulse" />}
+                                  </div>
+                                </div>
 
-                            {/* Simple Action Buttons */}
-                            {n.actions && n.actions.length > 0 && (
-                              <div className="pt-2 border-t border-white/10 flex flex-wrap items-center gap-2">
-                                {n.actions.map((act: any) => {
-                                  let btnStyle = "bg-white/10 text-white hover:bg-white/20";
-                                  if (act.variant === "primary") btnStyle = "bg-[#00F2FE] text-black font-extrabold hover:scale-105 shadow-[0_0_12px_rgba(0,242,254,0.3)]";
-                                  if (act.variant === "success") btnStyle = "bg-[#4CAF50] text-black font-extrabold hover:scale-105";
-                                  if (act.variant === "danger") btnStyle = "bg-[#F44336]/20 text-[#F44336] border border-[#F44336]/40 font-extrabold hover:bg-[#F44336]/30";
+                                <p className="text-xs text-white/80 leading-relaxed font-normal">
+                                  {n.body}
+                                </p>
 
-                                  return (
-                                    <button
-                                      key={act.id}
-                                      type="button"
-                                      onClick={() => handleNotificationAction(n.id, act.type, n.targetUserIndex)}
-                                      className={`px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer ${btnStyle}`}
-                                    >
-                                      {act.label}
-                                    </button>
-                                  );
-                                })}
+                                {/* Action Buttons */}
+                                {n.actions && n.actions.length > 0 && (
+                                  <div className="pt-1.5 flex flex-wrap items-center gap-2">
+                                    {n.actions.map((act: any) => {
+                                      let btnStyle = "bg-white/10 text-white hover:bg-white/20";
+                                      if (act.variant === "primary") btnStyle = "bg-[#00F2FE] text-black font-extrabold hover:scale-105 shadow-[0_0_12px_rgba(0,242,254,0.3)]";
+                                      if (act.variant === "success") btnStyle = "bg-[#4CAF50] text-black font-extrabold hover:scale-105";
+                                      if (act.variant === "danger") btnStyle = "bg-[#F44336]/20 text-[#F44336] border border-[#F44336]/40 font-extrabold hover:bg-[#F44336]/30";
 
-                                {n.requestStatus && (
-                                  <span className={`text-xs font-bold px-3 py-1 rounded-xl ${
-                                    n.requestStatus === "APPROVED" ? "bg-[#4CAF50]/20 text-[#4CAF50] border border-[#4CAF50]/40" : "bg-[#F44336]/20 text-[#F44336] border border-[#F44336]/40"
-                                  }`}>
-                                    {n.requestStatus === "APPROVED" ? "✓ Approved" : "✕ Denied"}
-                                  </span>
+                                      return (
+                                        <button
+                                          key={act.id}
+                                          type="button"
+                                          onClick={() => handleNotificationAction(n.id, act.type, n.targetUserIndex)}
+                                          className={`px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer ${btnStyle}`}
+                                        >
+                                          {act.label}
+                                        </button>
+                                      );
+                                    })}
+
+                                    {n.requestStatus && (
+                                      <span className={`text-xs font-bold px-3 py-1 rounded-xl ${
+                                        n.requestStatus === "APPROVED" ? "bg-[#4CAF50]/20 text-[#4CAF50] border border-[#4CAF50]/40" : "bg-[#F44336]/20 text-[#F44336] border border-[#F44336]/40"
+                                      }`}>
+                                        {n.requestStatus === "APPROVED" ? "✓ Approved" : "✕ Denied"}
+                                      </span>
+                                    )}
+                                  </div>
                                 )}
                               </div>
-                            )}
-                          </div>
-                        ))}
+                            </div>
+                          );
+                        })}
                       </div>
 
                       {/* Fixed Assistant Query Bar */}
