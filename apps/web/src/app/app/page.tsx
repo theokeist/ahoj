@@ -808,27 +808,27 @@ export default function FullWebAppDashboard() {
                 </div>
               </div>
 
-              {/* ── Conditional View Mode: Radar Orbit View vs Privacy-Aware User Cards ── */}
+              {/* ── Conditional View Mode: Full Size Screen Radar Orbit View vs twttr Stream Cards ── */}
               {viewMode === "radar" ? (
-                <div className="w-full min-h-[580px] h-[calc(100vh-220px)] rounded-3xl border border-white/15 bg-[#090909] relative overflow-hidden flex items-center justify-center shadow-2xl">
+                <div className="w-full h-[calc(100vh-140px)] md:h-[calc(100vh-95px)] rounded-3xl border border-white/15 bg-[#090909] relative overflow-hidden flex items-center justify-center shadow-2xl">
                   {/* Map Grid Pattern Background */}
-                  <div className="absolute inset-0 bg-[radial-gradient(#00F2FE_1px,transparent_1px)] [background-size:24px_24px] opacity-15 pointer-events-none" />
+                  <div className="absolute inset-0 bg-[radial-gradient(#00F2FE_1px,transparent_1px)] [background-size:28px_28px] opacity-20 pointer-events-none" />
 
                   {/* Floating Map Control Bar (Top Left) */}
-                  <div className="absolute top-4 left-4 z-30 flex items-center gap-2 bg-black/80 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/15 text-xs text-white shadow-xl">
+                  <div className="absolute top-5 left-5 z-30 flex items-center gap-2 bg-black/85 backdrop-blur-xl px-4 py-2.5 rounded-2xl border border-white/15 text-xs text-white shadow-2xl">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#00F2FE] animate-ping" />
-                    <span className="font-extrabold flex items-center gap-1.5">
-                      <MapPin size={14} className="text-[#00F2FE]" /> Live Proximity Radar (Brno)
+                    <span className="font-extrabold flex items-center gap-1.5 text-sm">
+                      <MapPin size={15} className="text-[#00F2FE]" /> Live Proximity Radar (Brno)
                     </span>
-                    <span className="text-[10px] font-mono text-[#00F2FE] bg-[#00F2FE]/10 px-2 py-0.5 rounded-full border border-[#00F2FE]/30">
+                    <span className="text-[11px] font-mono text-[#00F2FE] bg-[#00F2FE]/10 px-2.5 py-0.5 rounded-full border border-[#00F2FE]/30">
                       {radiusKm} km · {nearbyUsers.length} Active Nodes
                     </span>
                   </div>
 
                   {/* Floating Privacy Status Indicator (Top Right) */}
-                  <div className="absolute top-4 right-4 z-30 hidden sm:flex items-center gap-2 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-white/15 text-xs text-white">
-                    <span className="text-[10px] font-bold text-white/60">Your Mode:</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-mono border ${
+                  <div className="absolute top-5 right-5 z-30 hidden sm:flex items-center gap-2 bg-black/85 backdrop-blur-xl px-4 py-2 rounded-2xl border border-white/15 text-xs text-white shadow-2xl">
+                    <span className="text-[11px] font-bold text-white/60">Your Mode:</span>
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold font-mono border ${
                       settingsForm.privacyMode === "GHOST"
                         ? "bg-purple-500/20 text-purple-300 border-purple-500/40"
                         : settingsForm.privacyMode === "PRIVATE"
@@ -840,52 +840,52 @@ export default function FullWebAppDashboard() {
                   </div>
 
                   {/* Floating Legend / Quick Hint (Bottom Left) */}
-                  <div className="absolute bottom-4 left-4 z-30 bg-black/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15 text-[11px] text-white/70 font-medium hidden sm:flex items-center gap-2 shadow-lg">
-                    <span>💡 Tap any radar node for instant media preview & profile splitter</span>
+                  <div className="absolute bottom-5 left-5 z-30 bg-black/85 backdrop-blur-xl px-4 py-2.5 rounded-2xl border border-white/15 text-xs text-white/80 font-semibold hidden sm:flex items-center gap-2 shadow-2xl">
+                    <span>🎯 Full-Size Proximity Command Center · Tap any radar node for profile splitter</span>
                   </div>
 
                   {/* Full-Size Interactive Circular Radar Orbit Field */}
-                  <div className="relative w-[92%] max-w-[620px] aspect-square rounded-full border border-[#00F2FE]/25 flex items-center justify-center bg-[radial-gradient(circle_at_center,rgba(0,242,254,0.12)_0,transparent_75%)] shadow-[0_0_80px_rgba(0,242,254,0.15)] overflow-hidden">
+                  <div className="relative w-[95%] max-w-[720px] lg:max-w-[780px] aspect-square rounded-full border border-[#00F2FE]/30 flex items-center justify-center bg-[radial-gradient(circle_at_center,rgba(0,242,254,0.14)_0,transparent_75%)] shadow-[0_0_100px_rgba(0,242,254,0.2)] overflow-hidden">
                     {/* Concentric Distance Orbit Circles */}
                     <div className="absolute inset-0 rounded-full border border-[#00F2FE]/15 pointer-events-none" />
                     <div className="absolute w-4/5 h-4/5 rounded-full border border-[#00F2FE]/25 pointer-events-none flex items-start justify-center">
-                      <span className="text-[10px] font-mono font-bold text-[#00F2FE]/70 mt-2 bg-black/80 px-2 py-0.5 rounded-full border border-[#00F2FE]/30">500m Orbit</span>
+                      <span className="text-[10px] font-mono font-bold text-[#00F2FE]/70 mt-2.5 bg-black/80 px-2.5 py-0.5 rounded-full border border-[#00F2FE]/30">500m Orbit</span>
                     </div>
                     <div className="absolute w-3/5 h-3/5 rounded-full border border-[#00F2FE]/35 pointer-events-none flex items-start justify-center">
-                      <span className="text-[10px] font-mono font-bold text-[#00F2FE]/80 mt-2 bg-black/80 px-2 py-0.5 rounded-full border border-[#00F2FE]/30">250m Orbit</span>
+                      <span className="text-[10px] font-mono font-bold text-[#00F2FE]/80 mt-2.5 bg-black/80 px-2.5 py-0.5 rounded-full border border-[#00F2FE]/30">250m Orbit</span>
                     </div>
                     <div className="absolute w-2/5 h-2/5 rounded-full border border-[#00F2FE]/45 pointer-events-none flex items-start justify-center">
-                      <span className="text-[10px] font-mono font-bold text-[#00F2FE] mt-2 bg-black/80 px-2 py-0.5 rounded-full border border-[#00F2FE]/30">100m Orbit</span>
+                      <span className="text-[10px] font-mono font-bold text-[#00F2FE] mt-2.5 bg-black/80 px-2.5 py-0.5 rounded-full border border-[#00F2FE]/30">100m Orbit</span>
                     </div>
                     <div className="absolute w-1/5 h-1/5 rounded-full border border-[#00F2FE]/60 pointer-events-none" />
 
                     {/* Axis Crosshairs */}
-                    <div className="absolute inset-x-0 top-1/2 h-px bg-[#00F2FE]/20 pointer-events-none" />
-                    <div className="absolute inset-y-0 left-1/2 w-px bg-[#00F2FE]/20 pointer-events-none" />
+                    <div className="absolute inset-x-0 top-1/2 h-px bg-[#00F2FE]/25 pointer-events-none" />
+                    <div className="absolute inset-y-0 left-1/2 w-px bg-[#00F2FE]/25 pointer-events-none" />
 
                     {/* Animated 360 Sweep Beam */}
                     <div
                       className="absolute inset-0 rounded-full pointer-events-none animate-spin"
                       style={{
                         animationDuration: "5s",
-                        background: "conic-gradient(from 0deg, rgba(0,242,254,0.3) 0deg, transparent 55deg, transparent 360deg)",
+                        background: "conic-gradient(from 0deg, rgba(0,242,254,0.35) 0deg, transparent 60deg, transparent 360deg)",
                       }}
                     />
 
                     {/* Center Node (You / Self Location) */}
                     <div
                       onClick={() => setActiveTab("profile")}
-                      className="relative z-20 w-12 h-12 rounded-full bg-[#00F2FE] text-black font-black text-xs flex flex-col items-center justify-center shadow-[0_0_25px_rgba(0,242,254,0.9)] cursor-pointer hover:scale-110 transition-transform"
+                      className="relative z-20 w-14 h-14 rounded-full bg-[#00F2FE] text-black font-black text-xs flex flex-col items-center justify-center shadow-[0_0_30px_rgba(0,242,254,0.95)] cursor-pointer hover:scale-110 transition-transform"
                       title="Your Location (Click for Profile Splitter)"
                     >
-                      <span className="leading-none text-sm font-extrabold">/A\</span>
-                      <span className="text-[8px] font-extrabold uppercase">You</span>
+                      <span className="leading-none text-base font-extrabold">/A\</span>
+                      <span className="text-[9px] font-extrabold uppercase">You</span>
                     </div>
 
-                    {/* Positioned Nearby User Nodes across Radar Orbit */}
+                    {/* Positioned Nearby User Nodes across Full-Size Radar Orbit */}
                     {nearbyUsers.map((u, idx) => {
                       const angles = [45, 135, 210, 315, 75, 260, 160, 290];
-                      const distancesPx = [180, 220, 240, 140, 210, 190, 160, 230];
+                      const distancesPx = [220, 270, 290, 160, 250, 230, 200, 280];
                       const angle = angles[idx % angles.length];
                       const dist = distancesPx[idx % distancesPx.length];
                       const rad = (angle * Math.PI) / 180;
