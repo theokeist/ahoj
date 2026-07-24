@@ -1284,341 +1284,120 @@ export default function FullWebAppDashboard() {
                     </div>
                   ) : activeChatUser.isSystem || activeChatUser.id === "ahoj-notifications" ? (
                     <>
-                      {/* Fixed System Notification Stream Header */}
-                      <div className="p-4 border-b border-white/10 space-y-3 bg-[#121212] shrink-0 z-10">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#00F2FE] via-purple-600 to-[#FF6B6B] p-0.5 shadow-[0_0_20px_rgba(0,242,254,0.3)]">
-                              <div className="w-full h-full rounded-[14px] bg-[#0C0C0C] flex items-center justify-center text-[#00F2FE] font-black text-sm">
-                                /A\
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-extrabold text-sm text-white flex items-center gap-1.5">
-                                {activeChatUser.username}
-                                <span className="px-2 py-0.5 rounded-full bg-[#00F2FE]/15 text-[#00F2FE] border border-[#00F2FE]/30 text-[10px] font-bold">
-                                  Official Bot
+                      {/* Clean & Simple Notifications Header */}
+                      <div className="p-4 border-b border-white/10 flex items-center justify-between bg-[#121212] shrink-0 z-10">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-2xl bg-[#00F2FE]/10 border border-[#00F2FE]/30 flex items-center justify-center text-[#00F2FE]">
+                            <Bell size={18} />
+                          </div>
+                          <div>
+                            <div className="font-extrabold text-sm text-white flex items-center gap-2">
+                              Notifications
+                              {inAppNotifications.filter((n) => n.unread).length > 0 && (
+                                <span className="px-2 py-0.5 rounded-full bg-[#00F2FE] text-black font-extrabold text-[10px]">
+                                  {inAppNotifications.filter((n) => n.unread).length} new
                                 </span>
-                              </div>
-                              <div className="text-[10px] text-white/50">Proximity stream alerts, access requests & system notifications</div>
+                              )}
                             </div>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            {/* Mark All Read Button */}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setInAppNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
-                                setNotificationToast("Marked all notifications as read.");
-                                setTimeout(() => setNotificationToast(null), 3000);
-                              }}
-                              className="px-2.5 py-1 rounded-xl bg-white/5 hover:bg-[#00F2FE]/15 text-white/70 hover:text-[#00F2FE] border border-white/10 text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1"
-                              title="Mark all notifications as read"
-                            >
-                              <CheckCircle2 size={12} /> Mark Read
-                            </button>
-
-                            {/* Card Size Selector: EE (Extra Expanded) vs Medium */}
-                            <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
-                              <button
-                                type="button"
-                                onClick={() => setNotifCardSize("EE")}
-                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                                  notifCardSize === "EE" ? "bg-[#00F2FE] text-black shadow-[0_0_10px_rgba(0,242,254,0.3)]" : "text-white/60 hover:text-white"
-                                }`}
-                                title="Extra Expanded Rich Card View"
-                              >
-                                EE Expanded 🖼️
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setNotifCardSize("MEDIUM")}
-                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                                  notifCardSize === "MEDIUM" ? "bg-[#00F2FE] text-black shadow-[0_0_10px_rgba(0,242,254,0.3)]" : "text-white/60 hover:text-white"
-                                }`}
-                                title="Compact Medium View"
-                              >
-                                Medium 📄
-                              </button>
-                            </div>
+                            <div className="text-[10px] text-white/50">Proximity alerts, sparks & system updates</div>
                           </div>
                         </div>
 
-                        {/* Category Filter Pills (Info, Sparks, Radar, Users) */}
-                        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pt-1">
-                          {[
-                            { id: "ALL", label: `All (${inAppNotifications.length})` },
-                            { id: "INFO", label: `Info ℹ️ (${inAppNotifications.filter((n) => n.category === "INFO").length})` },
-                            { id: "SPARK", label: `Sparks ⚡ (${inAppNotifications.filter((n) => n.category === "SPARK").length})` },
-                            { id: "RADAR", label: `Radar 📍 (${inAppNotifications.filter((n) => n.category === "RADAR").length})` },
-                            { id: "USER", label: `Users 👤 (${inAppNotifications.filter((n) => n.category === "USER").length})` },
-                          ].map((cat) => (
-                            <button
-                              key={cat.id}
-                              type="button"
-                              onClick={() => setNotifCategoryFilter(cat.id as any)}
-                              className={`px-3 py-1 rounded-xl text-[10px] font-bold shrink-0 transition-all cursor-pointer ${
-                                notifCategoryFilter === cat.id
-                                  ? "bg-[#00F2FE] text-black font-extrabold shadow-[0_0_12px_rgba(0,242,254,0.3)]"
-                                  : "bg-white/5 text-white/70 hover:text-white border border-white/10"
-                              }`}
-                            >
-                              {cat.label}
-                            </button>
-                          ))}
-                        </div>
+                        {/* Simple Mark All Read Button */}
+                        {inAppNotifications.some((n) => n.unread) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setInAppNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+                              setNotificationToast("All notifications marked as read.");
+                              setTimeout(() => setNotificationToast(null), 3000);
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-[#00F2FE]/15 text-white/70 hover:text-[#00F2FE] border border-white/10 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                          >
+                            <CheckCircle2 size={13} /> Mark all read
+                          </button>
+                        )}
                       </div>
 
-                      {/* Notification Cards Stream (Grouped into New vs Earlier) */}
-                      <div className="flex-1 min-h-0 p-5 overflow-y-auto space-y-5">
+                      {/* Simple, Clean Notifications Stream */}
+                      <div className="flex-1 min-h-0 p-4 sm:p-5 overflow-y-auto space-y-3">
                         {notificationToast && (
-                          <div className="p-3.5 rounded-2xl bg-[#00F2FE]/20 border border-[#00F2FE] text-[#00F2FE] text-xs font-bold flex items-center gap-2 animate-fadeIn sticky top-0 z-20 backdrop-blur-md shadow-lg">
-                            <CheckCircle2 size={16} /> {notificationToast}
+                          <div className="p-3 rounded-2xl bg-[#00F2FE]/20 border border-[#00F2FE] text-[#00F2FE] text-xs font-bold flex items-center gap-2 animate-fadeIn sticky top-0 z-20 backdrop-blur-md shadow-lg">
+                            <CheckCircle2 size={15} /> {notificationToast}
                           </div>
                         )}
 
-                        {/* ── Section 1: New / Unread Notifications ──────────────── */}
-                        {inAppNotifications.filter((n) => n.unread && (notifCategoryFilter === "ALL" || n.category === notifCategoryFilter)).length > 0 && (
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between text-[11px] font-bold text-[#00F2FE] uppercase tracking-wider px-1 font-mono">
-                              <span className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-[#00F2FE] animate-ping" />
-                                New Notifications ({inAppNotifications.filter((n) => n.unread && (notifCategoryFilter === "ALL" || n.category === notifCategoryFilter)).length})
-                              </span>
+                        {inAppNotifications.map((n) => (
+                          <div
+                            key={n.id}
+                            className={`p-4 rounded-2xl border transition-all space-y-2.5 ${
+                              n.unread
+                                ? "bg-[#121212] border-[#00F2FE]/40 border-l-4 border-l-[#00F2FE] shadow-[0_0_15px_rgba(0,242,254,0.1)]"
+                                : "bg-[#121212]/60 border-white/10 hover:bg-[#121212]"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-3 min-w-0">
+                                {n.avatarUrl ? (
+                                  <img
+                                    src={n.avatarUrl}
+                                    alt="Avatar"
+                                    className="w-9 h-9 rounded-2xl object-cover border border-white/15 shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-9 h-9 rounded-2xl bg-[#00F2FE]/10 border border-[#00F2FE]/30 flex items-center justify-center text-[#00F2FE] text-xs font-bold shrink-0">
+                                    /A\
+                                  </div>
+                                )}
+
+                                <div className="min-w-0">
+                                  <div className="font-extrabold text-xs text-white truncate flex items-center gap-2">
+                                    {n.title}
+                                    {n.unread && <span className="w-2 h-2 rounded-full bg-[#00F2FE] animate-pulse shrink-0" />}
+                                  </div>
+                                  <span className="text-[10px] font-mono text-white/40">{n.categoryLabel || n.category}</span>
+                                </div>
+                              </div>
+
+                              <span className="text-[10px] text-white/40 font-mono shrink-0 pt-0.5">{n.timestamp}</span>
                             </div>
 
-                            {inAppNotifications
-                              .filter((n) => n.unread && (notifCategoryFilter === "ALL" || n.category === notifCategoryFilter))
-                              .map((n) =>
-                                notifCardSize === "EE" ? (
-                                  /* ── EE (Extra Expanded) Rich Card Layout ────────────────── */
-                                  <div
-                                    key={n.id}
-                                    className="glass-panel p-5 rounded-3xl border transition-all space-y-3.5 relative overflow-hidden border-[#00F2FE]/50 bg-gradient-to-r from-[#00F2FE]/15 via-[#121212] to-[#121212] shadow-[0_0_25px_rgba(0,242,254,0.15)] border-l-4 border-l-[#00F2FE]"
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-3">
-                                        {n.avatarUrl ? (
-                                          <div className="relative">
-                                            <img src={n.avatarUrl} alt="Avatar" className="w-10 h-10 rounded-2xl object-cover border border-[#00F2FE]/60" />
-                                            <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-[#00F2FE] border-2 border-[#121212]" />
-                                          </div>
-                                        ) : (
-                                          <div className="w-10 h-10 rounded-2xl bg-[#00F2FE]/10 border border-[#00F2FE]/40 flex items-center justify-center text-[#00F2FE] text-xs font-black">
-                                            /A\
-                                          </div>
-                                        )}
-                                        <div>
-                                          <div className="flex items-center gap-1.5">
-                                            <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-[#00F2FE]/10 text-[#00F2FE] border border-[#00F2FE]/30 uppercase tracking-wider font-mono">
-                                              {n.categoryLabel || n.category}
-                                            </span>
-                                            {n.category === "SPARK" || n.category === "USER" ? (
-                                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#FF6B6B]/20 text-[#FF6B6B] border border-[#FF6B6B]/40 uppercase tracking-wider">
-                                                URGENT ACTION
-                                              </span>
-                                            ) : null}
-                                          </div>
-                                        </div>
-                                      </div>
+                            <p className="text-xs text-white/80 leading-relaxed font-normal pl-1">
+                              {n.body}
+                            </p>
 
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-[11px] text-[#00F2FE] font-mono font-bold">{n.timestamp}</span>
-                                        <span className="w-2.5 h-2.5 rounded-full bg-[#00F2FE] animate-pulse" />
-                                      </div>
-                                    </div>
+                            {/* Simple Action Buttons */}
+                            {n.actions && n.actions.length > 0 && (
+                              <div className="pt-2 border-t border-white/10 flex flex-wrap items-center gap-2">
+                                {n.actions.map((act: any) => {
+                                  let btnStyle = "bg-white/10 text-white hover:bg-white/20";
+                                  if (act.variant === "primary") btnStyle = "bg-[#00F2FE] text-black font-extrabold hover:scale-105 shadow-[0_0_12px_rgba(0,242,254,0.3)]";
+                                  if (act.variant === "success") btnStyle = "bg-[#4CAF50] text-black font-extrabold hover:scale-105";
+                                  if (act.variant === "danger") btnStyle = "bg-[#F44336]/20 text-[#F44336] border border-[#F44336]/40 font-extrabold hover:bg-[#F44336]/30";
 
-                                    <div className="space-y-1.5 pl-1">
-                                      <h4 className="font-extrabold text-sm text-white tracking-tight flex items-center gap-2">
-                                        {n.title}
-                                      </h4>
-                                      <p className="text-xs text-white/90 leading-relaxed font-normal bg-white/[0.03] p-3.5 rounded-2xl border border-white/10">
-                                        {n.body}
-                                      </p>
-                                    </div>
+                                  return (
+                                    <button
+                                      key={act.id}
+                                      type="button"
+                                      onClick={() => handleNotificationAction(n.id, act.type, n.targetUserIndex)}
+                                      className={`px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer ${btnStyle}`}
+                                    >
+                                      {act.label}
+                                    </button>
+                                  );
+                                })}
 
-                                    {/* Action Buttons */}
-                                    {n.actions && n.actions.length > 0 && (
-                                      <div className="pt-2 border-t border-white/10 flex flex-wrap items-center gap-2">
-                                        {n.actions.map((act: any) => {
-                                          let btnStyle = "bg-white/10 text-white hover:bg-white/20";
-                                          if (act.variant === "primary") btnStyle = "bg-[#00F2FE] text-black font-extrabold hover:scale-105 shadow-[0_0_15px_rgba(0,242,254,0.35)]";
-                                          if (act.variant === "success") btnStyle = "bg-[#4CAF50] text-black font-extrabold hover:scale-105";
-                                          if (act.variant === "danger") btnStyle = "bg-[#F44336]/20 text-[#F44336] border border-[#F44336]/40 font-extrabold hover:bg-[#F44336]/30";
-
-                                          return (
-                                            <button
-                                              key={act.id}
-                                              type="button"
-                                              onClick={() => handleNotificationAction(n.id, act.type, n.targetUserIndex)}
-                                              className={`px-4 py-2 rounded-xl text-xs transition-all cursor-pointer ${btnStyle}`}
-                                            >
-                                              {act.label}
-                                            </button>
-                                          );
-                                        })}
-
-                                        {n.requestStatus && (
-                                          <span className={`text-xs font-bold px-3.5 py-1.5 rounded-xl ${
-                                            n.requestStatus === "APPROVED" ? "bg-[#4CAF50]/20 text-[#4CAF50] border border-[#4CAF50]/40" : "bg-[#F44336]/20 text-[#F44336] border border-[#F44336]/40"
-                                          }`}>
-                                            {n.requestStatus === "APPROVED" ? "✓ Approved" : "✕ Denied"}
-                                          </span>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  /* ── Medium Compact Card Layout ───────────────────────────── */
-                                  <div
-                                    key={n.id}
-                                    className="p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 border-[#00F2FE]/40 bg-[#00F2FE]/10 shadow-[0_0_15px_rgba(0,242,254,0.1)]"
-                                  >
-                                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                                      {n.avatarUrl ? (
-                                        <img src={n.avatarUrl} alt="Avatar" className="w-9 h-9 rounded-xl object-cover border border-[#00F2FE]/50 shrink-0" />
-                                      ) : (
-                                        <div className="w-9 h-9 rounded-xl bg-[#00F2FE]/10 border border-[#00F2FE]/30 flex items-center justify-center text-[#00F2FE] text-[10px] font-bold shrink-0">
-                                          /A\
-                                        </div>
-                                      )}
-                                      <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-2">
-                                          <span className="font-extrabold text-xs text-white truncate">{n.title}</span>
-                                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-[#00F2FE] font-mono shrink-0">
-                                            {n.categoryLabel || n.category}
-                                          </span>
-                                        </div>
-                                        <p className="text-[11px] text-white/70 truncate">{n.body}</p>
-                                      </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 shrink-0">
-                                      <span className="text-[10px] text-[#00F2FE] font-mono font-bold">{n.timestamp}</span>
-                                      {n.actions && n.actions[0] && (
-                                        <button
-                                          type="button"
-                                          onClick={() => handleNotificationAction(n.id, n.actions[0].type, n.targetUserIndex)}
-                                          className="px-2.5 py-1 rounded-lg bg-[#00F2FE] text-black font-extrabold text-[10px] hover:scale-105 transition-all cursor-pointer shadow-[0_0_10px_rgba(0,242,254,0.3)]"
-                                        >
-                                          {n.actions[0].label}
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-                                )
-                              )}
+                                {n.requestStatus && (
+                                  <span className={`text-xs font-bold px-3 py-1 rounded-xl ${
+                                    n.requestStatus === "APPROVED" ? "bg-[#4CAF50]/20 text-[#4CAF50] border border-[#4CAF50]/40" : "bg-[#F44336]/20 text-[#F44336] border border-[#F44336]/40"
+                                  }`}>
+                                    {n.requestStatus === "APPROVED" ? "✓ Approved" : "✕ Denied"}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
-                        )}
-
-                        {/* ── Section 2: Earlier Notifications ─────────────────── */}
-                        {inAppNotifications.filter((n) => !n.unread && (notifCategoryFilter === "ALL" || n.category === notifCategoryFilter)).length > 0 && (
-                          <div className="space-y-3 pt-2">
-                            <div className="text-[11px] font-bold text-white/40 uppercase tracking-wider px-1 font-mono">
-                              Earlier Today ({inAppNotifications.filter((n) => !n.unread && (notifCategoryFilter === "ALL" || n.category === notifCategoryFilter)).length})
-                            </div>
-
-                            {inAppNotifications
-                              .filter((n) => !n.unread && (notifCategoryFilter === "ALL" || n.category === notifCategoryFilter))
-                              .map((n) =>
-                                notifCardSize === "EE" ? (
-                                  /* ── EE (Extra Expanded) Rich Card Layout ────────────────── */
-                                  <div
-                                    key={n.id}
-                                    className="glass-panel p-5 rounded-3xl border border-white/10 bg-[#121212]/80 transition-all space-y-3.5 relative overflow-hidden"
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-3">
-                                        {n.avatarUrl ? (
-                                          <img src={n.avatarUrl} alt="Avatar" className="w-9 h-9 rounded-2xl object-cover border border-white/20" />
-                                        ) : (
-                                          <div className="w-9 h-9 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/50 text-xs font-bold">
-                                            /A\
-                                          </div>
-                                        )}
-                                        <div>
-                                          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-white/5 text-white/60 border border-white/10 uppercase tracking-wider font-mono">
-                                            {n.categoryLabel || n.category}
-                                          </span>
-                                        </div>
-                                      </div>
-
-                                      <span className="text-[11px] text-white/40 font-mono">{n.timestamp}</span>
-                                    </div>
-
-                                    <div className="space-y-1 pl-1">
-                                      <h4 className="font-bold text-sm text-white tracking-tight">{n.title}</h4>
-                                      <p className="text-xs text-white/70 leading-relaxed font-normal bg-white/[0.02] p-3 rounded-2xl border border-white/5">
-                                        {n.body}
-                                      </p>
-                                    </div>
-
-                                    {/* Action Buttons */}
-                                    {n.actions && n.actions.length > 0 && (
-                                      <div className="pt-2 border-t border-white/10 flex flex-wrap items-center gap-2">
-                                        {n.actions.map((act: any) => {
-                                          let btnStyle = "bg-white/10 text-white hover:bg-white/20";
-                                          if (act.variant === "primary") btnStyle = "bg-[#00F2FE] text-black font-bold hover:scale-105 shadow-[0_0_12px_rgba(0,242,254,0.3)]";
-                                          if (act.variant === "success") btnStyle = "bg-[#4CAF50] text-black font-bold hover:scale-105";
-                                          if (act.variant === "danger") btnStyle = "bg-[#F44336]/20 text-[#F44336] border border-[#F44336]/40 font-bold hover:bg-[#F44336]/30";
-
-                                          return (
-                                            <button
-                                              key={act.id}
-                                              type="button"
-                                              onClick={() => handleNotificationAction(n.id, act.type, n.targetUserIndex)}
-                                              className={`px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer ${btnStyle}`}
-                                            >
-                                              {act.label}
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  /* ── Medium Compact Card Layout ───────────────────────────── */
-                                  <div
-                                    key={n.id}
-                                    className="p-3.5 rounded-2xl border border-white/10 bg-[#121212]/80 hover:bg-white/5 transition-all flex items-center justify-between gap-3"
-                                  >
-                                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                                      {n.avatarUrl ? (
-                                        <img src={n.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-xl object-cover border border-white/20 shrink-0" />
-                                      ) : (
-                                        <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 text-[10px] font-bold shrink-0">
-                                          /A\
-                                        </div>
-                                      )}
-                                      <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-2">
-                                          <span className="font-bold text-xs text-white truncate">{n.title}</span>
-                                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-white/60 font-mono shrink-0">
-                                            {n.categoryLabel || n.category}
-                                          </span>
-                                        </div>
-                                        <p className="text-[11px] text-white/50 truncate">{n.body}</p>
-                                      </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 shrink-0">
-                                      <span className="text-[10px] text-white/40 font-mono">{n.timestamp}</span>
-                                      {n.actions && n.actions[0] && (
-                                        <button
-                                          type="button"
-                                          onClick={() => handleNotificationAction(n.id, n.actions[0].type, n.targetUserIndex)}
-                                          className="px-2.5 py-1 rounded-lg bg-white/10 text-white font-bold text-[10px] hover:bg-white/20 transition-all cursor-pointer"
-                                        >
-                                          {n.actions[0].label}
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-                                )
-                              )}
-                          </div>
-                        )}
+                        ))}
                       </div>
 
                       {/* Fixed Assistant Query Bar */}
