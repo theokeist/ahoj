@@ -71,7 +71,8 @@ const INITIAL_INAPP_NOTIFICATIONS = [
     title: "New Proximity Story 📸",
     body: "@natalie_s (~120m away) posted a new story: 'Hledám parťáka na turistiku 🏔️'",
     timestamp: "2m ago",
-    category: "STORY",
+    category: "USER",
+    categoryLabel: "Users 👤",
     unread: true,
     avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150&h=150",
     targetUserIndex: 0,
@@ -86,6 +87,7 @@ const INITIAL_INAPP_NOTIFICATIONS = [
     body: "@kubajz created a Spark ~45m away: 'Specialty Coffee & Tech Chat ☕' at Skog Urban Hub.",
     timestamp: "15m ago",
     category: "SPARK",
+    categoryLabel: "Sparks ⚡",
     unread: true,
     avatarUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=150&h=150",
     targetUserIndex: 1,
@@ -99,7 +101,8 @@ const INITIAL_INAPP_NOTIFICATIONS = [
     title: "Private Profile Access Request 🔒",
     body: "@secret_vibe requested access to view your stories and private profile details.",
     timestamp: "45m ago",
-    category: "REQUEST",
+    category: "USER",
+    categoryLabel: "Users 👤",
     unread: true,
     requestStatus: "PENDING",
     avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150&h=150",
@@ -114,7 +117,8 @@ const INITIAL_INAPP_NOTIFICATIONS = [
     title: "Google+ +1 Endorsement 🎉",
     body: "@emma_art and 5 nearby users +1'd your status message: 'Ahoj Brno!'",
     timestamp: "1h ago",
-    category: "PLUS_ONE",
+    category: "USER",
+    categoryLabel: "Users 👤",
     unread: false,
     avatarUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=150&h=150",
     targetUserIndex: 3,
@@ -124,10 +128,11 @@ const INITIAL_INAPP_NOTIFICATIONS = [
   },
   {
     id: "notif-5",
-    title: "Proximity Radar Update 📡",
+    title: "Proximity Radar Sweep 📡",
     body: "4 active users found in your 3km radius around Brno Center.",
     timestamp: "2h ago",
-    category: "PROXIMITY",
+    category: "RADAR",
+    categoryLabel: "Radar 📍",
     unread: false,
     actions: [
       { id: "open-rad", label: "Open Live Radar 📡", type: "OPEN_RADAR", variant: "primary" },
@@ -138,10 +143,11 @@ const INITIAL_INAPP_NOTIFICATIONS = [
     title: "Ghost Mode Security Guard 👻",
     body: "Location fuzzing is set to 300m. Your exact location is hidden while keeping nearby discovery active.",
     timestamp: "4h ago",
-    category: "SYSTEM",
+    category: "INFO",
+    categoryLabel: "Info ℹ️",
     unread: false,
     actions: [
-      { id: "open-set", label: "Privacy Settings ⚙️", type: "OPEN_SETTINGS", variant: "secondary" },
+      { id: "open-set", label: "Open Privacy Settings ⚙️", type: "OPEN_SETTINGS", variant: "secondary" },
     ],
   },
 ];
@@ -178,6 +184,8 @@ export default function FullWebAppDashboard() {
   // In-App Notification System State
   const [inAppNotifications, setInAppNotifications] = useState<any[]>(INITIAL_INAPP_NOTIFICATIONS);
   const [notificationToast, setNotificationToast] = useState<string | null>(null);
+  const [notifCategoryFilter, setNotifCategoryFilter] = useState<"ALL" | "INFO" | "SPARK" | "RADAR" | "USER">("ALL");
+  const [notifCardSize, setNotifCardSize] = useState<"EE" | "MEDIUM">("EE");
 
   // Data collections
   const [nearbyUsers, setNearbyUsers] = useState<any[]>(MOCK_NEARBY_USERS);
@@ -1277,105 +1285,200 @@ export default function FullWebAppDashboard() {
                   ) : activeChatUser.isSystem || activeChatUser.id === "ahoj-notifications" ? (
                     <>
                       {/* Fixed System Notification Stream Header */}
-                      <div className="p-4 border-b border-white/10 flex items-center justify-between bg-[#121212] shrink-0 z-10">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#00F2FE] to-purple-600 p-0.5 shadow-[0_0_15px_rgba(0,242,254,0.3)]">
-                            <div className="w-full h-full rounded-[14px] bg-[#0C0C0C] flex items-center justify-center text-[#00F2FE] font-black text-sm">
-                              /A\
+                      <div className="p-4 border-b border-white/10 space-y-3 bg-[#121212] shrink-0 z-10">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#00F2FE] to-purple-600 p-0.5 shadow-[0_0_15px_rgba(0,242,254,0.3)]">
+                              <div className="w-full h-full rounded-[14px] bg-[#0C0C0C] flex items-center justify-center text-[#00F2FE] font-black text-sm">
+                                /A\
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-bold text-sm text-white flex items-center gap-1.5">
+                                {activeChatUser.username}
+                                <span className="px-2 py-0.5 rounded-full bg-[#00F2FE]/15 text-[#00F2FE] border border-[#00F2FE]/30 text-[10px] font-bold">
+                                  Official Bot
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-white/50">Real-time proximity alerts, spark invites & system notifications</div>
                             </div>
                           </div>
-                          <div>
-                            <div className="font-bold text-sm text-white flex items-center gap-1.5">
-                              {activeChatUser.username}
-                              <span className="px-2 py-0.5 rounded-full bg-[#00F2FE]/15 text-[#00F2FE] border border-[#00F2FE]/30 text-[10px] font-bold">
-                                Official Bot
-                              </span>
-                            </div>
-                            <div className="text-[10px] text-white/50">Real-time proximity alerts, spark invites & system notifications</div>
+
+                          {/* Card Size Selector: EE (Extra Expanded) vs Medium */}
+                          <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
+                            <button
+                              type="button"
+                              onClick={() => setNotifCardSize("EE")}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                                notifCardSize === "EE" ? "bg-[#00F2FE] text-black shadow-[0_0_10px_rgba(0,242,254,0.3)]" : "text-white/60 hover:text-white"
+                              }`}
+                              title="Extra Expanded Rich Card View"
+                            >
+                              EE Expanded 🖼️
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setNotifCardSize("MEDIUM")}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                                notifCardSize === "MEDIUM" ? "bg-[#00F2FE] text-black shadow-[0_0_10px_rgba(0,242,254,0.3)]" : "text-white/60 hover:text-white"
+                              }`}
+                              title="Compact Medium View"
+                            >
+                              Medium 📄
+                            </button>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <span className="px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 text-[11px] font-mono font-bold text-[#00F2FE]">
-                            {inAppNotifications.filter((n) => n.unread).length} Unread
-                          </span>
+                        {/* Category Filter Pills (Info, Sparks, Radar, Users) */}
+                        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pt-1">
+                          {[
+                            { id: "ALL", label: `All (${inAppNotifications.length})` },
+                            { id: "INFO", label: `Info ℹ️ (${inAppNotifications.filter((n) => n.category === "INFO").length})` },
+                            { id: "SPARK", label: `Sparks ⚡ (${inAppNotifications.filter((n) => n.category === "SPARK").length})` },
+                            { id: "RADAR", label: `Radar 📍 (${inAppNotifications.filter((n) => n.category === "RADAR").length})` },
+                            { id: "USER", label: `Users 👤 (${inAppNotifications.filter((n) => n.category === "USER").length})` },
+                          ].map((cat) => (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => setNotifCategoryFilter(cat.id as any)}
+                              className={`px-3 py-1 rounded-xl text-[10px] font-bold shrink-0 transition-all cursor-pointer ${
+                                notifCategoryFilter === cat.id
+                                  ? "bg-[#00F2FE] text-black font-extrabold shadow-[0_0_12px_rgba(0,242,254,0.3)]"
+                                  : "bg-white/5 text-white/70 hover:text-white border border-white/10"
+                              }`}
+                            >
+                              {cat.label}
+                            </button>
+                          ))}
                         </div>
                       </div>
 
-                      {/* Notification Cards List (Inner Scrollable) */}
-                      <div className="flex-1 min-h-0 p-5 overflow-y-auto space-y-4">
+                      {/* Notification Cards Stream (Filtered by Category & Styled by EE / Medium Size) */}
+                      <div className="flex-1 min-h-0 p-5 overflow-y-auto space-y-3.5">
                         {notificationToast && (
                           <div className="p-3.5 rounded-2xl bg-[#00F2FE]/20 border border-[#00F2FE] text-[#00F2FE] text-xs font-bold flex items-center gap-2 animate-fadeIn sticky top-0 z-20 backdrop-blur-md shadow-lg">
                             <CheckCircle2 size={16} /> {notificationToast}
                           </div>
                         )}
 
-                        {inAppNotifications.map((n) => (
-                          <div
-                            key={n.id}
-                            className={`glass-panel p-4.5 rounded-3xl border transition-all space-y-3 ${
-                              n.unread
-                                ? "border-[#00F2FE]/40 bg-gradient-to-r from-[#00F2FE]/10 via-[#121212] to-[#121212] shadow-[0_0_20px_rgba(0,242,254,0.1)]"
-                                : "border-white/10 bg-[#121212]/80"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2.5">
-                                {n.avatarUrl ? (
-                                  <img src={n.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-full object-cover border border-[#00F2FE]/50" />
-                                ) : (
-                                  <div className="w-8 h-8 rounded-full bg-[#00F2FE]/10 border border-[#00F2FE]/30 flex items-center justify-center text-[#00F2FE] text-xs font-bold">
-                                    /A\
+                        {inAppNotifications
+                          .filter((n) => notifCategoryFilter === "ALL" || n.category === notifCategoryFilter)
+                          .map((n) =>
+                            notifCardSize === "EE" ? (
+                              /* ── EE (Extra Expanded) Rich Card Layout ────────────────── */
+                              <div
+                                key={n.id}
+                                className={`glass-panel p-5 rounded-3xl border transition-all space-y-3.5 relative overflow-hidden ${
+                                  n.unread
+                                    ? "border-[#00F2FE]/50 bg-gradient-to-r from-[#00F2FE]/15 via-[#121212] to-[#121212] shadow-[0_0_25px_rgba(0,242,254,0.15)] border-l-4 border-l-[#00F2FE]"
+                                    : "border-white/10 bg-[#121212]/90"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    {n.avatarUrl ? (
+                                      <img src={n.avatarUrl} alt="Avatar" className="w-9 h-9 rounded-2xl object-cover border border-[#00F2FE]/50" />
+                                    ) : (
+                                      <div className="w-9 h-9 rounded-2xl bg-[#00F2FE]/10 border border-[#00F2FE]/40 flex items-center justify-center text-[#00F2FE] text-xs font-black">
+                                        /A\
+                                      </div>
+                                    )}
+                                    <div>
+                                      <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-[#00F2FE]/10 text-[#00F2FE] border border-[#00F2FE]/30 uppercase tracking-wider font-mono">
+                                        {n.categoryLabel || n.category}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-white/40 font-mono">{n.timestamp}</span>
+                                    {n.unread && <span className="w-2.5 h-2.5 rounded-full bg-[#00F2FE] animate-pulse" />}
+                                  </div>
+                                </div>
+
+                                <div className="space-y-1 pl-1">
+                                  <h4 className="font-extrabold text-sm text-white tracking-tight">{n.title}</h4>
+                                  <p className="text-xs text-white/80 leading-relaxed font-normal bg-white/[0.02] p-3 rounded-2xl border border-white/5">
+                                    {n.body}
+                                  </p>
+                                </div>
+
+                                {/* Action Buttons */}
+                                {n.actions && n.actions.length > 0 && (
+                                  <div className="pt-2 border-t border-white/10 flex flex-wrap items-center gap-2">
+                                    {n.actions.map((act: any) => {
+                                      let btnStyle = "bg-white/10 text-white hover:bg-white/20";
+                                      if (act.variant === "primary") btnStyle = "bg-[#00F2FE] text-black font-extrabold hover:scale-105 shadow-[0_0_12px_rgba(0,242,254,0.3)]";
+                                      if (act.variant === "success") btnStyle = "bg-[#4CAF50] text-black font-extrabold hover:scale-105";
+                                      if (act.variant === "danger") btnStyle = "bg-[#F44336]/20 text-[#F44336] border border-[#F44336]/40 font-extrabold hover:bg-[#F44336]/30";
+
+                                      return (
+                                        <button
+                                          key={act.id}
+                                          type="button"
+                                          onClick={() => handleNotificationAction(n.id, act.type, n.targetUserIndex)}
+                                          className={`px-4 py-2 rounded-xl text-xs transition-all cursor-pointer ${btnStyle}`}
+                                        >
+                                          {act.label}
+                                        </button>
+                                      );
+                                    })}
+
+                                    {n.requestStatus && (
+                                      <span className={`text-xs font-bold px-3 py-1.5 rounded-xl ${
+                                        n.requestStatus === "APPROVED" ? "bg-[#4CAF50]/20 text-[#4CAF50] border border-[#4CAF50]/40" : "bg-[#F44336]/20 text-[#F44336] border border-[#F44336]/40"
+                                      }`}>
+                                        {n.requestStatus === "APPROVED" ? "✓ Approved" : "✕ Denied"}
+                                      </span>
+                                    )}
                                   </div>
                                 )}
-                                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-white/5 text-[#00F2FE] border border-white/10 uppercase tracking-wider font-mono">
-                                  {n.category}
-                                </span>
                               </div>
+                            ) : (
+                              /* ── Medium Compact Card Layout ───────────────────────────── */
+                              <div
+                                key={n.id}
+                                className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                                  n.unread
+                                    ? "border-[#00F2FE]/40 bg-[#00F2FE]/10"
+                                    : "border-white/10 bg-[#121212]/80 hover:bg-white/5"
+                                }`}
+                              >
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                  {n.avatarUrl ? (
+                                    <img src={n.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-xl object-cover border border-[#00F2FE]/40 shrink-0" />
+                                  ) : (
+                                    <div className="w-8 h-8 rounded-xl bg-[#00F2FE]/10 border border-[#00F2FE]/30 flex items-center justify-center text-[#00F2FE] text-[10px] font-bold shrink-0">
+                                      /A\
+                                    </div>
+                                  )}
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold text-xs text-white truncate">{n.title}</span>
+                                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-[#00F2FE] font-mono shrink-0">
+                                        {n.categoryLabel || n.category}
+                                      </span>
+                                    </div>
+                                    <p className="text-[11px] text-white/60 truncate">{n.body}</p>
+                                  </div>
+                                </div>
 
-                              <div className="flex items-center gap-2">
-                                <span className="text-[11px] text-white/40 font-mono">{n.timestamp}</span>
-                                {n.unread && <span className="w-2 h-2 rounded-full bg-[#00F2FE] animate-pulse" />}
-                              </div>
-                            </div>
-
-                            <div className="space-y-1">
-                              <h4 className="font-bold text-xs text-white">{n.title}</h4>
-                              <p className="text-xs text-white/80 leading-relaxed font-normal">{n.body}</p>
-                            </div>
-
-                            {/* Action Buttons */}
-                            {n.actions && n.actions.length > 0 && (
-                              <div className="pt-2 border-t border-white/10 flex flex-wrap items-center gap-2">
-                                {n.actions.map((act: any) => {
-                                  let btnStyle = "bg-white/10 text-white hover:bg-white/20";
-                                  if (act.variant === "primary") btnStyle = "bg-[#00F2FE] text-black font-bold hover:scale-105 shadow-[0_0_12px_rgba(0,242,254,0.3)]";
-                                  if (act.variant === "success") btnStyle = "bg-[#4CAF50] text-black font-bold hover:scale-105";
-                                  if (act.variant === "danger") btnStyle = "bg-[#F44336]/20 text-[#F44336] border border-[#F44336]/40 font-bold hover:bg-[#F44336]/30";
-
-                                  return (
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="text-[10px] text-white/40 font-mono">{n.timestamp}</span>
+                                  {n.actions && n.actions[0] && (
                                     <button
-                                      key={act.id}
                                       type="button"
-                                      onClick={() => handleNotificationAction(n.id, act.type, n.targetUserIndex)}
-                                      className={`px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer ${btnStyle}`}
+                                      onClick={() => handleNotificationAction(n.id, n.actions[0].type, n.targetUserIndex)}
+                                      className="px-2.5 py-1 rounded-lg bg-[#00F2FE] text-black font-extrabold text-[10px] hover:scale-105 transition-all cursor-pointer"
                                     >
-                                      {act.label}
+                                      {n.actions[0].label}
                                     </button>
-                                  );
-                                })}
-
-                                {n.requestStatus && (
-                                  <span className={`text-xs font-bold px-3 py-1 rounded-xl ${
-                                    n.requestStatus === "APPROVED" ? "bg-[#4CAF50]/20 text-[#4CAF50] border border-[#4CAF50]/40" : "bg-[#F44336]/20 text-[#F44336] border border-[#F44336]/40"
-                                  }`}>
-                                    {n.requestStatus === "APPROVED" ? "✓ Approved" : "✕ Denied"}
-                                  </span>
-                                )}
+                                  )}
+                                </div>
                               </div>
-                            )}
-                          </div>
-                        ))}
+                            )
+                          )}
                       </div>
 
                       {/* Fixed Assistant Query Bar */}
