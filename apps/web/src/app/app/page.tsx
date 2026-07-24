@@ -1104,11 +1104,11 @@ export default function FullWebAppDashboard() {
 
           {/* TAB 3: FULL MODERN MESSENGER (CHATS & NOTIFICATIONS & MY PROFILE) */}
           {activeTab === "chats" && (
-            <div className="h-[calc(100vh-65px)] flex bg-[#090909]">
+            <div className="h-[calc(100vh-65px)] flex bg-[#090909] overflow-hidden">
               {/* ── Messenger Left Sidebar ───────────────────────────────────── */}
-              <div className="w-72 sm:w-80 border-r border-white/10 p-3 space-y-3 overflow-y-auto flex flex-col bg-[#0C0C0C]">
+              <div className="w-72 sm:w-80 border-r border-white/10 p-3 space-y-3 overflow-y-auto flex flex-col bg-[#0C0C0C] shrink-0">
                 {/* Messenger Header & Search */}
-                <div className="space-y-2 px-1 pt-1">
+                <div className="space-y-2 px-1 pt-1 shrink-0">
                   <div className="flex items-center justify-between">
                     <h3 className="font-extrabold text-sm text-white tracking-tight flex items-center gap-2">
                       <MessageSquare size={16} className="text-[#00F2FE]" /> Messenger
@@ -1127,39 +1127,9 @@ export default function FullWebAppDashboard() {
                     />
                     <Search size={13} className="absolute left-2.5 top-2.5 text-white/40" />
                   </div>
-
-                  {/* Demo Accounts Quick Sandbox Switcher */}
-                  <div className="bg-white/[0.03] p-2 rounded-2xl border border-white/10 space-y-1.5">
-                    <div className="flex items-center justify-between text-[10px] font-bold text-[#00F2FE]">
-                      <span className="flex items-center gap-1">⚡ Demo Sandbox Accounts</span>
-                      <span className="text-white/40 font-normal">Click to chat</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
-                      {nearbyUsers.map((u) => (
-                        <button
-                          key={u.id}
-                          type="button"
-                          onClick={() => {
-                            setActiveChatUser(u);
-                            setMessages([
-                              { id: `msg-1-${u.id}`, senderId: u.id, content: `Ahoj! &ldquo;${u.message}&rdquo;` },
-                              { id: `msg-2-${u.id}`, senderId: myUser?.id || "me", content: "Ahoj! Great to connect nearby on Ahoj." },
-                            ]);
-                          }}
-                          className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold shrink-0 transition-all cursor-pointer ${
-                            activeChatUser?.id === u.id
-                              ? "bg-[#00F2FE] text-black shadow-[0_0_10px_rgba(0,242,254,0.4)] font-extrabold"
-                              : "bg-white/5 text-white/70 hover:text-white border border-white/10"
-                          }`}
-                        >
-                          <img src={u.avatarUrl} alt={u.username} className="w-4 h-4 rounded-full object-cover" />
-                          <span>@{u.username}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
 
+                {/* Primary Real Conversations List */}
                 <div className="flex-1 space-y-1.5 overflow-y-auto pr-0.5">
                   {/* System & Notification Channel */}
                   <button
@@ -1173,7 +1143,7 @@ export default function FullWebAppDashboard() {
                     }
                     className={`w-full p-3 rounded-2xl text-left border transition-all flex items-center justify-between cursor-pointer ${
                       activeChatUser?.id === "ahoj-notifications"
-                        ? "bg-[#00F2FE]/15 border-[#00F2FE]/40"
+                        ? "bg-[#00F2FE]/15 border-[#00F2FE]/40 shadow-[0_0_15px_rgba(0,242,254,0.15)]"
                         : "bg-white/5 border-white/5 hover:bg-white/10"
                     }`}
                   >
@@ -1210,7 +1180,7 @@ export default function FullWebAppDashboard() {
                     }
                     className={`w-full p-3 rounded-2xl text-left border transition-all flex items-center justify-between cursor-pointer ${
                       activeChatUser?.isOwnProfileSpace
-                        ? "bg-[#00F2FE]/15 border-[#00F2FE]/40"
+                        ? "bg-[#00F2FE]/15 border-[#00F2FE]/40 shadow-[0_0_15px_rgba(0,242,254,0.15)]"
                         : "bg-white/5 border-white/5 hover:bg-white/10"
                     }`}
                   >
@@ -1231,28 +1201,53 @@ export default function FullWebAppDashboard() {
 
                   <div className="h-px bg-white/10 my-2" />
 
-                  {/* User Direct Conversations */}
-                  {conversations.map((c) => (
+                  {/* Real Active Nearby User Threads */}
+                  <div className="text-[10px] font-bold text-white/40 uppercase tracking-wider px-2 py-1">
+                    Nearby People ({nearbyUsers.length})
+                  </div>
+
+                  {nearbyUsers.map((u) => (
                     <button
-                      key={c.id}
+                      key={u.id}
                       type="button"
-                      onClick={() => setActiveChatUser(c.partner)}
-                      className={`w-full p-3 rounded-2xl text-left border transition-all cursor-pointer ${
-                        activeChatUser?.id === c.partner.id ? "bg-[#00F2FE]/15 border-[#00F2FE]/40" : "bg-white/5 border-white/5 hover:bg-white/10"
+                      onClick={() => {
+                        setActiveChatUser(u);
+                        setMessages([
+                          { id: `msg-1-${u.id}`, senderId: u.id, content: `Ahoj! &ldquo;${u.message}&rdquo;` },
+                          { id: `msg-2-${u.id}`, senderId: myUser?.id || "me", content: "Ahoj! Great to connect nearby on Ahoj." },
+                        ]);
+                      }}
+                      className={`w-full p-3 rounded-2xl text-left border transition-all cursor-pointer flex items-center justify-between ${
+                        activeChatUser?.id === u.id
+                          ? "bg-[#00F2FE]/15 border-[#00F2FE]/40 shadow-[0_0_15px_rgba(0,242,254,0.15)]"
+                          : "bg-white/5 border-white/5 hover:bg-white/10"
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-0.5">
-                        <div className="font-bold text-xs text-white truncate">@{c.partner.username}</div>
-                        <span className="text-[9px] text-white/40 font-mono">12:45</span>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="relative shrink-0">
+                          <img
+                            src={u.avatarUrl}
+                            alt={u.username}
+                            className="w-9 h-9 rounded-2xl object-cover border border-white/15"
+                          />
+                          <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#00F2FE] border border-[#0C0C0C]" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-xs text-white flex items-center gap-1.5 truncate">
+                            @{u.username}
+                            <span className="text-[9px] font-mono text-[#00F2FE]">~{u.distanceMeters}m</span>
+                          </div>
+                          <div className="text-[10px] text-white/50 truncate">&ldquo;{u.message}&rdquo;</div>
+                        </div>
                       </div>
-                      <div className="text-[10px] text-white/50 truncate">{c.lastMessage || "Encrypted thread"}</div>
+                      <span className="text-[9px] text-white/40 font-mono shrink-0 ml-1">12:45</span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* ── Messenger Main Chat Pane ─────────────────────────────────── */}
-              <div className="flex-1 flex flex-col bg-[#0C0C0C]">
+              {/* ── Messenger Main Chat Pane (Inner Scrollable Stream) ──────── */}
+              <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#0C0C0C]">
                 {activeChatUser ? (
                   activeChatUser.isOwnProfileSpace ? (
                     <div className="flex-1 p-4 md:p-6 overflow-y-auto">
@@ -1281,8 +1276,8 @@ export default function FullWebAppDashboard() {
                     </div>
                   ) : activeChatUser.isSystem || activeChatUser.id === "ahoj-notifications" ? (
                     <>
-                      {/* System Notification Stream Header */}
-                      <div className="p-4 border-b border-white/10 flex items-center justify-between bg-[#121212]">
+                      {/* Fixed System Notification Stream Header */}
+                      <div className="p-4 border-b border-white/10 flex items-center justify-between bg-[#121212] shrink-0 z-10">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#00F2FE] to-purple-600 p-0.5 shadow-[0_0_15px_rgba(0,242,254,0.3)]">
                             <div className="w-full h-full rounded-[14px] bg-[#0C0C0C] flex items-center justify-center text-[#00F2FE] font-black text-sm">
@@ -1307,8 +1302,8 @@ export default function FullWebAppDashboard() {
                         </div>
                       </div>
 
-                      {/* Notification Cards List */}
-                      <div className="flex-1 p-5 overflow-y-auto space-y-4">
+                      {/* Notification Cards List (Inner Scrollable) */}
+                      <div className="flex-1 min-h-0 p-5 overflow-y-auto space-y-4">
                         {notificationToast && (
                           <div className="p-3.5 rounded-2xl bg-[#00F2FE]/20 border border-[#00F2FE] text-[#00F2FE] text-xs font-bold flex items-center gap-2 animate-fadeIn sticky top-0 z-20 backdrop-blur-md shadow-lg">
                             <CheckCircle2 size={16} /> {notificationToast}
@@ -1383,8 +1378,8 @@ export default function FullWebAppDashboard() {
                         ))}
                       </div>
 
-                      {/* Assistant Query Bar */}
-                      <div className="p-4 border-t border-white/10 flex gap-2 bg-white/[0.02]">
+                      {/* Fixed Assistant Query Bar */}
+                      <div className="p-4 border-t border-white/10 flex gap-2 bg-white/[0.02] shrink-0 z-10">
                         <input
                           type="text"
                           value={typedMessage}
@@ -1432,8 +1427,8 @@ export default function FullWebAppDashboard() {
                     </>
                   ) : (
                     <>
-                      {/* Rich Messenger Chat Header */}
-                      <div className="p-4 border-b border-white/10 flex items-center justify-between bg-[#121212]/90 backdrop-blur-md">
+                      {/* Fixed Messenger Header */}
+                      <div className="p-4 border-b border-white/10 flex items-center justify-between bg-[#121212]/90 backdrop-blur-md shrink-0 z-10">
                         <div className="flex items-center gap-3">
                           <div className="relative">
                             <img
@@ -1469,8 +1464,8 @@ export default function FullWebAppDashboard() {
                         </div>
                       </div>
 
-                      {/* Messenger Message Stream */}
-                      <div className="flex-1 p-5 overflow-y-auto space-y-3 bg-[radial-gradient(ellipse_at_top,rgba(0,242,254,0.03),transparent_70%)]">
+                      {/* Messenger Message Stream (Inner Scrollable Container) */}
+                      <div className="flex-1 min-h-0 p-5 overflow-y-auto space-y-3 bg-[radial-gradient(ellipse_at_top,rgba(0,242,254,0.03),transparent_70%)]">
                         {messages.map((m) => (
                           <div key={m.id} className={`flex ${m.senderId === myUser?.id ? "justify-end" : "justify-start"}`}>
                             <div
@@ -1489,8 +1484,8 @@ export default function FullWebAppDashboard() {
                         ))}
                       </div>
 
-                      {/* Rich Messenger Composer Toolbar */}
-                      <div className="p-3.5 border-t border-white/10 flex items-center gap-2 bg-[#121212]">
+                      {/* Fixed Messenger Composer Toolbar */}
+                      <div className="p-3.5 border-t border-white/10 flex items-center gap-2 bg-[#121212] shrink-0 z-10">
                         <button
                           type="button"
                           onClick={() => setIsStoryModalOpen(true)}
