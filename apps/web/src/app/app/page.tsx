@@ -549,14 +549,14 @@ export default function FullWebAppDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0C0C0C] text-white flex font-sans overflow-x-hidden">
+    <div className="h-screen w-screen max-w-full max-h-full bg-[#0C0C0C] text-white flex font-sans overflow-hidden">
 
       {/* Background Atmosphere Glows */}
       <div className="fixed top-[-10%] left-[-10%] w-[500px] h-[500px] bg-[#00F2FE]/10 rounded-full blur-[180px] pointer-events-none" />
       <div className="fixed bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#C56BFF]/10 rounded-full blur-[180px] pointer-events-none" />
 
       {/* ── 1. LEFT SIDEBAR NAVIGATION (X / Twitter Style) ────────────────────────── */}
-      <aside className="w-64 lg:w-72 h-screen sticky top-0 border-r border-white/10 p-5 flex flex-col justify-between z-30 bg-[#0C0C0C]/80 backdrop-blur-xl shrink-0 hidden md:flex">
+      <aside className="w-64 lg:w-72 h-full border-r border-white/10 p-5 flex flex-col justify-between z-30 bg-[#0C0C0C] overflow-y-auto shrink-0 hidden md:flex">
         
         <div className="space-y-7">
           {/* Top-Left Logo & User Avatar Profile Header */}
@@ -669,11 +669,11 @@ export default function FullWebAppDashboard() {
 
       </aside>
 
-      {/* ── 2. CENTER STREAM COLUMN (Google+ Card Stream + X Timeline) ───────────── */}
-      <main className="flex-1 min-w-0 flex flex-col min-h-screen border-r border-white/10 relative z-20">
+      {/* ── 2. CENTER STREAM COLUMN (Full Height & Inner Component Scrolling) ───────────── */}
+      <main className="flex-1 min-w-0 h-full flex flex-col border-r border-white/10 relative z-20 overflow-hidden">
 
-        {/* Sticky Header Bar */}
-        <header className="sticky top-0 z-30 bg-[#0C0C0C]/80 backdrop-blur-xl border-b border-white/10 px-6 h-16 flex items-center justify-between">
+        {/* Header Bar (Shrink-0) */}
+        <header className="shrink-0 bg-[#0C0C0C]/90 backdrop-blur-xl border-b border-white/10 px-6 h-16 flex items-center justify-between z-30">
           <div className="flex items-center gap-3">
             <h2 className="text-base font-bold text-white capitalize">
               {activeTab === "feed" && t.radarTitle}
@@ -718,7 +718,7 @@ export default function FullWebAppDashboard() {
         </header>
 
         {/* ── Horizontal Story Circles Carousel (Google+ Circles style) ──────── */}
-        <div className="p-4 border-b border-white/10 overflow-x-auto scrollbar-none flex items-center gap-4 bg-white/[0.01]">
+        <div className="shrink-0 p-4 border-b border-white/10 overflow-x-auto scrollbar-none flex items-center gap-4 bg-white/[0.01]">
           {/* Add Story Button */}
           <button
             type="button"
@@ -754,8 +754,8 @@ export default function FullWebAppDashboard() {
           ))}
         </div>
 
-        {/* ── Content Tab Views ────────────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto">
+        {/* ── Content Tab Views (Component-Level Inner Scrolling) ───────────── */}
+        <div className={`flex-1 min-h-0 ${activeTab === "chats" || (activeTab === "feed" && viewMode === "radar") || activeTab === "profile" ? "overflow-hidden flex flex-col" : "overflow-y-auto"}`}>
 
           {/* TAB 1: NEARBY RADAR STREAM */}
           {activeTab === "feed" && (
@@ -1104,7 +1104,7 @@ export default function FullWebAppDashboard() {
 
           {/* TAB 3: FULL MODERN MESSENGER (CHATS & NOTIFICATIONS & MY PROFILE) */}
           {activeTab === "chats" && (
-            <div className="h-[calc(100vh-65px)] flex bg-[#090909] overflow-hidden">
+            <div className="h-full flex bg-[#090909] overflow-hidden">
               {/* ── Messenger Left Sidebar ───────────────────────────────────── */}
               <div className="w-72 sm:w-80 border-r border-white/10 p-3 space-y-3 overflow-y-auto flex flex-col bg-[#0C0C0C] shrink-0">
                 {/* Messenger Header & Search */}
@@ -1581,7 +1581,7 @@ export default function FullWebAppDashboard() {
 
           {/* TAB 5: USER PROFILE WITH ANT DESIGN SPLITTER */}
           {activeTab === "profile" && (
-            <div className="h-[calc(100vh-65px)] p-4 md:p-6">
+            <div className="h-full p-4 md:p-6 overflow-hidden">
               <UserProfileSplitter
                 user={{
                   id: myUser?.id || "me",
@@ -1831,7 +1831,7 @@ export default function FullWebAppDashboard() {
       </main>
 
       {/* ── 3. RIGHT SIDEBAR WIDGETS (Google+ Sparks & X Trends / Radar) ────────────── */}
-      <aside className="w-80 h-screen sticky top-0 border-l border-white/10 p-5 hidden xl:flex flex-col gap-6 overflow-y-auto z-30 bg-[#0C0C0C]/50 backdrop-blur-md shrink-0">
+      <aside className="w-80 lg:w-96 h-full border-l border-white/10 p-5 hidden xl:flex flex-col gap-6 overflow-y-auto z-30 bg-[#0C0C0C] shrink-0">
 
         {/* Live Radar Widget */}
         <div className="glass-panel p-5 rounded-3xl space-y-4 border border-white/10">
