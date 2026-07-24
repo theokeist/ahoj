@@ -33,10 +33,65 @@ export default function ChatScreen() {
   const partnerTypingTimeoutRef = useRef<any>(null);
 
   // Get chat history
-  const { data: messages = [], isLoading } = useQuery<ChatMessage[]>({
+  const { data: rawMessages = [], isLoading } = useQuery<ChatMessage[]>({
     queryKey: ["messages", chatId],
     queryFn: () => chatsApi.getMessages(chatId),
+    enabled: chatId !== "ahoj-notification" && chatId !== "ahoj-notifications",
   });
+
+  const isNotificationChat = chatId === "ahoj-notification" || chatId === "ahoj-notifications";
+
+  const sampleNotifications: ChatMessage[] = [
+    {
+      id: "n-1",
+      chatId: chatId || "ahoj-notification",
+      senderId: "ahoj",
+      content: "📸 @natalie_s posted a new story ~120m away: 'Hledám parťáka na turistiku 🏔️'\n\n👉 Tap to view story & profile",
+      type: "TEXT",
+      readAt: null,
+      createdAt: new Date(Date.now() - 120000).toISOString(),
+    },
+    {
+      id: "n-2",
+      chatId: chatId || "ahoj-notification",
+      senderId: "ahoj",
+      content: "⚡ Spontaneous Spark Meetup: 'Specialty Coffee & Tech Chat ☕' created by @kubajz ~45m away.\n\n⚡ Tap to Join Spark",
+      type: "TEXT",
+      readAt: null,
+      createdAt: new Date(Date.now() - 900000).toISOString(),
+    },
+    {
+      id: "n-3",
+      chatId: chatId || "ahoj-notification",
+      senderId: "ahoj",
+      content: "🔒 @secret_vibe requested permission to view your private profile and stories.\n\n✓ Approve  |  ✕ Deny",
+      type: "TEXT",
+      readAt: null,
+      createdAt: new Date(Date.now() - 2700000).toISOString(),
+    },
+    {
+      id: "n-4",
+      chatId: chatId || "ahoj-notification",
+      senderId: "ahoj",
+      content: "🎉 @emma_art and 5 nearby users +1'd your status message: 'Ahoj Brno!'",
+      type: "TEXT",
+      readAt: null,
+      createdAt: new Date(Date.now() - 3600000).toISOString(),
+    },
+    {
+      id: "n-5",
+      chatId: chatId || "ahoj-notification",
+      senderId: "ahoj",
+      content: "👻 Ghost Mode location protection is active (300m fuzzing radius).",
+      type: "TEXT",
+      readAt: null,
+      createdAt: new Date(Date.now() - 14400000).toISOString(),
+    },
+  ];
+
+  const messages = isNotificationChat
+    ? (rawMessages.length > 0 ? rawMessages : sampleNotifications)
+    : rawMessages;
 
   // Mutation to send message
   const sendMessageMutation = useMutation({

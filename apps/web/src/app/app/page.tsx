@@ -43,6 +43,7 @@ import {
 import { webApi } from "../../lib/api";
 import { MOCK_NEARBY_USERS } from "../../lib/mockData";
 import { getTranslations, type SupportedLanguage } from "../../locales";
+import { UserProfileSplitter } from "../../components/UserProfileSplitter";
 
 const STORY_FILTERS = [
   { id: "none", name: "Original 📷" },
@@ -56,6 +57,94 @@ const STORY_FILTERS = [
 ];
 
 const EMOJI_STICKERS = ["📍 Brno", "⚡ Spark", "🔥 Hot", "☕ Coffee", "🏔️ Trip", "🎧 Vibe", "🎉 Party"];
+
+const SYSTEM_NOTIFICATION_BOT = {
+  id: "ahoj-notifications",
+  username: "Ahoj Notifications 🔔",
+  isSystem: true,
+  avatarUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80",
+};
+
+const INITIAL_INAPP_NOTIFICATIONS = [
+  {
+    id: "notif-1",
+    title: "New Proximity Story 📸",
+    body: "@natalie_s (~120m away) posted a new story: 'Hledám parťáka na turistiku 🏔️'",
+    timestamp: "2m ago",
+    category: "STORY",
+    unread: true,
+    avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150&h=150",
+    targetUserIndex: 0,
+    actions: [
+      { id: "v-story", label: "View Story 📸", type: "VIEW_STORY", variant: "primary" },
+      { id: "v-prof", label: "View Profile (Splitter)", type: "VIEW_PROFILE", variant: "secondary" },
+    ],
+  },
+  {
+    id: "notif-2",
+    title: "Spontaneous Spark Meetup ⚡",
+    body: "@kubajz created a Spark ~45m away: 'Specialty Coffee & Tech Chat ☕' at Skog Urban Hub.",
+    timestamp: "15m ago",
+    category: "SPARK",
+    unread: true,
+    avatarUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=150&h=150",
+    targetUserIndex: 1,
+    actions: [
+      { id: "j-spark", label: "Join Spark ⚡", type: "JOIN_SPARK", variant: "primary" },
+      { id: "v-prof-2", label: "View Profile (Splitter)", type: "VIEW_PROFILE", variant: "secondary" },
+    ],
+  },
+  {
+    id: "notif-3",
+    title: "Private Profile Access Request 🔒",
+    body: "@secret_vibe requested access to view your stories and private profile details.",
+    timestamp: "45m ago",
+    category: "REQUEST",
+    unread: true,
+    requestStatus: "PENDING",
+    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150&h=150",
+    targetUserIndex: 2,
+    actions: [
+      { id: "app-req", label: "Approve Access ✓", type: "APPROVE_REQUEST", variant: "success" },
+      { id: "deny-req", label: "Deny ✕", type: "DENY_REQUEST", variant: "danger" },
+    ],
+  },
+  {
+    id: "notif-4",
+    title: "Google+ +1 Endorsement 🎉",
+    body: "@emma_art and 5 nearby users +1'd your status message: 'Ahoj Brno!'",
+    timestamp: "1h ago",
+    category: "PLUS_ONE",
+    unread: false,
+    avatarUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=150&h=150",
+    targetUserIndex: 3,
+    actions: [
+      { id: "my-prof", label: "View My Profile (Splitter)", type: "MY_PROFILE", variant: "primary" },
+    ],
+  },
+  {
+    id: "notif-5",
+    title: "Proximity Radar Update 📡",
+    body: "4 active users found in your 3km radius around Brno Center.",
+    timestamp: "2h ago",
+    category: "PROXIMITY",
+    unread: false,
+    actions: [
+      { id: "open-rad", label: "Open Live Radar 📡", type: "OPEN_RADAR", variant: "primary" },
+    ],
+  },
+  {
+    id: "notif-6",
+    title: "Ghost Mode Security Guard 👻",
+    body: "Location fuzzing is set to 300m. Your exact location is hidden while keeping nearby discovery active.",
+    timestamp: "4h ago",
+    category: "SYSTEM",
+    unread: false,
+    actions: [
+      { id: "open-set", label: "Privacy Settings ⚙️", type: "OPEN_SETTINGS", variant: "secondary" },
+    ],
+  },
+];
 
 export default function FullWebAppDashboard() {
   const router = useRouter();
@@ -81,9 +170,14 @@ export default function FullWebAppDashboard() {
   const [myUser, setMyUser] = useState<any>(null);
 
   // App Navigation & View Modes
-  const [activeTab, setActiveTab] = useState<"feed" | "sparks" | "chats" | "requests" | "settings">("feed");
+  const [activeTab, setActiveTab] = useState<"feed" | "sparks" | "chats" | "requests" | "profile" | "settings">("feed");
+  const [selectedProfileUser, setSelectedProfileUser] = useState<any>(null);
   const [viewMode, setViewMode] = useState<"grid" | "radar">("grid");
   const [radiusKm, setRadiusKm] = useState<number>(3);
+
+  // In-App Notification System State
+  const [inAppNotifications, setInAppNotifications] = useState<any[]>(INITIAL_INAPP_NOTIFICATIONS);
+  const [notificationToast, setNotificationToast] = useState<string | null>(null);
 
   // Data collections
   const [nearbyUsers, setNearbyUsers] = useState<any[]>(MOCK_NEARBY_USERS);
@@ -92,8 +186,28 @@ export default function FullWebAppDashboard() {
     { id: "s2", username: "karolina_v", category: "COFFEE", title: "Specialty Coffee & Chat ☕", distanceMeters: 320, description: "Working at Skog Urban Hub for 2 hours." },
     { id: "s3", username: "ondrej_f", category: "PARTY", title: "Impromptu Acoustic Jam 🎸", distanceMeters: 880, description: "Bring your guitar or synth!" },
   ]);
-  const [conversations, setConversations] = useState<any[]>([]);
-  const [activeChatUser, setActiveChatUser] = useState<any>(null);
+  const [conversations, setConversations] = useState<any[]>([
+    {
+      id: "conv-notifications",
+      partner: SYSTEM_NOTIFICATION_BOT,
+      lastMessage: "6 system & proximity notifications",
+      unreadCount: 3,
+      isSystem: true,
+    },
+    {
+      id: "conv-natalie",
+      partner: MOCK_NEARBY_USERS[0],
+      lastMessage: "Ahoj! Zrovna balím batoh na víkend...",
+      unreadCount: 0,
+    },
+    {
+      id: "conv-kubajz",
+      partner: MOCK_NEARBY_USERS[1],
+      lastMessage: "Espresso je základ! Kdy máš čas?",
+      unreadCount: 1,
+    },
+  ]);
+  const [activeChatUser, setActiveChatUser] = useState<any>(SYSTEM_NOTIFICATION_BOT);
   const [messages, setMessages] = useState<any[]>([]);
   const [typedMessage, setTypedMessage] = useState("");
   const [incomingRequests, setIncomingRequests] = useState<any[]>([]);
@@ -117,6 +231,47 @@ export default function FullWebAppDashboard() {
         },
       };
     });
+  };
+
+  // Notification Action Router Handler
+  const handleNotificationAction = (notifId: string, actionType: string, targetUserIndex?: number) => {
+    const targetUser = targetUserIndex !== undefined ? nearbyUsers[targetUserIndex] : null;
+
+    switch (actionType) {
+      case "VIEW_STORY":
+        if (targetUser) setSelectedStoryUser(targetUser);
+        break;
+      case "VIEW_PROFILE":
+        if (targetUser) setSelectedProfileUser(targetUser);
+        break;
+      case "MY_PROFILE":
+        setActiveTab("profile");
+        break;
+      case "OPEN_RADAR":
+        setActiveTab("feed");
+        break;
+      case "OPEN_SETTINGS":
+        setActiveTab("settings");
+        break;
+      case "JOIN_SPARK":
+        setNotificationToast("Joined Spark! Meeting at Skog Urban Hub ☕");
+        setTimeout(() => setNotificationToast(null), 3500);
+        break;
+      case "APPROVE_REQUEST":
+        setInAppNotifications((prev) =>
+          prev.map((n) => (n.id === notifId ? { ...n, requestStatus: "APPROVED" } : n))
+        );
+        setNotificationToast("Approved access request!");
+        setTimeout(() => setNotificationToast(null), 3500);
+        break;
+      case "DENY_REQUEST":
+        setInAppNotifications((prev) =>
+          prev.map((n) => (n.id === notifId ? { ...n, requestStatus: "DENIED" } : n))
+        );
+        setNotificationToast("Denied access request.");
+        setTimeout(() => setNotificationToast(null), 3500);
+        break;
+    }
   };
 
   // Story Creator & Camera Modal
@@ -396,7 +551,7 @@ export default function FullWebAppDashboard() {
             {/* Top-Left User Avatar Card */}
             <button
               type="button"
-              onClick={() => setActiveTab("settings")}
+              onClick={() => setActiveTab("profile")}
               className="w-full glass-panel p-3 rounded-2xl border border-white/10 flex items-center gap-3 hover:border-[#00F2FE]/40 transition-all text-left group cursor-pointer"
             >
               <div className="relative">
@@ -424,6 +579,7 @@ export default function FullWebAppDashboard() {
               { id: "sparks", label: t.sparksTitle, icon: <Flame size={20} />, count: (sparks || []).length },
               { id: "chats", label: t.chatsTitle, icon: <MessageSquare size={20} />, count: (conversations || []).length },
               { id: "requests", label: t.requestsTitle, icon: <Lock size={20} />, count: incomingRequests?.length || 0 },
+              { id: "profile", label: "My Profile", icon: <User size={20} />, count: null },
               { id: "settings", label: t.settingsTitle, icon: <Settings size={20} />, count: null },
             ].map(({ id, label, icon, count }) => {
               const isActive = activeTab === id;
@@ -501,6 +657,7 @@ export default function FullWebAppDashboard() {
               {activeTab === "sparks" && t.sparksTitle}
               {activeTab === "chats" && t.chatsTitle}
               {activeTab === "requests" && t.requestsTitle}
+              {activeTab === "profile" && "My Profile (Splitter)"}
               {activeTab === "settings" && t.settingsTitle}
             </h2>
             {isGhostMode && (
@@ -579,7 +736,7 @@ export default function FullWebAppDashboard() {
 
           {/* TAB 1: NEARBY RADAR STREAM */}
           {activeTab === "feed" && (
-            <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
+            <div className={`p-4 md:p-6 space-y-6 ${viewMode === "radar" ? "w-full" : "max-w-4xl mx-auto"}`}>
               
               {/* Composer Box (X / Twitter style) */}
               <div className="glass-panel p-4 rounded-3xl space-y-3 border border-white/10">
@@ -615,118 +772,273 @@ export default function FullWebAppDashboard() {
                 </div>
               </div>
 
-              {/* Multi-Card Stream (Modern Google+ Card Stream) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {nearbyUsers.map((user) => {
-                  const pOne = plusOneState[user.id] || { count: 12, clicked: false };
+              {/* ── Conditional View Mode: Radar View ("Kruh radaru" Full Map-like Viewport) vs Grid Cards ── */}
+              {viewMode === "radar" ? (
+                <div className="w-full min-h-[580px] h-[calc(100vh-220px)] rounded-3xl border border-white/15 bg-[#090909] relative overflow-hidden flex items-center justify-center shadow-2xl">
+                  {/* Map Grid Pattern Background */}
+                  <div className="absolute inset-0 bg-[radial-gradient(#00F2FE_1px,transparent_1px)] [background-size:24px_24px] opacity-15 pointer-events-none" />
 
-                  return (
-                    <article
-                      key={user.id}
-                      className="glass-panel p-5 rounded-3xl space-y-4 border border-white/10 hover:border-[#00F2FE]/40 transition-all flex flex-col justify-between shadow-xl hover:shadow-[0_0_30px_rgba(0,242,254,0.15)] group bg-[#0C0C0C]/60 backdrop-blur-xl"
+                  {/* Floating Map Control Bar (Top Left) */}
+                  <div className="absolute top-4 left-4 z-30 flex items-center gap-2 bg-black/80 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/15 text-xs text-white">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#00F2FE] animate-ping" />
+                    <span className="font-bold flex items-center gap-1.5">
+                      <MapPin size={14} className="text-[#00F2FE]" /> Live Radar Map (Brno)
+                    </span>
+                    <span className="text-[10px] font-mono text-[#00F2FE] bg-[#00F2FE]/10 px-2 py-0.5 rounded-full border border-[#00F2FE]/30">
+                      {radiusKm} km · {nearbyUsers.length} Users
+                    </span>
+                  </div>
+
+                  {/* Floating Map Category Filters (Top Right) */}
+                  <div className="absolute top-4 right-4 z-30 hidden sm:flex items-center gap-1.5 bg-black/80 backdrop-blur-md p-1.5 rounded-2xl border border-white/15">
+                    {["All", "☕ Coffee", "🏀 Sports", "💻 Tech", "🎧 Music"].map((cat, i) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all ${
+                          i === 0 ? "bg-[#00F2FE] text-black" : "text-white/70 hover:text-white hover:bg-white/10"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Floating Map Zoom & Action Controls (Bottom Right) */}
+                  <div className="absolute bottom-4 right-4 z-30 flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => alert("Zooming in on radar map...")}
+                      className="w-9 h-9 rounded-xl bg-black/80 backdrop-blur-md text-white border border-white/15 font-black text-sm flex items-center justify-center hover:bg-white/20 transition-all shadow-lg"
+                      title="Zoom In"
                     >
-                      {/* Google+ Card Header */}
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="relative">
-                              <img
-                                src={user.avatarUrl}
-                                alt={user.username}
-                                className="w-11 h-11 rounded-full object-cover border-2 border-[#00F2FE]/60 group-hover:scale-105 transition-transform"
-                              />
-                              <div className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-[#00F2FE] border-2 border-[#0C0C0C]" />
-                            </div>
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => alert("Zooming out on radar map...")}
+                      className="w-9 h-9 rounded-xl bg-black/80 backdrop-blur-md text-white border border-white/15 font-black text-sm flex items-center justify-center hover:bg-white/20 transition-all shadow-lg"
+                      title="Zoom Out"
+                    >
+                      −
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => alert("Recentered on your location")}
+                      className="w-9 h-9 rounded-xl bg-[#00F2FE] text-black font-bold text-xs flex items-center justify-center shadow-[0_0_15px_rgba(0,242,254,0.4)] hover:scale-105 transition-all"
+                      title="Recenter"
+                    >
+                      🎯
+                    </button>
+                  </div>
 
-                            <div>
-                              <div className="font-bold text-sm text-white flex items-center gap-1.5">
-                                @{user.username}
-                                {user.privacyMode === "PRIVATE" && <Lock size={12} className="text-amber-400" />}
-                              </div>
-                              <div className="flex items-center gap-2 text-[11px] text-white/50">
-                                <span className="text-[#00F2FE] font-mono font-semibold flex items-center gap-1">
-                                  <MapPin size={11} /> ~{user.distanceMeters}m
-                                </span>
-                                <span>·</span>
-                                <span className="text-white/40">{user.lastActive || "2m ago"}</span>
-                              </div>
-                            </div>
+                  {/* Floating Legend / Quick Hint (Bottom Left) */}
+                  <div className="absolute bottom-4 left-4 z-30 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/15 text-[11px] text-white/60 font-medium hidden sm:block">
+                    Click any avatar blip to open full Profile Splitter
+                  </div>
+
+                  {/* Full-Size Interactive Circular Radar Field */}
+                  <div className="relative w-[92%] max-w-[620px] aspect-square rounded-full border border-[#00F2FE]/25 flex items-center justify-center bg-[radial-gradient(circle_at_center,rgba(0,242,254,0.12)_0,transparent_75%)] shadow-[0_0_80px_rgba(0,242,254,0.15)] overflow-hidden">
+                    {/* Concentric Distance Circles */}
+                    <div className="absolute inset-0 rounded-full border border-[#00F2FE]/15 pointer-events-none" />
+                    <div className="absolute w-4/5 h-4/5 rounded-full border border-[#00F2FE]/25 pointer-events-none flex items-start justify-center">
+                      <span className="text-[10px] font-mono font-bold text-[#00F2FE]/70 mt-2 bg-black/60 px-2 py-0.5 rounded-full border border-[#00F2FE]/30">500m</span>
+                    </div>
+                    <div className="absolute w-3/5 h-3/5 rounded-full border border-[#00F2FE]/35 pointer-events-none flex items-start justify-center">
+                      <span className="text-[10px] font-mono font-bold text-[#00F2FE]/80 mt-2 bg-black/60 px-2 py-0.5 rounded-full border border-[#00F2FE]/30">250m</span>
+                    </div>
+                    <div className="absolute w-2/5 h-2/5 rounded-full border border-[#00F2FE]/45 pointer-events-none flex items-start justify-center">
+                      <span className="text-[10px] font-mono font-bold text-[#00F2FE] mt-2 bg-black/60 px-2 py-0.5 rounded-full border border-[#00F2FE]/30">100m</span>
+                    </div>
+                    <div className="absolute w-1/5 h-1/5 rounded-full border border-[#00F2FE]/60 pointer-events-none" />
+
+                    {/* Axis Crosshairs */}
+                    <div className="absolute inset-x-0 top-1/2 h-px bg-[#00F2FE]/25 pointer-events-none" />
+                    <div className="absolute inset-y-0 left-1/2 w-px bg-[#00F2FE]/25 pointer-events-none" />
+
+                    {/* Animated 360 Sweep Beam */}
+                    <div
+                      className="absolute inset-0 rounded-full pointer-events-none animate-spin"
+                      style={{
+                        animationDuration: "5s",
+                        background: "conic-gradient(from 0deg, rgba(0,242,254,0.3) 0deg, transparent 55deg, transparent 360deg)",
+                      }}
+                    />
+
+                    {/* Center Node (You / Self Location) */}
+                    <div
+                      onClick={() => setActiveTab("profile")}
+                      className="relative z-20 w-12 h-12 rounded-full bg-[#00F2FE] text-black font-black text-xs flex flex-col items-center justify-center shadow-[0_0_25px_rgba(0,242,254,0.9)] cursor-pointer hover:scale-110 transition-transform"
+                      title="Your Location (Click for Profile)"
+                    >
+                      <span className="leading-none text-sm">/A\</span>
+                      <span className="text-[8px] font-extrabold uppercase">You</span>
+                    </div>
+
+                    {/* Positioned Nearby User Blips across Map Field */}
+                    {nearbyUsers.map((u, idx) => {
+                      const angles = [45, 135, 210, 315, 75, 260];
+                      const distancesPx = [180, 220, 240, 140, 210, 190];
+                      const angle = angles[idx % angles.length];
+                      const dist = distancesPx[idx % distancesPx.length];
+                      const rad = (angle * Math.PI) / 180;
+                      const x = Math.cos(rad) * dist;
+                      const y = Math.sin(rad) * dist;
+
+                      return (
+                        <div
+                          key={u.id}
+                          onClick={() => setSelectedProfileUser(u)}
+                          className="absolute z-30 group cursor-pointer transition-all hover:scale-125"
+                          style={{
+                            transform: `translate(${x}px, ${y}px)`,
+                          }}
+                          title={`@${u.username} (${u.distanceMeters}m)`}
+                        >
+                          <div className="relative">
+                            <img
+                              src={u.avatarUrl}
+                              alt={u.username}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-[#00F2FE] shadow-[0_0_20px_rgba(0,242,254,0.7)]"
+                            />
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#00F2FE] border-2 border-[#090909]" />
                           </div>
 
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/5 text-white/70 border border-white/10 flex items-center gap-1">
-                              <Sparkles size={11} className="text-[#00F2FE]" /> Circle Stream
-                            </span>
-                            <button type="button" className="p-1.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-colors">
-                              <MoreHorizontal size={15} />
+                          {/* Map User Label Pill */}
+                          <div className="absolute top-11 left-1/2 -translate-x-1/2 bg-black/85 backdrop-blur-md px-2 py-0.5 rounded-lg border border-[#00F2FE]/40 text-[10px] font-bold text-white whitespace-nowrap shadow-lg flex items-center gap-1">
+                            <span className="text-[#00F2FE]">@{u.username}</span>
+                            <span className="text-white/50 text-[9px]">~{u.distanceMeters}m</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                /* Multi-Card Stream (Distinct Modern Radar User Cards) */
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {nearbyUsers.map((user) => {
+                    const pOne = plusOneState[user.id] || { count: 14, clicked: false };
+
+                    return (
+                      <article
+                        key={user.id}
+                        className="p-5 rounded-3xl bg-[#121212] border border-white/10 hover:border-[#00F2FE]/50 transition-all flex flex-col justify-between shadow-xl hover:shadow-[0_0_25px_rgba(0,242,254,0.18)] group relative overflow-hidden"
+                      >
+                        {/* Distinct Top Accent Bar */}
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#00F2FE]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                        <div className="space-y-3.5">
+                          {/* User Header Row */}
+                          <div className="flex items-center justify-between">
+                            <div
+                              onClick={() => setSelectedProfileUser(user)}
+                              className="flex items-center gap-3 cursor-pointer group/user"
+                              title="View Profile (Splitter)"
+                            >
+                              <div className="relative shrink-0">
+                                <img
+                                  src={user.avatarUrl}
+                                  alt={user.username}
+                                  className="w-12 h-12 rounded-2xl object-cover border border-white/15 group-hover/user:border-[#00F2FE] group-hover/user:scale-105 transition-all"
+                                />
+                                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#00F2FE] border-2 border-[#121212]" />
+                              </div>
+
+                              <div className="min-w-0">
+                                <div className="font-extrabold text-sm text-white flex items-center gap-1.5 group-hover/user:text-[#00F2FE] transition-colors">
+                                  @{user.username}
+                                  <span className="text-[#00F2FE] text-[10px] font-bold">✓ Nearby</span>
+                                  {user.privacyMode === "PRIVATE" && <Lock size={11} className="text-amber-400" />}
+                                </div>
+                                <div className="flex items-center gap-2 text-[11px] text-white/60 font-medium">
+                                  <span className="text-[#00F2FE] font-bold flex items-center gap-1">
+                                    <MapPin size={11} /> ~{user.distanceMeters}m away
+                                  </span>
+                                  <span>·</span>
+                                  <span className="text-white/40">{user.lastActive || "2m ago"}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => setSelectedProfileUser(user)}
+                              className="px-3 py-1.5 rounded-xl bg-[#00F2FE]/10 hover:bg-[#00F2FE]/20 text-[#00F2FE] border border-[#00F2FE]/30 text-[11px] font-bold transition-all cursor-pointer"
+                            >
+                              Profile 👤
                             </button>
                           </div>
-                        </div>
 
-                        {/* Google+ Post Text Content */}
-                        <div className="text-xs text-white/90 leading-relaxed font-normal bg-white/[0.03] p-4 rounded-2xl border border-white/5 space-y-2">
-                          <p className="italic">&ldquo;{user.message}&rdquo;</p>
+                          {/* Distinct Icebreaker Quote Box */}
+                          <div className="bg-white/[0.03] p-3.5 rounded-2xl border-l-2 border-l-[#00F2FE] border border-white/5 space-y-2">
+                            <p className="text-xs text-white/90 italic font-medium leading-relaxed">
+                              &ldquo;{user.message}&rdquo;
+                            </p>
 
-                          {/* Media Preview Attachment (Google+ Media Card) */}
-                          {user.stories && user.stories.length > 0 && (
-                            <div className="relative mt-2 rounded-xl overflow-hidden border border-white/10 group/img">
-                              <img
-                                src={user.stories[0]}
-                                alt="Post attachment"
-                                className="w-full h-36 object-cover group-hover/img:scale-105 transition-transform duration-300"
-                              />
-                              <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md text-[10px] font-bold text-white flex items-center gap-1 border border-white/20">
-                                📷 Photo Attachment
+                            {/* Story Thumbnail Attachment */}
+                            {user.stories && user.stories.length > 0 && (
+                              <div
+                                onClick={() => setSelectedProfileUser(user)}
+                                className="relative mt-2 rounded-xl overflow-hidden border border-white/10 group/img cursor-pointer"
+                              >
+                                <img
+                                  src={user.stories[0]}
+                                  alt="Post attachment"
+                                  className="w-full h-32 object-cover group-hover/img:scale-105 transition-transform duration-300"
+                                />
+                                <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur-md text-[10px] font-bold text-white flex items-center gap-1 border border-white/20">
+                                  📷 Story Moment
+                                </div>
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Google+ Social Action Bar (Bottom Toolbar) */}
-                      <div className="pt-3 border-t border-white/10 flex items-center justify-between">
-                        {/* Left Actions: +1 Button & Reshare */}
-                        <div className="flex items-center gap-2">
-                          {/* Google+ +1 Interactive Button */}
-                          <button
-                            type="button"
-                            onClick={() => handleTogglePlusOne(user.id)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
-                              pOne.clicked
-                                ? "bg-[#00F2FE] text-black shadow-[0_0_15px_rgba(0,242,254,0.4)] scale-105"
-                                : "bg-[#00F2FE]/10 text-[#00F2FE] border border-[#00F2FE]/30 hover:bg-[#00F2FE]/20"
-                            }`}
-                          >
-                            <span>+1</span>
-                            <span className="text-[11px] font-mono">{pOne.count}</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            className="p-2 rounded-xl text-white/50 hover:text-white hover:bg-white/10 transition-colors flex items-center gap-1 text-xs"
-                            title="Reshare post"
-                          >
-                            <Share2 size={14} />
-                          </button>
+                            )}
+                          </div>
                         </div>
 
-                        {/* Right Action: Direct Message / Request */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveChatUser(user);
-                            setActiveTab("chats");
-                          }}
-                          className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
-                        >
-                          <MessageSquare size={13} className="text-[#00F2FE]" /> {t.chatBtn}
-                        </button>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
+                        {/* Distinct Social Action Toolbar */}
+                        <div className="pt-3 border-t border-white/10 flex items-center justify-between mt-3">
+                          <div className="flex items-center gap-2">
+                            {/* +1 Endorse Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePlusOne(user.id)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
+                                pOne.clicked
+                                  ? "bg-[#00F2FE] text-black shadow-[0_0_15px_rgba(0,242,254,0.4)] scale-105"
+                                  : "bg-white/5 text-[#00F2FE] border border-white/10 hover:bg-[#00F2FE]/15"
+                              }`}
+                            >
+                              <span>+1</span>
+                              <span className="font-mono text-[11px]">{pOne.count}</span>
+                            </button>
 
+                            <button
+                              type="button"
+                              onClick={() => alert("Share user profile link")}
+                              className="p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-colors text-xs"
+                              title="Share"
+                            >
+                              <Share2 size={13} />
+                            </button>
+                          </div>
+
+                          {/* Direct Message Button */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveChatUser(user);
+                              setActiveTab("chats");
+                            }}
+                            className="px-4 py-1.5 rounded-xl bg-[#00F2FE] hover:bg-[#00DCE6] text-black font-extrabold text-xs flex items-center gap-1.5 shadow-[0_0_15px_rgba(0,242,254,0.25)] transition-all cursor-pointer"
+                          >
+                            <MessageSquare size={13} /> {t.chatBtn}
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -767,78 +1079,420 @@ export default function FullWebAppDashboard() {
             </div>
           )}
 
-          {/* TAB 3: E2EE CHATS */}
+          {/* TAB 3: FULL MODERN MESSENGER (CHATS & NOTIFICATIONS & MY PROFILE) */}
           {activeTab === "chats" && (
-            <div className="h-[calc(100vh-65px)] flex">
-              <div className="w-72 border-r border-white/10 p-3 space-y-2 overflow-y-auto">
-                <div className="text-xs font-bold text-white/50 uppercase tracking-wider px-2 py-1">{t.chatsTitle}</div>
-                {conversations.map((c) => (
+            <div className="h-[calc(100vh-65px)] flex bg-[#090909]">
+              {/* ── Messenger Left Sidebar ───────────────────────────────────── */}
+              <div className="w-72 sm:w-80 border-r border-white/10 p-3 space-y-3 overflow-y-auto flex flex-col bg-[#0C0C0C]">
+                {/* Messenger Header & Search */}
+                <div className="space-y-2 px-1 pt-1">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-extrabold text-sm text-white tracking-tight flex items-center gap-2">
+                      <MessageSquare size={16} className="text-[#00F2FE]" /> Messenger
+                    </h3>
+                    <span className="text-[10px] font-mono font-bold text-[#00F2FE] bg-[#00F2FE]/10 px-2 py-0.5 rounded-full border border-[#00F2FE]/30">
+                      E2EE Active
+                    </span>
+                  </div>
+
+                  {/* Messenger Search Input */}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search messages & circles..."
+                      className="w-full glass-input pl-8 pr-3 py-1.5 rounded-xl text-xs text-white placeholder-white/40"
+                    />
+                    <Search size={13} className="absolute left-2.5 top-2.5 text-white/40" />
+                  </div>
+                </div>
+
+                <div className="flex-1 space-y-1.5 overflow-y-auto pr-0.5">
+                  {/* System & Notification Channel */}
                   <button
-                    key={c.id}
                     type="button"
-                    onClick={() => setActiveChatUser(c.partner)}
-                    className={`w-full p-3 rounded-2xl text-left border transition-all ${
-                      activeChatUser?.id === c.partner.id ? "bg-[#00F2FE]/15 border-[#00F2FE]/40" : "bg-white/5 border-white/5 hover:bg-white/10"
+                    onClick={() =>
+                      setActiveChatUser({
+                        id: "ahoj-notifications",
+                        username: "Ahoj Notifications 🔔",
+                        isSystem: true,
+                      } as any)
+                    }
+                    className={`w-full p-3 rounded-2xl text-left border transition-all flex items-center justify-between cursor-pointer ${
+                      activeChatUser?.id === "ahoj-notifications"
+                        ? "bg-[#00F2FE]/15 border-[#00F2FE]/40"
+                        : "bg-white/5 border-white/5 hover:bg-white/10"
                     }`}
                   >
-                    <div className="font-bold text-xs text-white">@{c.partner.username}</div>
-                    <div className="text-[10px] text-white/50 truncate">{c.lastMessage || "Encrypted thread"}</div>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#00F2FE] to-purple-600 p-0.5 shrink-0 shadow-[0_0_10px_rgba(0,242,254,0.3)]">
+                        <div className="w-full h-full rounded-[14px] bg-[#0C0C0C] flex items-center justify-center text-[#00F2FE] font-black text-xs">
+                          /A\
+                        </div>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-xs text-white flex items-center gap-1">
+                          System & Alerts <Sparkles size={11} className="text-[#00F2FE]" />
+                        </div>
+                        <div className="text-[10px] text-white/50 truncate">Proximity updates & alerts</div>
+                      </div>
+                    </div>
+
+                    {inAppNotifications.filter((n) => n.unread).length > 0 && (
+                      <span className="w-5 h-5 rounded-full bg-[#00F2FE] text-black font-black text-[10px] flex items-center justify-center shrink-0">
+                        {inAppNotifications.filter((n) => n.unread).length}
+                      </span>
+                    )}
                   </button>
-                ))}
+
+                  {/* My Profile Channel */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveChatUser({
+                        id: "my-own-profile",
+                        username: `@${myUser?.username || "alex"} (My Profile)`,
+                        isOwnProfileSpace: true,
+                      } as any)
+                    }
+                    className={`w-full p-3 rounded-2xl text-left border transition-all flex items-center justify-between cursor-pointer ${
+                      activeChatUser?.isOwnProfileSpace
+                        ? "bg-[#00F2FE]/15 border-[#00F2FE]/40"
+                        : "bg-white/5 border-white/5 hover:bg-white/10"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <img
+                        src={myUser?.avatarUrl || settingsForm.avatarUrl || "https://randomuser.me/api/portraits/men/32.jpg"}
+                        alt="My Avatar"
+                        className="w-9 h-9 rounded-2xl object-cover border border-[#00F2FE]/50 shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <div className="font-bold text-xs text-white flex items-center gap-1">
+                          My Profile 👤
+                        </div>
+                        <div className="text-[10px] text-white/50 truncate">Personal Splitter View & Info</div>
+                      </div>
+                    </div>
+                  </button>
+
+                  <div className="h-px bg-white/10 my-2" />
+
+                  {/* User Direct Conversations */}
+                  {conversations.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setActiveChatUser(c.partner)}
+                      className={`w-full p-3 rounded-2xl text-left border transition-all cursor-pointer ${
+                        activeChatUser?.id === c.partner.id ? "bg-[#00F2FE]/15 border-[#00F2FE]/40" : "bg-white/5 border-white/5 hover:bg-white/10"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-0.5">
+                        <div className="font-bold text-xs text-white truncate">@{c.partner.username}</div>
+                        <span className="text-[9px] text-white/40 font-mono">12:45</span>
+                      </div>
+                      <div className="text-[10px] text-white/50 truncate">{c.lastMessage || "Encrypted thread"}</div>
+                    </button>
+                  ))}
+                </div>
               </div>
 
+              {/* ── Messenger Main Chat Pane ─────────────────────────────────── */}
               <div className="flex-1 flex flex-col bg-[#0C0C0C]">
                 {activeChatUser ? (
-                  <>
-                    <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
-                      <div className="font-bold text-sm text-white">@{activeChatUser.username}</div>
-                      <span className="text-xs text-[#4CAF50] font-semibold flex items-center gap-1 bg-[#4CAF50]/10 px-2.5 py-1 rounded-full border border-[#4CAF50]/30">
-                        <Lock size={12} /> {t.e2eeNotice}
-                      </span>
+                  activeChatUser.isOwnProfileSpace ? (
+                    <div className="flex-1 p-4 md:p-6 overflow-y-auto">
+                      <UserProfileSplitter
+                        user={{
+                          id: myUser?.id || "me",
+                          username: myUser?.username || settingsForm.username || "alex",
+                          fullName: "Alex Miller",
+                          email: myUser?.email || "alex@ahoj.app",
+                          message: settingsForm.message,
+                          bio:
+                            settingsForm.bio ||
+                            "Software developer & proximity enthusiast in Brno. Building real-time interactive apps with Ant Design v6 and React.",
+                          avatarUrl:
+                            myUser?.avatarUrl || settingsForm.avatarUrl || "https://randomuser.me/api/portraits/men/32.jpg",
+                          privacyMode: settingsForm.privacyMode as any,
+                          distanceMeters: 0,
+                          locationName: "Brno Center 📍",
+                          lastActive: "Just now",
+                          plusOneCount: 42,
+                        }}
+                        isOwnProfile={true}
+                        onEditProfile={() => setActiveTab("settings")}
+                        onUploadPhoto={() => setIsStoryModalOpen(true)}
+                      />
                     </div>
-
-                    <div className="flex-1 p-5 overflow-y-auto space-y-3">
-                      {messages.map((m) => (
-                        <div key={m.id} className={`flex ${m.senderId === myUser?.id ? "justify-end" : "justify-start"}`}>
-                          <div className={`max-w-[75%] p-3.5 rounded-2xl text-xs ${
-                            m.senderId === myUser?.id ? "bg-[#00F2FE] text-black font-semibold shadow-[0_0_15px_rgba(0,242,254,0.2)]" : "bg-white/10 text-white"
-                          }`}>
-                            {m.content}
+                  ) : activeChatUser.isSystem || activeChatUser.id === "ahoj-notifications" ? (
+                    <>
+                      {/* System Notification Stream Header */}
+                      <div className="p-4 border-b border-white/10 flex items-center justify-between bg-[#121212]">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#00F2FE] to-purple-600 p-0.5 shadow-[0_0_15px_rgba(0,242,254,0.3)]">
+                            <div className="w-full h-full rounded-[14px] bg-[#0C0C0C] flex items-center justify-center text-[#00F2FE] font-black text-sm">
+                              /A\
+                            </div>
+                          </div>
+                          <div>
+                            <div className="font-bold text-sm text-white flex items-center gap-1.5">
+                              {activeChatUser.username}
+                              <span className="px-2 py-0.5 rounded-full bg-[#00F2FE]/15 text-[#00F2FE] border border-[#00F2FE]/30 text-[10px] font-bold">
+                                Official Bot
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-white/50">Real-time proximity alerts, spark invites & system notifications</div>
                           </div>
                         </div>
-                      ))}
-                    </div>
 
-                    <div className="p-4 border-t border-white/10 flex gap-2 bg-white/[0.02]">
-                      <input
-                        type="text"
-                        value={typedMessage}
-                        onChange={(e) => setTypedMessage(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            handleSendMessage(typedMessage);
-                            setTypedMessage("");
-                          }
-                        }}
-                        placeholder={t.typeMessage}
-                        className="flex-1 glass-input px-4 py-3 rounded-2xl text-xs text-white placeholder-white/40"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleSendMessage(typedMessage);
-                          setTypedMessage("");
-                        }}
-                        className="px-5 py-3 rounded-2xl bg-[#00F2FE] text-black font-bold text-xs hover:scale-105 transition-all"
-                      >
-                        {t.send}
-                      </button>
-                    </div>
-                  </>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 text-[11px] font-mono font-bold text-[#00F2FE]">
+                            {inAppNotifications.filter((n) => n.unread).length} Unread
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Notification Cards List */}
+                      <div className="flex-1 p-5 overflow-y-auto space-y-4">
+                        {notificationToast && (
+                          <div className="p-3.5 rounded-2xl bg-[#00F2FE]/20 border border-[#00F2FE] text-[#00F2FE] text-xs font-bold flex items-center gap-2 animate-fadeIn sticky top-0 z-20 backdrop-blur-md shadow-lg">
+                            <CheckCircle2 size={16} /> {notificationToast}
+                          </div>
+                        )}
+
+                        {inAppNotifications.map((n) => (
+                          <div
+                            key={n.id}
+                            className={`glass-panel p-4.5 rounded-3xl border transition-all space-y-3 ${
+                              n.unread
+                                ? "border-[#00F2FE]/40 bg-gradient-to-r from-[#00F2FE]/10 via-[#121212] to-[#121212] shadow-[0_0_20px_rgba(0,242,254,0.1)]"
+                                : "border-white/10 bg-[#121212]/80"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2.5">
+                                {n.avatarUrl ? (
+                                  <img src={n.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-full object-cover border border-[#00F2FE]/50" />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-[#00F2FE]/10 border border-[#00F2FE]/30 flex items-center justify-center text-[#00F2FE] text-xs font-bold">
+                                    /A\
+                                  </div>
+                                )}
+                                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-white/5 text-[#00F2FE] border border-white/10 uppercase tracking-wider font-mono">
+                                  {n.category}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] text-white/40 font-mono">{n.timestamp}</span>
+                                {n.unread && <span className="w-2 h-2 rounded-full bg-[#00F2FE] animate-pulse" />}
+                              </div>
+                            </div>
+
+                            <div className="space-y-1">
+                              <h4 className="font-bold text-xs text-white">{n.title}</h4>
+                              <p className="text-xs text-white/80 leading-relaxed font-normal">{n.body}</p>
+                            </div>
+
+                            {/* Action Buttons */}
+                            {n.actions && n.actions.length > 0 && (
+                              <div className="pt-2 border-t border-white/10 flex flex-wrap items-center gap-2">
+                                {n.actions.map((act: any) => {
+                                  let btnStyle = "bg-white/10 text-white hover:bg-white/20";
+                                  if (act.variant === "primary") btnStyle = "bg-[#00F2FE] text-black font-bold hover:scale-105 shadow-[0_0_12px_rgba(0,242,254,0.3)]";
+                                  if (act.variant === "success") btnStyle = "bg-[#4CAF50] text-black font-bold hover:scale-105";
+                                  if (act.variant === "danger") btnStyle = "bg-[#F44336]/20 text-[#F44336] border border-[#F44336]/40 font-bold hover:bg-[#F44336]/30";
+
+                                  return (
+                                    <button
+                                      key={act.id}
+                                      type="button"
+                                      onClick={() => handleNotificationAction(n.id, act.type, n.targetUserIndex)}
+                                      className={`px-3.5 py-1.5 rounded-xl text-xs transition-all cursor-pointer ${btnStyle}`}
+                                    >
+                                      {act.label}
+                                    </button>
+                                  );
+                                })}
+
+                                {n.requestStatus && (
+                                  <span className={`text-xs font-bold px-3 py-1 rounded-xl ${
+                                    n.requestStatus === "APPROVED" ? "bg-[#4CAF50]/20 text-[#4CAF50] border border-[#4CAF50]/40" : "bg-[#F44336]/20 text-[#F44336] border border-[#F44336]/40"
+                                  }`}>
+                                    {n.requestStatus === "APPROVED" ? "✓ Approved" : "✕ Denied"}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Assistant Query Bar */}
+                      <div className="p-4 border-t border-white/10 flex gap-2 bg-white/[0.02]">
+                        <input
+                          type="text"
+                          value={typedMessage}
+                          onChange={(e) => setTypedMessage(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && typedMessage.trim()) {
+                              const newNotif = {
+                                id: `notif-${Date.now()}`,
+                                title: "Ahoj Notification Assistant 🤖",
+                                body: `Answer for "${typedMessage}": Proximity alerts & Sparks update in real time. Use settings to control visibility!`,
+                                timestamp: "Just now",
+                                category: "SYSTEM",
+                                unread: false,
+                                actions: [{ id: "set", label: "Open Settings ⚙️", type: "OPEN_SETTINGS", variant: "secondary" }],
+                              };
+                              setInAppNotifications((prev) => [newNotif, ...prev]);
+                              setTypedMessage("");
+                            }
+                          }}
+                          placeholder="Ask Notification Assistant (e.g. 'How do Sparks work?')..."
+                          className="flex-1 glass-input px-4 py-3 rounded-2xl text-xs text-white placeholder-white/40"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (typedMessage.trim()) {
+                              const newNotif = {
+                                id: `notif-${Date.now()}`,
+                                title: "Ahoj Notification Assistant 🤖",
+                                body: `Answer for "${typedMessage}": Proximity alerts & Sparks update in real time. Use settings to control visibility!`,
+                                timestamp: "Just now",
+                                category: "SYSTEM",
+                                unread: false,
+                                actions: [{ id: "set", label: "Open Settings ⚙️", type: "OPEN_SETTINGS", variant: "secondary" }],
+                              };
+                              setInAppNotifications((prev) => [newNotif, ...prev]);
+                              setTypedMessage("");
+                            }
+                          }}
+                          className="px-5 py-3 rounded-2xl bg-[#00F2FE] text-black font-bold text-xs hover:scale-105 transition-all cursor-pointer"
+                        >
+                          Ask Assistant
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Rich Messenger Chat Header */}
+                      <div className="p-4 border-b border-white/10 flex items-center justify-between bg-[#121212]/90 backdrop-blur-md">
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <img
+                              src={activeChatUser.avatarUrl || "https://randomuser.me/api/portraits/women/44.jpg"}
+                              alt={activeChatUser.username}
+                              className="w-10 h-10 rounded-2xl object-cover border border-[#00F2FE]/50"
+                            />
+                            <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#4CAF50] border-2 border-[#121212]" />
+                          </div>
+
+                          <div>
+                            <div className="font-extrabold text-sm text-white flex items-center gap-1.5">
+                              @{activeChatUser.username}
+                              <span className="text-[10px] font-bold text-[#00F2FE] bg-[#00F2FE]/10 px-2 py-0.5 rounded-full border border-[#00F2FE]/30">
+                                ~{activeChatUser.distanceMeters ?? 320}m away
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-[#4CAF50] font-medium flex items-center gap-1">
+                              <Lock size={10} /> End-to-End Encrypted Signal Thread
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Messenger Top Action Controls */}
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedProfileUser(activeChatUser)}
+                            className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-[#00F2FE]/15 text-white/70 hover:text-[#00F2FE] border border-white/10 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                          >
+                            <User size={13} /> Profile Splitter
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Messenger Message Stream */}
+                      <div className="flex-1 p-5 overflow-y-auto space-y-3 bg-[radial-gradient(ellipse_at_top,rgba(0,242,254,0.03),transparent_70%)]">
+                        {messages.map((m) => (
+                          <div key={m.id} className={`flex ${m.senderId === myUser?.id ? "justify-end" : "justify-start"}`}>
+                            <div
+                              className={`max-w-[75%] p-3.5 rounded-2xl text-xs space-y-1 shadow-lg ${
+                                m.senderId === myUser?.id
+                                  ? "bg-gradient-to-r from-[#00F2FE] to-[#00DCE6] text-black font-semibold rounded-br-none"
+                                  : "bg-[#181818] text-white border border-white/10 rounded-bl-none"
+                              }`}
+                            >
+                              <p className="leading-relaxed">{m.content}</p>
+                              <div className={`text-[9px] font-mono text-right ${m.senderId === myUser?.id ? "text-black/60" : "text-white/40"}`}>
+                                12:46 · Read ✓✓
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Rich Messenger Composer Toolbar */}
+                      <div className="p-3.5 border-t border-white/10 flex items-center gap-2 bg-[#121212]">
+                        <button
+                          type="button"
+                          onClick={() => setIsStoryModalOpen(true)}
+                          className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-[#00F2FE] transition-colors"
+                          title="Attach Photo / Story"
+                        >
+                          <Camera size={16} />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => alert("Voice message recording started... 🎙️")}
+                          className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-[#00F2FE] transition-colors"
+                          title="Voice Note"
+                        >
+                          <Zap size={16} />
+                        </button>
+
+                        <input
+                          type="text"
+                          value={typedMessage}
+                          onChange={(e) => setTypedMessage(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && typedMessage.trim()) {
+                              handleSendMessage(typedMessage);
+                              setTypedMessage("");
+                            }
+                          }}
+                          placeholder="Type encrypted message..."
+                          className="flex-1 glass-input px-4 py-2.5 rounded-xl text-xs text-white placeholder-white/40"
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (typedMessage.trim()) {
+                              handleSendMessage(typedMessage);
+                              setTypedMessage("");
+                            }
+                          }}
+                          className="px-4 py-2.5 rounded-xl bg-[#00F2FE] hover:bg-[#00DCE6] text-black font-extrabold text-xs flex items-center gap-1.5 shadow-[0_0_15px_rgba(0,242,254,0.3)] transition-all cursor-pointer"
+                        >
+                          <Send size={14} /> Send
+                        </button>
+                      </div>
+                    </>
+                  )
                 ) : (
-                  <div className="flex-1 flex items-center justify-center text-white/40 text-xs font-medium space-y-2">
-                    <MessageSquare size={32} className="mx-auto text-white/20" />
-                    <p>Select a conversation to start chat</p>
+                  <div className="flex-1 flex flex-col items-center justify-center text-white/40 text-xs font-medium space-y-3 p-6 text-center">
+                    <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[#00F2FE]">
+                      <MessageSquare size={28} />
+                    </div>
+                    <h4 className="font-bold text-sm text-white">Your Encrypted Messenger</h4>
+                    <p className="max-w-xs text-white/50 text-[11px]">
+                      Select a conversation on the left, or open System Alerts or My Profile.
+                    </p>
                   </div>
                 )}
               </div>
@@ -876,9 +1530,37 @@ export default function FullWebAppDashboard() {
             </div>
           )}
 
-          {/* TAB 5: APP SETTINGS PAGE (IMMEDIATE SAVE) */}
+          {/* TAB 5: USER PROFILE WITH ANT DESIGN SPLITTER */}
+          {activeTab === "profile" && (
+            <div className="h-[calc(100vh-65px)] p-4 md:p-6">
+              <UserProfileSplitter
+                user={{
+                  id: myUser?.id || "me",
+                  username: myUser?.username || settingsForm.username || "alex",
+                  fullName: "Alex Miller",
+                  email: myUser?.email || "alex@ahoj.app",
+                  message: settingsForm.message,
+                  bio:
+                    settingsForm.bio ||
+                    "Software developer & proximity enthusiast in Brno. Building real-time interactive apps with Ant Design v6 and React.",
+                  avatarUrl:
+                    myUser?.avatarUrl || settingsForm.avatarUrl || "https://randomuser.me/api/portraits/men/32.jpg",
+                  privacyMode: settingsForm.privacyMode as any,
+                  distanceMeters: 0,
+                  locationName: "Brno Center 📍",
+                  lastActive: "Just now",
+                  plusOneCount: 42,
+                }}
+                isOwnProfile={true}
+                onEditProfile={() => setActiveTab("settings")}
+                onUploadPhoto={() => setIsStoryModalOpen(true)}
+              />
+            </div>
+          )}
+
+          {/* TAB 6: APP SETTINGS PAGE (NARROW CONTAINER) */}
           {activeTab === "settings" && (
-            <div className="p-6 space-y-6">
+            <div className="max-w-2xl mx-auto p-4 sm:p-6 space-y-6">
 
               {settingsSaveSuccess && (
                 <div className="p-4 rounded-2xl bg-[#4CAF50]/20 border border-[#4CAF50] text-[#4CAF50] text-xs font-bold flex items-center gap-2 animate-fadeIn sticky top-16 z-30 shadow-lg backdrop-blur-md">
@@ -1264,13 +1946,39 @@ export default function FullWebAppDashboard() {
         </div>
       )}
 
-      {/* ── 6. MOBILE BOTTOM NAVIGATION BAR (Phones) ───────────────────────── */}
+      {/* ── 6. SELECTED USER PROFILE SPLITTER MODAL ───────────────────────── */}
+      {selectedProfileUser && (
+        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-3 sm:p-6 backdrop-blur-md animate-fadeIn">
+          <div className="relative w-full max-w-4xl h-[88vh] bg-[#0C0C0C] rounded-3xl overflow-hidden border border-[#00F2FE]/40 shadow-2xl flex flex-col">
+            <button
+              type="button"
+              onClick={() => setSelectedProfileUser(null)}
+              className="absolute top-3.5 right-4 z-30 p-2 rounded-2xl bg-black/70 text-white/70 hover:text-white border border-white/20 hover:bg-black transition-all cursor-pointer"
+              title="Close Profile"
+            >
+              <X size={18} />
+            </button>
+            <UserProfileSplitter
+              user={selectedProfileUser}
+              isOwnProfile={selectedProfileUser.id === myUser?.id}
+              onStartChat={(u) => {
+                setSelectedProfileUser(null);
+                setActiveChatUser(u);
+                setActiveTab("chats");
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── 7. MOBILE BOTTOM NAVIGATION BAR (Phones) ───────────────────────── */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#0C0C0C]/95 backdrop-blur-xl border-t border-white/10 px-4 py-2.5 flex items-center justify-around md:hidden shadow-[0_-5px_25px_rgba(0,0,0,0.8)]">
         {[
           { id: "feed", label: t.radarTitle, icon: <Compass size={20} /> },
           { id: "sparks", label: t.sparksTitle, icon: <Flame size={20} /> },
           { id: "chats", label: t.chatsTitle, icon: <MessageSquare size={20} /> },
           { id: "requests", label: t.requestsTitle, icon: <Lock size={20} /> },
+          { id: "profile", label: "Profile", icon: <User size={20} /> },
           { id: "settings", label: t.settingsTitle, icon: <Settings size={20} /> },
         ].map(({ id, label, icon }) => {
           const isActive = activeTab === id;

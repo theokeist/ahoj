@@ -4,33 +4,40 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Switch,
   ActivityIndicator,
   Alert,
   StatusBar,
-  TextInput,
 } from "react-native";
 import { useState, useEffect } from "react";
 import { router } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { accessRequestsApi, feedApi, infoApi, usersApi } from "../../lib/api";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { accessRequestsApi, feedApi, usersApi } from "../../lib/api";
 import { useAuthStore, useLocationStore, useSettingsStore } from "../../store";
 import { colors, spacing, typography, radius } from "../../lib/theme";
 import { pageStyles } from "../../lib/pageStyles";
 import { Image } from "expo-image";
 import { TRANSLATIONS, type SupportedLanguage } from "@ahoj/shared";
+import {
+  FormGroup,
+  FormInput,
+  FormSwitch,
+  FormSegmented,
+  FormChipGroup,
+} from "../../components/ui/FormGroup";
 
 /**
  * SettingsScreen — Ant Design Mobile Styled Settings
  * Ant Design Token Alignment:
  *   colorPrimary: #00F2FE, colorBgBase: #0C0C0C, colorBgContainer: #121212, borderRadius: 16
- *   Immediate Save on Change with full i18n translation support
+ *   Secure Area Insets & Custom FormGroup Controls
  */
 export default function SettingsScreen() {
+  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const logout = useAuthStore((s) => s.logout);
   const me = useAuthStore((s) => s.user);
-  const { isGhostMode, setGhostMode } = useLocationStore();
+  const { setGhostMode } = useLocationStore();
   const { showStoryBar, setShowStoryBar } = useSettingsStore();
 
   const [language, setLanguage] = useState<SupportedLanguage>("cs");
@@ -212,11 +219,20 @@ export default function SettingsScreen() {
   ];
 
   return (
-    <View style={pageStyles.screen}>
+    <View
+      style={[
+        pageStyles.screen,
+        {
+          paddingTop: insets.top,
+          paddingLeft: insets.left,
+          paddingRight: insets.right,
+        },
+      ]}
+    >
       <StatusBar barStyle="light-content" />
 
-      {/* Header */}
-      <View style={pageStyles.header}>
+      {/* Header with Safe Area Insets */}
+      <View style={[pageStyles.header, { paddingTop: 12 }]}>
         <TouchableOpacity onPress={() => router.back()} style={pageStyles.backButton}>
           <Text style={pageStyles.backText}>← Back</Text>
         </TouchableOpacity>
@@ -230,282 +246,197 @@ export default function SettingsScreen() {
         </View>
       )}
 
-      <ScrollView contentContainerStyle={pageStyles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={[
+          pageStyles.scrollContent,
+          { paddingBottom: insets.bottom + 40 },
+        ]}
+      >
+        {/* SECTION 1: PROFILE & IDENTITY FORM GROUP */}
+        <FormGroup title={t.settings.profile} icon="👤">
+          <FormInput
+            label={t.settings.username}
+            value={settings.username}
+            onChangeText={(val) => handleImmediateChange("username", val)}
+            placeholder="Username"
+            icon="✏️"
+          />
+          <FormInput
+            label={t.settings.statusMessage}
+            value={settings.message}
+            onChangeText={(val) => handleImmediateChange("message", val)}
+            placeholder="Status message"
+            icon="💬"
+          />
+          <FormInput
+            label={t.settings.bio}
+            value={settings.bio}
+            onChangeText={(val) => handleImmediateChange("bio", val)}
+            placeholder="Bio description"
+            multiline
+            style={{ height: 70 }}
+            icon="📝"
+          />
+        </FormGroup>
 
-        {/* SECTION 1: ANT DESIGN PROFILE CARD */}
-        <View style={pageStyles.section}>
-          <Text style={pageStyles.sectionTitle}>👤 {t.settings.profile}</Text>
-          <View style={styles.antCard}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>{t.settings.username}</Text>
-              <TextInput
-                value={settings.username}
-                onChangeText={(val) => handleImmediateChange("username", val)}
-                style={styles.antInput}
-                placeholder="Username"
-                placeholderTextColor="rgba(255,255,255,0.3)"
-              />
-            </View>
+        {/* SECTION 2: PRIVACY & PROXIMITY FORM GROUP */}
+        <FormGroup title={t.settings.privacy} icon="👻">
+          <FormSegmented
+            label="Proximity Mode"
+            value={settings.privacyMode}
+            onChange={(val) => handleImmediateChange("privacyMode", val)}
+            options={[
+              { id: "PUBLIC", label: t.settings.privacyPublic, icon: "🔓" },
+              { id: "GHOST", label: t.settings.privacyGhost, icon: "👻" },
+              { id: "PRIVATE", label: t.settings.privacyPrivate, icon: "🔒" },
+            ]}
+          />
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>{t.settings.statusMessage}</Text>
-              <TextInput
-                value={settings.message}
-                onChangeText={(val) => handleImmediateChange("message", val)}
-                style={styles.antInput}
-                placeholder="Status message"
-                placeholderTextColor="rgba(255,255,255,0.3)"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>{t.settings.bio}</Text>
-              <TextInput
-                value={settings.bio}
-                onChangeText={(val) => handleImmediateChange("bio", val)}
-                style={[styles.antInput, { height: 70 }]}
-                multiline
-                placeholder="Bio description"
-                placeholderTextColor="rgba(255,255,255,0.3)"
-              />
-            </View>
+          <View style={styles.infoBox}>
+            <Text style={styles.infoTitle}>{t.settings.ghostFuzz}</Text>
+            <Text style={styles.infoDesc}>
+              {settings.ghostFuzzRadiusMeters}m {t.settings.ghostFuzzDesc}
+            </Text>
           </View>
-        </View>
 
-        {/* SECTION 2: PRIVACY & PROXIMITY (ANT DESIGN SEGMENTED CONTROL) */}
-        <View style={pageStyles.section}>
-          <Text style={pageStyles.sectionTitle}>👻 {t.settings.privacy}</Text>
-          <View style={styles.antCard}>
-            <Text style={styles.inputLabel}>Proximity Mode</Text>
-            <View style={styles.segmentedContainer}>
-              {[
-                { id: "PUBLIC", label: t.settings.privacyPublic },
-                { id: "GHOST", label: t.settings.privacyGhost },
-                { id: "PRIVATE", label: t.settings.privacyPrivate },
-              ].map((m) => (
-                <TouchableOpacity
-                  key={m.id}
-                  onPress={() => handleImmediateChange("privacyMode", m.id)}
-                  hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
-                  activeOpacity={0.7}
-                  style={[
-                    styles.segmentedSegment,
-                    settings.privacyMode === m.id && styles.segmentedActive,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.segmentedText,
-                      settings.privacyMode === m.id && styles.segmentedActiveText,
-                    ]}
-                  >
-                    {m.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+          <FormChipGroup
+            label={t.settings.dmPermission}
+            value={settings.allowDirectMessages}
+            onChange={(val) => handleImmediateChange("allowDirectMessages", val)}
+            options={[
+              { id: "EVERYONE", label: t.settings.dmEveryone },
+              { id: "APPROVED", label: t.settings.dmApproved },
+              { id: "NOBODY", label: t.settings.dmNobody },
+            ]}
+          />
 
-            {/* Ghost Fuzz Slider Info */}
-            <View style={styles.antRow}>
-              <View style={styles.settingTextContainer}>
-                <Text style={styles.settingLabel}>{t.settings.ghostFuzz}</Text>
-                <Text style={styles.settingDescription}>{settings.ghostFuzzRadiusMeters}m {t.settings.ghostFuzzDesc}</Text>
-              </View>
-            </View>
+          <FormSwitch
+            label={t.settings.showDistance}
+            description={t.settings.showDistanceDesc}
+            value={settings.showDistanceToOthers}
+            onValueChange={(val) => handleImmediateChange("showDistanceToOthers", val)}
+            icon="📍"
+          />
 
-            {/* Direct Message Permission */}
-            <View style={[styles.antRow, { marginTop: spacing.md }]}>
-              <View style={styles.settingTextContainer}>
-                <Text style={styles.settingLabel}>{t.settings.dmPermission}</Text>
-                <View style={styles.chipRow}>
-                  {[
-                    { id: "EVERYONE", label: t.settings.dmEveryone },
-                    { id: "APPROVED", label: t.settings.dmApproved },
-                    { id: "NOBODY", label: t.settings.dmNobody },
-                  ].map((chip) => (
-                    <TouchableOpacity
-                      key={chip.id}
-                      onPress={() => handleImmediateChange("allowDirectMessages", chip.id)}
-                      style={[
-                        styles.chip,
-                        settings.allowDirectMessages === chip.id && styles.chipActive,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.chipText,
-                          settings.allowDirectMessages === chip.id && styles.chipActiveText,
-                        ]}
-                      >
-                        {chip.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            </View>
+          <FormSwitch
+            label="Story Bar"
+            description="Show top story bar on radar feed"
+            value={showStoryBar}
+            onValueChange={setShowStoryBar}
+            icon="📸"
+          />
+        </FormGroup>
 
-            {/* Distance Toggle */}
-            <View style={[styles.antRow, { marginTop: spacing.md }]}>
-              <View style={styles.settingTextContainer}>
-                <Text style={styles.settingLabel}>{t.settings.showDistance}</Text>
-                <Text style={styles.settingDescription}>{t.settings.showDistanceDesc}</Text>
-              </View>
-              <Switch
-                value={settings.showDistanceToOthers}
-                onValueChange={(val) => handleImmediateChange("showDistanceToOthers", val)}
-                trackColor={{ false: "#444", true: colors.primary }}
-                thumbColor="#fff"
-              />
-            </View>
+        {/* SECTION 3: NOTIFICATIONS FORM GROUP */}
+        <FormGroup title={t.settings.notifications} icon="🔔">
+          <FormSwitch
+            label={t.settings.pushEnabled}
+            value={settings.notifications.pushEnabled}
+            onValueChange={(val) => handleImmediateChange("notifications.pushEnabled", val)}
+            icon="📲"
+          />
+          <FormSwitch
+            label={t.settings.nearbyAlert}
+            value={settings.notifications.nearbyUsersAlert}
+            onValueChange={(val) => handleImmediateChange("notifications.nearbyUsersAlert", val)}
+            icon="📡"
+          />
+          <FormSwitch
+            label={t.settings.sparksAlert}
+            value={settings.notifications.sparksAlert}
+            onValueChange={(val) => handleImmediateChange("notifications.sparksAlert", val)}
+            icon="⚡"
+          />
+          <FormSwitch
+            label={t.settings.messagesAlert}
+            value={settings.notifications.messagesAlert}
+            onValueChange={(val) => handleImmediateChange("notifications.messagesAlert", val)}
+            icon="💬"
+          />
+          <FormSwitch
+            label={t.settings.soundEnabled}
+            value={settings.notifications.soundEnabled}
+            onValueChange={(val) => handleImmediateChange("notifications.soundEnabled", val)}
+            icon="🔊"
+          />
+        </FormGroup>
 
-            {/* Story Bar Toggle */}
-            <View style={[styles.antRow, { marginTop: spacing.md }]}>
-              <View style={styles.settingTextContainer}>
-                <Text style={styles.settingLabel}>Story Bar</Text>
-                <Text style={styles.settingDescription}>Show top story bar on radar feed</Text>
-              </View>
-              <Switch
-                value={showStoryBar}
-                onValueChange={setShowStoryBar}
-                trackColor={{ false: "#444", true: colors.primary }}
-                thumbColor="#fff"
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* SECTION 3: NOTIFICATIONS & SOUND */}
-        <View style={pageStyles.section}>
-          <Text style={pageStyles.sectionTitle}>🔔 {t.settings.notifications}</Text>
-          <View style={styles.antCard}>
-            {[
-              { key: "notifications.pushEnabled", label: t.settings.pushEnabled, val: settings.notifications.pushEnabled },
-              { key: "notifications.nearbyUsersAlert", label: t.settings.nearbyAlert, val: settings.notifications.nearbyUsersAlert },
-              { key: "notifications.sparksAlert", label: t.settings.sparksAlert, val: settings.notifications.sparksAlert },
-              { key: "notifications.messagesAlert", label: t.settings.messagesAlert, val: settings.notifications.messagesAlert },
-              { key: "notifications.soundEnabled", label: t.settings.soundEnabled, val: settings.notifications.soundEnabled },
-            ].map((n, idx) => (
-              <View key={n.key} style={[styles.antRow, idx > 0 && { marginTop: spacing.md }]}>
-                <Text style={styles.settingLabel}>{n.label}</Text>
-                <Switch
-                  value={n.val}
-                  onValueChange={(val) => handleImmediateChange(n.key, val)}
-                  trackColor={{ false: "#444", true: colors.primary }}
-                  thumbColor="#fff"
-                />
-              </View>
+        {/* SECTION 4: APP PREFERENCES & DEMO MODE */}
+        <FormGroup title={t.settings.appPreferences} icon="🌐">
+          <Text style={styles.inputLabel}>{t.settings.language}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.langScroll}>
+            {languagesList.map((lang) => (
+              <TouchableOpacity
+                key={lang.code}
+                onPress={() => handleImmediateChange("language", lang.code)}
+                style={[
+                  styles.langChip,
+                  language === lang.code && styles.langChipActive,
+                ]}
+              >
+                <Text style={styles.langFlag}>{lang.flag}</Text>
+                <Text style={[styles.langText, language === lang.code && styles.langTextActive]}>
+                  {lang.label}
+                </Text>
+              </TouchableOpacity>
             ))}
-          </View>
-        </View>
+          </ScrollView>
 
-        {/* SECTION 4: LANGUAGE & APP PREFERENCES */}
-        <View style={pageStyles.section}>
-          <Text style={pageStyles.sectionTitle}>🌐 {t.settings.appPreferences}</Text>
-          <View style={styles.antCard}>
-            <Text style={styles.inputLabel}>{t.settings.language}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.langScroll}>
-              {languagesList.map((lang) => (
-                <TouchableOpacity
-                  key={lang.code}
-                  onPress={() => handleImmediateChange("language", lang.code)}
-                  style={[
-                    styles.langChip,
-                    language === lang.code && styles.langChipActive,
-                  ]}
-                >
-                  <Text style={styles.langFlag}>{lang.flag}</Text>
-                  <Text style={[styles.langText, language === lang.code && styles.langTextActive]}>
-                    {lang.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+          <FormChipGroup
+            label={t.settings.distanceUnit}
+            value={settings.distanceUnit}
+            onChange={(val) => handleImmediateChange("distanceUnit", val)}
+            options={[
+              { id: "metric", label: t.settings.metric },
+              { id: "imperial", label: t.settings.imperial },
+            ]}
+          />
 
-            <View style={[styles.antRow, { marginTop: spacing.md }]}>
-              <View style={styles.settingTextContainer}>
-                <Text style={styles.settingLabel}>{t.settings.distanceUnit}</Text>
-              </View>
-              <View style={styles.chipRow}>
-                {[
-                  { id: "metric", label: t.settings.metric },
-                  { id: "imperial", label: t.settings.imperial },
-                ].map((unit) => (
-                  <TouchableOpacity
-                    key={unit.id}
-                    onPress={() => handleImmediateChange("distanceUnit", unit.id)}
-                    style={[
-                      styles.chip,
-                      settings.distanceUnit === unit.id && styles.chipActive,
-                    ]}
-                  >
-                    <Text style={[styles.chipText, settings.distanceUnit === unit.id && styles.chipActiveText]}>
-                      {unit.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Demo Mode Row */}
-            <View style={[styles.antRow, { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.borderLight }]}>
-              <View style={styles.settingTextContainer}>
-                <Text style={styles.settingLabel}>🚀 Demo Mode</Text>
-                <Text style={styles.settingDescription}>Move demo users (Bob, Alice, Charlie) nearby.</Text>
-              </View>
-              {seedDemoMutation.isPending ? (
-                <ActivityIndicator color={colors.primary} />
-              ) : (
-                <Switch
-                  value={isDemoMode}
-                  onValueChange={handleToggleDemoMode}
-                  trackColor={{ false: "#444", true: colors.primary }}
-                  thumbColor="#fff"
-                />
-              )}
-            </View>
-          </View>
-        </View>
+          <FormSwitch
+            label="🚀 Demo Mode"
+            description="Move demo users (Bob, Alice, Charlie) nearby"
+            value={isDemoMode}
+            onValueChange={handleToggleDemoMode}
+            disabled={seedDemoMutation.isPending}
+          />
+        </FormGroup>
 
         {/* SECTION 5: ACCESS REQUESTS */}
-        <View style={pageStyles.section}>
-          <Text style={pageStyles.sectionTitle}>🔑 {t.requests.title}</Text>
-          <View style={styles.antCard}>
-            {isLoading ? (
-              <ActivityIndicator color={colors.primary} style={{ paddingVertical: spacing.md }} />
-            ) : incomingRequests.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>{t.requests.noRequests} 🌟</Text>
-              </View>
-            ) : (
-              incomingRequests.map((req: any) => (
-                <View key={req.id} style={styles.requestItem}>
-                  <View style={styles.userInfo}>
-                    <View style={styles.avatarWrapper}>
-                      {req.requester.profilePhotoUrl ? (
-                        <Image source={{ uri: req.requester.profilePhotoUrl }} style={styles.avatar} contentFit="cover" />
-                      ) : (
-                        <View style={styles.avatarFallback}>
-                          <Text style={styles.avatarInitial}>{req.requester.username[0].toUpperCase()}</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={styles.username}>@{req.requester.username}</Text>
+        <FormGroup title={t.requests.title} icon="🔑">
+          {isLoading ? (
+            <ActivityIndicator color={colors.primary} style={{ paddingVertical: spacing.md }} />
+          ) : incomingRequests.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>{t.requests.noRequests} 🌟</Text>
+            </View>
+          ) : (
+            incomingRequests.map((req: any) => (
+              <View key={req.id} style={styles.requestItem}>
+                <View style={styles.userInfo}>
+                  <View style={styles.avatarWrapper}>
+                    {req.requester.profilePhotoUrl ? (
+                      <Image source={{ uri: req.requester.profilePhotoUrl }} style={styles.avatar} contentFit="cover" />
+                    ) : (
+                      <View style={styles.avatarFallback}>
+                        <Text style={styles.avatarInitial}>{req.requester.username[0].toUpperCase()}</Text>
+                      </View>
+                    )}
                   </View>
-
-                  <View style={styles.actionButtons}>
-                    <TouchableOpacity style={[styles.actionBtn, styles.approveBtn]} onPress={() => approveMutation.mutate(req.id)}>
-                      <Text style={styles.approveBtnText}>{t.requests.approve}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.denyBtn]} onPress={() => denyMutation.mutate(req.id)}>
-                      <Text style={styles.denyBtnText}>{t.requests.deny}</Text>
-                    </TouchableOpacity>
-                  </View>
+                  <Text style={styles.username}>@{req.requester.username}</Text>
                 </View>
-              ))
-            )}
-          </View>
-        </View>
+
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity style={[styles.actionBtn, styles.approveBtn]} onPress={() => approveMutation.mutate(req.id)}>
+                    <Text style={styles.approveBtnText}>{t.requests.approve}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.actionBtn, styles.denyBtn]} onPress={() => denyMutation.mutate(req.id)}>
+                    <Text style={styles.denyBtnText}>{t.requests.deny}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))
+          )}
+        </FormGroup>
 
         {/* LOGOUT */}
         <View style={pageStyles.section}>
@@ -521,13 +452,6 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  antCard: {
-    backgroundColor: "#121212",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-    padding: spacing.md,
-  },
   toastBanner: {
     backgroundColor: "rgba(76,175,80,0.15)",
     borderWidth: 1,
@@ -544,9 +468,6 @@ const styles = StyleSheet.create({
     fontWeight: typography.bold,
     textAlign: "center",
   },
-  inputGroup: {
-    marginBottom: spacing.md,
-  },
   inputLabel: {
     fontSize: typography.xs,
     fontWeight: typography.bold,
@@ -555,91 +476,28 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-  antInput: {
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
+  infoBox: {
+    backgroundColor: "rgba(255,255,255,0.03)",
+    padding: spacing.sm,
     borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    color: colors.text.primary,
-    fontSize: typography.sm,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
   },
-  antRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-  settingTextContainer: { flex: 1 },
-  settingLabel: {
-    fontSize: typography.sm,
+  infoTitle: {
+    fontSize: typography.xs,
     fontWeight: typography.bold,
     color: colors.text.primary,
   },
-  settingDescription: {
+  infoDesc: {
     fontSize: typography.xs,
     color: colors.text.tertiary,
     marginTop: 2,
-  },
-  segmentedContainer: {
-    flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderRadius: radius.md,
-    padding: 3,
-    marginBottom: spacing.md,
-  },
-  segmentedSegment: {
-    flex: 1,
-    minHeight: 44,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: radius.sm,
-  },
-  segmentedActive: {
-    backgroundColor: colors.primary,
-  },
-  segmentedText: {
-    fontSize: typography.xs,
-    fontWeight: typography.semibold,
-    color: colors.text.secondary,
-  },
-  segmentedActiveText: {
-    color: "#000",
-    fontWeight: typography.bold,
-  },
-  chipRow: {
-    flexDirection: "row",
-    gap: 6,
-    marginTop: 6,
-    flexWrap: "wrap",
-  },
-  chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: radius.sm,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
-  },
-  chipActive: {
-    backgroundColor: "rgba(0,242,254,0.15)",
-    borderColor: colors.primary,
-  },
-  chipText: {
-    fontSize: typography.xs,
-    color: colors.text.secondary,
-  },
-  chipActiveText: {
-    color: colors.primary,
-    fontWeight: typography.bold,
   },
   langScroll: {
     flexDirection: "row",
     gap: 8,
     paddingVertical: 4,
+    marginBottom: spacing.xs,
   },
   langChip: {
     flexDirection: "row",

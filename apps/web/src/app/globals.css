@@ -392,3 +392,54 @@ body {
 @media (min-width: 1024px) {
   .masonry-grid { column-count: 3; }
 }
+
+/* ── Ant Design Splitter Dark Customization ─────────────────────── */
+.ant-splitter {
+  background-color: transparent !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.ant-splitter-panel {
+  transition: background-color 0.2s ease;
+}
+
+.ant-splitter-bar {
+  background: rgba(255, 255, 255, 0.08) !important;
+  height: 12px !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  margin: 0 !important;
+  position: relative !important;
+  cursor: row-resize !important;
+  backdrop-filter: blur(8px) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.ant-splitter-bar::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 4px;
+  border-radius: 2px;
+  background-color: rgba(0, 242, 254, 0.5);
+  box-shadow: 0 0 8px rgba(0, 242, 254, 0.3);
+  transition: all 0.25s ease;
+}
+
+.ant-splitter-bar:hover,
+.ant-splitter-bar-active {
+  background: rgba(0, 242, 254, 0.15) !important;
+  border-color: rgba(0, 242, 254, 0.4) !important;
+}
+
+.ant-splitter-bar:hover::after,
+.ant-splitter-bar-active::after {
+  width: 64px;
+  height: 5px;
+  background-color: #00F2FE;
+  box-shadow: 0 0 16px rgba(0, 242, 254, 0.8);
+}
+

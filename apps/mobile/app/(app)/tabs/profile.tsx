@@ -22,6 +22,7 @@ import { useAuthStore } from "../../../store";
 import { usersApi, accessRequestsApi, storiesApi } from "../../../lib/api";
 import { colors, spacing, typography, radius } from "../../../lib/theme";
 import { pageStyles } from "../../../lib/pageStyles";
+import { SplitterComponent } from "../../../components/ui/SplitterComponent";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -262,230 +263,80 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: 96 + insets.bottom }]}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* User Card */}
-        <View style={styles.profileCard}>
-          <TouchableOpacity style={styles.avatar} onPress={handleUploadAvatar} activeOpacity={0.8}>
-            {isUploadingPhoto ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : profile?.profilePhotoUrl ? (
-              <Image source={{ uri: profile.profilePhotoUrl }} style={styles.avatarImage} contentFit="cover" />
-            ) : (
-              <Text style={styles.avatarText}>
-                {profile?.username ? profile.username[0].toUpperCase() : "A"}
-              </Text>
-            )}
-            <View style={styles.avatarEditBadge}>
-              <Text style={styles.avatarEditBadgeText}>✏️</Text>
-            </View>
-          </TouchableOpacity>
-          <Text style={styles.username}>@{profile?.username}</Text>
-          <Text style={styles.email}>{profile?.email}</Text>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>
-              {profile?.privacyMode === "PUBLIC" ? "🔓 Public" : "🔒 Private"}
-            </Text>
-          </View>
-        </View>
+      <SplitterComponent
+        initialRatio={0.618}
+        minRatio={0.20}
+        maxRatio={0.82}
+        topPanel={
+          <ScrollView
+            contentContainerStyle={styles.splitterSubScroll}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Ambient Cover Banner */}
+            <View style={styles.mobileCoverBanner} />
 
-        {/* Ant Design Mobile Two-Part Splitter */}
-        <View style={styles.segmentSplitter}>
-          {[
-            { id: "user", label: "👤 User Profile" },
-            { id: "actions", label: "⚡ Feed Actions" },
-          ].map((tab) => (
-            <TouchableOpacity
-              key={tab.id}
-              onPress={() => setProfileTab(tab.id as any)}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              style={[
-                styles.segmentItem,
-                (profileTab === tab.id || (profileTab === "stories" && tab.id === "user") || (profileTab === "sparks" && tab.id === "actions")) && styles.segmentItemActive,
-              ]}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  (profileTab === tab.id || (profileTab === "stories" && tab.id === "user") || (profileTab === "sparks" && tab.id === "actions")) && styles.segmentTextActive,
-                ]}
+            {/* Header Row: Overlapping Avatar & Left-aligned Info */}
+            <View style={styles.mobileHeaderRow}>
+              <TouchableOpacity style={styles.mobileAvatarContainer} onPress={handleUploadAvatar} activeOpacity={0.8}>
+                {isUploadingPhoto ? (
+                  <ActivityIndicator color={colors.primary} />
+                ) : profile?.profilePhotoUrl ? (
+                  <Image source={{ uri: profile.profilePhotoUrl }} style={styles.mobileAvatarImage} contentFit="cover" />
+                ) : (
+                  <Text style={styles.avatarText}>
+                    {profile?.username ? profile.username[0].toUpperCase() : "A"}
+                  </Text>
+                )}
+                <View style={styles.avatarEditBadge}>
+                  <Text style={styles.avatarEditBadgeText}>✏️</Text>
+                </View>
+              </TouchableOpacity>
+
+              <View style={styles.mobileUserInfoColumn}>
+                <View style={styles.mobileNameRow}>
+                  <Text style={styles.mobileUsername}>@{profile?.username}</Text>
+                  <Text style={styles.mobileVerifiedText}>✓ Verified</Text>
+                </View>
+                <Text style={styles.mobileLocationText}>📍 Brno Center (~0m) · Active now</Text>
+                <Text style={styles.mobileIcebreakerQuote}>⚡ &ldquo;{profile?.message || "Ahoj!"}&rdquo;</Text>
+              </View>
+            </View>
+
+            {/* Seamless Bio & Inline Interests Flow (No card headers or pill shapes) */}
+            <View style={styles.mobileBioSection}>
+              <Text style={styles.mobileBioText}>
+                {profile?.bio ||
+                  "Specialty coffee brewing ☕, impromptu basketball games in Brno 🏀, and synthwave beats 🎧. Always up for spontaneous coffee meetups or coding discussions!"}
+              </Text>
+
+              <Text style={styles.mobileInterestsText}>
+                ☕ Specialty Coffee  •  🏀 Basketball  •  🎧 Synthwave  •  🏔️ Hiking  •  💻 React  •  ⚡ Impromptu Meetups
+              </Text>
+            </View>
+
+            {/* Single Action Row */}
+            <View style={styles.mobileActionRow}>
+              <TouchableOpacity
+                style={styles.mobilePrimaryActionBtn}
+                onPress={() => router.push("/settings")}
               >
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+                <Text style={styles.mobilePrimaryActionText}>⚙️ Settings</Text>
+              </TouchableOpacity>
 
-        {/* PART 1: USER PROFILE & SETTINGS */}
-        {(profileTab === "user" || profileTab === "stories") && (
-          <>
-            {/* Icebreaker Message Editor */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Icebreaker Message</Text>
-              {isEditingMessage ? (
-                <View style={styles.editorRow}>
-                  <TextInput
-                    style={styles.input}
-                    value={message}
-                    onChangeText={setMessage}
-                    maxLength={60}
-                    placeholder="Icebreaker Message"
-                    placeholderTextColor={colors.text.tertiary}
-                  />
-                  <View style={styles.buttonRow}>
-                    <TouchableOpacity
-                      style={[styles.actionButton, styles.cancelBtn]}
-                      onPress={() => setIsEditingMessage(false)}
-                    >
-                      <Text style={styles.actionBtnText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.actionButton, styles.saveBtn]}
-                      onPress={() => updateMessageMutation.mutate()}
-                      disabled={updateMessageMutation.isPending}
-                    >
-                      {updateMessageMutation.isPending ? (
-                        <ActivityIndicator color="#fff" size="small" />
-                      ) : (
-                        <Text style={styles.actionBtnText}>Save</Text>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : (
-                <View style={styles.messageBox}>
-                  <Text style={styles.messageText}>"{profile?.message}"</Text>
-                  <TouchableOpacity
-                    style={styles.editBtn}
-                    onPress={() => setIsEditingMessage(true)}
-                  >
-                    <Text style={styles.editBtnText}>✏️ Edit Message</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-
-            {/* Privacy Settings & Live Preview */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Privacy Mode</Text>
-              <Text style={styles.privacyDescription}>
-                In Private Mode, other users must request permission to view your stories. Your icebreaker message remains visible, but your avatar is blurred/hidden in the feed.
-              </Text>
-
-              <View style={styles.toggleRow}>
-                <TouchableOpacity
-                  style={[
-                    styles.toggleButton,
-                    profile?.privacyMode === "PUBLIC" && styles.toggleButtonActive,
-                  ]}
-                  onPress={() => updatePrivacyMutation.mutate("PUBLIC")}
-                  disabled={updatePrivacyMutation.isPending}
-                >
-                  <Text
-                    style={[
-                      styles.toggleButtonText,
-                      profile?.privacyMode === "PUBLIC" && styles.toggleButtonTextActive,
-                    ]}
-                  >
-                    🔓 Public
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.toggleButton,
-                    profile?.privacyMode === "PRIVATE" && styles.toggleButtonActive,
-                  ]}
-                  onPress={() => updatePrivacyMutation.mutate("PRIVATE")}
-                  disabled={updatePrivacyMutation.isPending}
-                >
-                  <Text
-                    style={[
-                      styles.toggleButtonText,
-                      profile?.privacyMode === "PRIVATE" && styles.toggleButtonTextActive,
-                    ]}
-                  >
-                    🔒 Private
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Live Preview: How others see you */}
-              <Text style={styles.previewTitle}>How others see you in the feed</Text>
-              <View style={styles.previewCardContainer}>
-                <View style={styles.previewFeedItem}>
-                  {/* Avatar */}
-                  <View style={styles.avatarWrapper}>
-                    <View style={[styles.previewAvatarRing, { borderColor: colors.borderLight }]} />
-                    <View style={[styles.previewAvatar, profile?.privacyMode === "PRIVATE" && styles.avatarPrivate]}>
-                      {profile?.profilePhotoUrl && profile?.privacyMode === "PUBLIC" ? (
-                        <Image
-                          source={{ uri: profile.profilePhotoUrl }}
-                          style={styles.previewAvatarImage}
-                          contentFit="cover"
-                        />
-                      ) : (
-                        <View style={styles.avatarPlaceholder}>
-                          <Text style={styles.avatarInitial}>
-                            {profile?.username ? profile.username[0].toUpperCase() : "A"}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-
-                  {/* Info */}
-                  <View style={styles.userInfo}>
-                    <View style={styles.userHeader}>
-                      <Text style={styles.previewUsername}>{profile?.username}</Text>
-                      {profile?.privacyMode === "PRIVATE" && (
-                        <View style={styles.privateBadge}>
-                          <Text style={styles.privateBadgeText}>🔒 Private</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={styles.previewMessage} numberOfLines={2}>
-                      {profile?.message || "No message set"}
-                    </Text>
-                  </View>
-
-                  {/* Distance */}
-                  <View style={styles.distanceContainer}>
-                    <Text style={styles.distance}>~120 m</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            {/* Info Details */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Account Details</Text>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Bio</Text>
-                <Text style={styles.infoValue}>{profile?.bio || "No bio yet"}</Text>
-              </View>
-              {profile?.website && (
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Website</Text>
-                  <Text style={styles.infoValue}>{profile.website}</Text>
-                </View>
-              )}
-            </View>
-
-            {/* Log Out CTA */}
-            <View style={styles.section}>
-              <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
-                <Text style={styles.logoutText}>🚪 Sign Out of ahoj</Text>
+              <TouchableOpacity
+                style={styles.mobileSecondaryActionBtn}
+                onPress={() => setIsEditingMessage(true)}
+              >
+                <Text style={styles.mobileSecondaryActionText}>✏️ Edit Message</Text>
               </TouchableOpacity>
             </View>
-          </>
-        )}
-
-        {/* PART 2: FEED ACTIONS & MEDIA */}
-        {(profileTab === "actions" || profileTab === "sparks") && (
-          <>
+          </ScrollView>
+        }
+        bottomPanel={
+          <ScrollView
+            contentContainerStyle={[styles.splitterSubScroll, { paddingBottom: 96 + insets.bottom }]}
+            keyboardShouldPersistTaps="handled"
+          >
             {/* Fotoalbum & Story Media */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>📸 My Media & Stories ({profile?.photoAlbum?.length || 0}/6)</Text>
@@ -567,6 +418,29 @@ export default function ProfileScreen() {
               </View>
             )}
 
+            {/* Public Info & Stats */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>🌐 Public Info & Proximity Stats</Text>
+              <View style={styles.infoCard}>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>⚡ Response Rate</Text>
+                  <Text style={[styles.infoValue, { color: colors.primary, fontWeight: "bold" }]}>⚡ Instant (~2m)</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>🔥 Proximity Streak</Text>
+                  <Text style={[styles.infoValue, { color: "#FFD700", fontWeight: "bold" }]}>7 Days 🔥</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>📅 Joined ahoj</Text>
+                  <Text style={styles.infoValue}>July 2026</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>📍 Distance Unit</Text>
+                  <Text style={styles.infoValue}>Metric (Meters)</Text>
+                </View>
+              </View>
+            </View>
+
             {/* Quick Feed Actions CTA */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>⚡ Quick Feed Actions</Text>
@@ -578,24 +452,25 @@ export default function ProfileScreen() {
                 <Text style={[styles.actionBtnText, { fontSize: 14, fontWeight: "bold" }]}>⚡ Create Spontaneous Spark</Text>
               </TouchableOpacity>
             </View>
-          </>
-        )}
 
-        {/* Logout */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Log Out</Text>
-        </TouchableOpacity>
-      </ScrollView>
+            {/* Logout */}
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Text style={styles.logoutText}>Log Out</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        }
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { padding: spacing.xl, gap: spacing.lg },
+  scroll: { padding: spacing.md, gap: spacing.lg },
+  splitterSubScroll: { paddingHorizontal: spacing.sm, paddingVertical: spacing.md, gap: spacing.md },
   profileCard: {
     alignItems: "center",
     backgroundColor: colors.background.secondary,
-    padding: spacing.xl,
+    padding: spacing.lg,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
@@ -659,9 +534,10 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: spacing.sm,
+    width: "100%",
   },
   sectionTitle: {
-    fontSize: typography.sm,
+    fontSize: 13,
     fontWeight: typography.bold,
     color: colors.text.tertiary,
     textTransform: "uppercase",
@@ -725,6 +601,13 @@ const styles = StyleSheet.create({
     fontWeight: typography.semibold,
     color: "#fff",
   },
+  infoCard: {
+    backgroundColor: colors.background.secondary,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+  },
   infoRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -770,23 +653,23 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: radius.md,
-    backgroundColor: colors.background.secondary,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.border,
     alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: colors.background.secondary,
   },
   toggleButtonActive: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
   toggleButtonText: {
-    fontSize: typography.base,
+    fontSize: typography.sm,
     fontWeight: typography.semibold,
     color: colors.text.secondary,
   },
   toggleButtonTextActive: {
-    color: "#fff",
+    color: "#000",
+    fontWeight: typography.bold,
   },
   previewTitle: {
     fontSize: typography.sm,
@@ -949,12 +832,12 @@ const styles = StyleSheet.create({
   albumGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: spacing.sm,
-    marginTop: spacing.xs,
+    gap: spacing.xs,
+    width: "100%",
   },
   albumItem: {
-    width: (width - spacing.xl * 2 - spacing.sm * 2) / 3,
-    height: (width - spacing.xl * 2 - spacing.sm * 2) / 3,
+    width: (width - spacing.sm * 2 - spacing.xs * 2 - 8) / 3,
+    height: (width - spacing.sm * 2 - spacing.xs * 2 - 8) / 3,
     borderRadius: radius.md,
     overflow: "hidden",
     backgroundColor: colors.background.secondary,
@@ -983,8 +866,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   addPhotoCard: {
-    width: (width - spacing.xl * 2 - spacing.sm * 2) / 3,
-    height: (width - spacing.xl * 2 - spacing.sm * 2) / 3,
+    width: (width - spacing.sm * 2 - spacing.xs * 2 - 8) / 3,
+    height: (width - spacing.sm * 2 - spacing.xs * 2 - 8) / 3,
     borderRadius: radius.md,
     borderWidth: 1.5,
     borderStyle: "dashed",
@@ -1036,5 +919,132 @@ const styles = StyleSheet.create({
   segmentTextActive: {
     color: "#0C0C0C",
     fontWeight: typography.black,
+  },
+
+  // ── Mobile Profile Restyled Full-Width Components & Optimized Typography ──
+  mobileCoverBanner: {
+    width: "100%",
+    height: 96,
+    borderRadius: radius.md,
+    backgroundColor: colors.background.secondary,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    marginBottom: -42,
+  },
+  mobileHeaderRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingHorizontal: 4,
+    gap: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  mobileAvatarContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: radius.lg,
+    borderWidth: 3,
+    borderColor: colors.background.primary,
+    backgroundColor: colors.background.card,
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  mobileAvatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: radius.lg - 3,
+  },
+  mobileUserInfoColumn: {
+    flex: 1,
+    paddingTop: 44,
+    gap: 3,
+  },
+  mobileNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  mobileUsername: {
+    fontSize: typography.lg,
+    fontWeight: "800",
+    color: colors.text.primary,
+  },
+  mobileVerifiedText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: colors.primary,
+  },
+  mobileLocationText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: colors.text.secondary,
+  },
+  mobileIcebreakerQuote: {
+    fontSize: 14,
+    fontStyle: "italic",
+    color: colors.text.primary,
+    marginTop: 4,
+    lineHeight: 20,
+  },
+  mobileBioSection: {
+    width: "100%",
+    paddingHorizontal: 4,
+    paddingTop: spacing.md,
+    gap: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+    marginTop: spacing.xs,
+  },
+  mobileBioText: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: colors.text.secondary,
+    fontWeight: "400",
+  },
+  mobileInterestsText: {
+    fontSize: 13,
+    color: colors.text.primary,
+    lineHeight: 22,
+    fontWeight: "600",
+  },
+  mobileActionRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingHorizontal: 4,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+    marginTop: spacing.md,
+  },
+  mobilePrimaryActionBtn: {
+    flex: 1,
+    minHeight: 48,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  mobilePrimaryActionText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#0C0C0C",
+  },
+  mobileSecondaryActionBtn: {
+    flex: 1,
+    minHeight: 48,
+    backgroundColor: colors.background.secondary,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  mobileSecondaryActionText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.text.primary,
   },
 });

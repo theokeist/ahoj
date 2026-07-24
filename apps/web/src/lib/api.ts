@@ -15,52 +15,148 @@ export async function apiFetch<T>(endpoint: string, options: CustomRequestInit =
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  // 1. Handle mock tokens gracefully for ALL endpoints (offline & dev demo mode)
+  if (token && token.startsWith("mock-")) {
+    const usernameFromToken = token.replace("mock-access-token-", "").replace("mock-oauth-", "").replace("-token", "");
+    const username = usernameFromToken && usernameFromToken !== "dev" ? usernameFromToken : "alex_dev";
 
-  if (res.status === 401 && !options._isRetry && endpoint !== "/auth/login" && endpoint !== "/auth/register") {
-    // Attempt automatic token refresh
-    const refreshToken = typeof window !== "undefined" ? localStorage.getItem("refreshToken") : null;
-    if (refreshToken) {
-      try {
-        const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refreshToken }),
-        });
+    if (endpoint === "/auth/me") {
+      return {
+        user: {
+          id: "mock-user-id",
+          username,
+          email: `${username}@ahoj.app`,
+          message: "Ahoj from web! 🚀",
+          privacyMode: "PUBLIC",
+          profilePhotoUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150&h=150",
+          bio: "Web developer & specialty coffee lover in Brno ☕",
+        },
+      } as unknown as T;
+    }
 
-        if (refreshRes.ok) {
-          const refreshData = await refreshRes.json();
-          if (typeof window !== "undefined") {
-            localStorage.setItem("accessToken", refreshData.accessToken);
-            if (refreshData.refreshToken) {
-              localStorage.setItem("refreshToken", refreshData.refreshToken);
+    if (endpoint === "/users/me/settings") {
+      return {
+        privacyMode: "PUBLIC",
+        ghostFuzzRadiusMeters: 300,
+        allowDirectMessages: "EVERYONE",
+        showDistanceToOthers: true,
+        notifications: {
+          pushEnabled: true,
+          nearbyUsersAlert: true,
+          sparksAlert: true,
+          messagesAlert: true,
+          accessRequestAlert: true,
+          soundEnabled: true,
+        },
+        language: "cs",
+        distanceUnit: "metric",
+      } as unknown as T;
+    }
+
+    if (endpoint.startsWith("/chats")) {
+      return { conversations: [], messages: [] } as unknown as T;
+    }
+
+    if (endpoint.startsWith("/feed")) {
+      return { users: [] } as unknown as T;
+    }
+
+    if (endpoint.startsWith("/sparks")) {
+      return { sparks: [], spark: { id: `spk-${Date.now()}`, title: "Mock Spark" } } as unknown as T;
+    }
+
+    if (endpoint.startsWith("/access-requests")) {
+      return [] as unknown as T;
+    }
+
+    return {} as unknown as T;
+  }
+
+  // 2. Real API fetch attempt
+  try {
+    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+
+    if (res.status === 401 && !options._isRetry && endpoint !== "/auth/login" && endpoint !== "/auth/register") {
+      const refreshToken = typeof window !== "undefined" ? localStorage.getItem("refreshToken") : null;
+      if (refreshToken) {
+        try {
+          const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refreshToken }),
+          });
+
+          if (refreshRes.ok) {
+            const refreshData = await refreshRes.json();
+            if (typeof window !== "undefined") {
+              localStorage.setItem("accessToken", refreshData.accessToken);
+              if (refreshData.refreshToken) {
+                localStorage.setItem("refreshToken", refreshData.refreshToken);
+              }
             }
+            return apiFetch<T>(endpoint, { ...options, _isRetry: true });
           }
-          // Retry original request with new access token
-          return apiFetch<T>(endpoint, { ...options, _isRetry: true });
+        } catch {
+          // Silent catch
         }
-      } catch {
-        // Refresh failed, proceed to logout redirect
       }
+
+      // Only redirect to /login if using a real token that failed authentication
+      if (typeof window !== "undefined" && token && !token.startsWith("mock-")) {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        window.location.href = "/login";
+      }
+      throw new Error("Unauthorized");
     }
 
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      window.location.href = "/login";
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || "API Request failed");
     }
-    throw new Error("Unauthorized");
-  }
 
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || "API Request failed");
+    return data as T;
+  } catch (err: any) {
+    // Return safe fallback for offline mode or network errors
+    if (token && (token.startsWith("mock-") || err.message === "Failed to fetch")) {
+      if (endpoint === "/auth/me") {
+        return {
+          user: {
+            id: "mock-user-id",
+            username: "alex_dev",
+            email: "dev@ahoj.app",
+            message: "Ahoj from web! 🚀",
+            privacyMode: "PUBLIC",
+            profilePhotoUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150&h=150",
+            bio: "Web developer & specialty coffee lover in Brno ☕",
+          },
+        } as unknown as T;
+      }
+      if (endpoint === "/users/me/settings") {
+        return {
+          privacyMode: "PUBLIC",
+          ghostFuzzRadiusMeters: 300,
+          allowDirectMessages: "EVERYONE",
+          showDistanceToOthers: true,
+          notifications: {
+            pushEnabled: true,
+            nearbyUsersAlert: true,
+            sparksAlert: true,
+            messagesAlert: true,
+            accessRequestAlert: true,
+            soundEnabled: true,
+          },
+          language: "cs",
+          distanceUnit: "metric",
+        } as unknown as T;
+      }
+      return {} as unknown as T;
+    }
+    throw err;
   }
-
-  return data as T;
 }
 
 export const webApi = {

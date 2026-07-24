@@ -75,7 +75,22 @@
       "expo-notifications",
       "expo-secure-store",
       "expo-camera",
-      "expo-image-picker"
+      "expo-image-picker",
+      [
+        "react-native-bootsplash",
+        {
+          "android": {
+            "parentTheme": "Theme.SplashScreen"
+          },
+          "ios": {
+            "storyboard": "BootSplash"
+          },
+          "logo": "./assets/splash.png",
+          "darkLogo": "./assets/splash.png",
+          "backgroundColor": "#0C0C0C",
+          "darkBackgroundColor": "#0C0C0C"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

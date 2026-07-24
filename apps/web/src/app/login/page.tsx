@@ -2,167 +2,27 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { GlobalOutlined, ThunderboltOutlined } from "@ant-design/icons";
-import { ThemeProvider } from "../../components/ThemeProvider";
+import {
+  Zap,
+  Globe,
+  Lock,
+  Mail,
+  ArrowRight,
+  CheckCircle2,
+  AlertCircle,
+  ArrowLeft,
+  Sparkles,
+} from "lucide-react";
 import { OAuthProviderGrid, type OAuthProviderKey } from "../../components/OAuthProviderGrid";
-import { App } from "antd";
 import { getTranslations, type SupportedLanguage } from "../../locales";
 
-/* ── Shared custom input component ──────────────────────────────── */
-function Field({
-  label,
-  type = "text",
-  placeholder,
-  value,
-  onChange,
-  error,
-  icon,
-}: {
-  label?: string;
-  type?: string;
-  placeholder: string;
-  value: string;
-  onChange: (v: string) => void;
-  error?: string;
-  icon?: React.ReactNode;
-}) {
-  const [focused, setFocused] = useState(false);
-  const [showPw, setShowPw] = useState(false);
-  const isPassword = type === "password";
-
-  return (
-    <div className="flex flex-col gap-1">
-      {label && (
-        <label className="text-xs font-semibold text-white/60 tracking-wide">{label}</label>
-      )}
-      <div
-        className="relative flex items-center rounded-xl border transition-all duration-200"
-        style={{
-          backgroundColor: "rgba(255,255,255,0.03)",
-          borderColor: error
-            ? "#F44336"
-            : focused
-            ? "#00F2FE"
-            : "rgba(255,255,255,0.10)",
-          boxShadow: focused && !error ? "0 0 0 3px rgba(0,242,254,0.12)" : "none",
-        }}
-      >
-        {icon && (
-          <span className="pl-3.5 text-white/30 flex items-center shrink-0">{icon}</span>
-        )}
-        <input
-          type={isPassword && !showPw ? "password" : "text"}
-          placeholder={placeholder}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          className="w-full bg-transparent px-3.5 py-3 text-sm text-white placeholder-white/25 outline-none"
-          style={{ caretColor: "#00F2FE" }}
-        />
-        {isPassword && (
-          <button
-            type="button"
-            onClick={() => setShowPw(!showPw)}
-            className="pr-3.5 text-white/30 hover:text-white/70 transition-colors text-xs font-semibold cursor-pointer shrink-0"
-          >
-            {showPw ? "HIDE" : "SHOW"}
-          </button>
-        )}
-      </div>
-      {error && <p className="text-[11px] text-[#F44336] font-medium mt-0.5">{error}</p>}
-    </div>
-  );
-}
-
-/* ── Login Form ──────────────────────────────────────────────────── */
-function LoginForm() {
+export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
-  const { message } = App.useApp();
-
-  const validate = () => {
-    const e: typeof errors = {};
-    if (!email) e.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(email)) e.email = "Enter a valid email";
-    if (!password) e.password = "Password is required";
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Login failed");
-      message.success(`Welcome back, ${data.user.username}!`);
-      localStorage.setItem("accessToken", data.accessToken);
-      if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
-      window.location.href = "/app";
-    } catch (err: any) {
-      // Fallback demo session if API server is offline or unseeded
-      const usernameFromEmail = email ? email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "_") : "alex_dev";
-      const fallbackData = {
-        accessToken: "mock-access-token-dev",
-        user: {
-          id: "demo-user-id",
-          username: usernameFromEmail,
-          email: email || "dev@ahoj.app",
-          message: "Ahoj from web! 🚀",
-          privacyMode: "PUBLIC",
-          avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150&h=150",
-        },
-      };
-      localStorage.setItem("accessToken", fallbackData.accessToken);
-      message.success(`Welcome back, @${fallbackData.user.username}!`);
-      window.location.href = "/app";
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDemoLogin = async () => {
-    setEmail("dev@ahoj.app");
-    setPassword("password123");
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: "dev@ahoj.app", password: "password123" }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Demo login failed");
-      message.success(`Welcome back, ${data.user.username}!`);
-      localStorage.setItem("accessToken", data.accessToken);
-      if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
-      window.location.href = "/app";
-    } catch {
-      localStorage.setItem("accessToken", "mock-access-token-dev");
-      message.success("Welcome back, @dev!");
-      window.location.href = "/app";
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleOAuth = (provider: OAuthProviderKey) => {
-    // Immediate mock sign-in on web if backend OAuth redirect isn't active
-    localStorage.setItem("accessToken", `mock-oauth-${provider}-token`);
-    message.success(`Signed in with ${provider.toUpperCase()}!`);
-    window.location.href = "/app";
-  };
+  const [toastMessage, setToastMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [lang, setLang] = useState<SupportedLanguage>("cs");
 
@@ -174,152 +34,243 @@ function LoginForm() {
   const t = getTranslations(lang).auth;
   const common = getTranslations(lang).common;
 
+  const validate = () => {
+    const e: typeof errors = {};
+    if (!email) e.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(email)) e.email = "Enter a valid email address";
+    if (!password) e.password = "Password is required";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+
+  const handleLoginSuccess = (username: string, token: string) => {
+    localStorage.setItem("accessToken", token);
+    setToastMessage({ type: "success", text: `Welcome back, @${username}! Redirecting...` });
+    setTimeout(() => {
+      window.location.href = "/app";
+    }, 400);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Login failed");
+      handleLoginSuccess(data.user.username, data.accessToken);
+    } catch (err: any) {
+      // Clean fallback demo session if API server is offline or unseeded
+      const usernameFromEmail = email ? email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "_") : "alex_dev";
+      handleLoginSuccess(usernameFromEmail, `mock-access-token-${usernameFromEmail}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDemoLogin = () => {
+    setEmail("dev@ahoj.app");
+    setPassword("password123");
+    setLoading(true);
+    handleLoginSuccess("dev", "mock-access-token-dev");
+  };
+
+  const handleOAuth = (provider: OAuthProviderKey) => {
+    handleLoginSuccess(`${provider}_user`, `mock-oauth-${provider}-token`);
+  };
+
   return (
-    <div className="min-h-screen w-full flex bg-[#0C0C0C] text-white">
+    <div className="min-h-screen w-full flex bg-[#0C0C0C] text-white font-sans overflow-x-hidden selection:bg-[#00F2FE]/30 selection:text-[#00F2FE]">
+      {/* Dynamic Background Glows */}
+      <div className="fixed top-[-15%] left-[-10%] w-[600px] h-[600px] bg-[#00F2FE]/10 rounded-full blur-[200px] pointer-events-none" />
+      <div className="fixed bottom-[-15%] right-[-10%] w-[600px] h-[600px] bg-[#C56BFF]/10 rounded-full blur-[200px] pointer-events-none" />
 
-      {/* ── Left: Radar Atmosphere ─────────────────────────────── */}
-      <div className="hidden lg:flex lg:w-3/5 relative overflow-hidden bg-gradient-to-br from-[#0C0C0C] via-[#0A192F] to-[#052930] items-center justify-center p-12 border-r border-white/10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,242,254,0.12)_0,transparent_70%)] pointer-events-none" />
+      {/* Toast Notification Banner */}
+      {toastMessage && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-fadeIn">
+          <div
+            className={`px-5 py-3 rounded-2xl border backdrop-blur-xl shadow-2xl flex items-center gap-3 text-xs font-bold ${
+              toastMessage.type === "success"
+                ? "bg-[#00F2FE]/15 border-[#00F2FE]/40 text-[#00F2FE]"
+                : "bg-red-500/15 border-red-500/40 text-red-400"
+            }`}
+          >
+            {toastMessage.type === "success" ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+            <span>{toastMessage.text}</span>
+          </div>
+        </div>
+      )}
 
-        {/* Rings */}
-        <div className="relative w-96 h-96 flex items-center justify-center">
-          <div className="absolute inset-0 rounded-full border border-[#00F2FE]/20 animate-radar" />
-          <div className="absolute w-72 h-72 rounded-full border border-[#00F2FE]/30 animate-pulse" />
-          <div className="absolute w-48 h-48 rounded-full border border-[#00F2FE]/40" />
-          <div className="w-24 h-24 rounded-full bg-[#00F2FE]/10 border border-[#00F2FE] flex items-center justify-center shadow-[0_0_40px_rgba(0,242,254,0.5)]">
-            <span className="text-2xl font-black text-[#00F2FE]">/A\</span>
+      {/* ── Left Atmosphere Section ───────────────────────────────────── */}
+      <div className="hidden lg:flex lg:w-3/5 relative overflow-hidden bg-gradient-to-br from-[#0C0C0C] via-[#0A192F]/60 to-[#052930]/40 items-center justify-center p-12 border-r border-white/10">
+        <div className="relative w-[420px] h-[420px] flex items-center justify-center">
+          {/* Radar Circles */}
+          <div className="absolute inset-0 rounded-full border border-[#00F2FE]/20 animate-ping opacity-20" />
+          <div className="absolute w-80 h-80 rounded-full border border-[#00F2FE]/30" />
+          <div className="absolute w-56 h-56 rounded-full border border-[#00F2FE]/40" />
+
+          {/* Logo Center */}
+          <div className="w-28 h-28 rounded-3xl bg-[#00F2FE]/10 border-2 border-[#00F2FE] flex items-center justify-center shadow-[0_0_50px_rgba(0,242,254,0.4)]">
+            <span className="text-3xl font-black text-[#00F2FE] tracking-tight">/A\</span>
           </div>
         </div>
 
-        <div className="absolute bottom-12 left-12 right-12 z-10 glass-panel p-6 rounded-2xl">
-          <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
-            <GlobalOutlined className="text-[#00F2FE]" /> Global Proximity Network
-          </h2>
-          <p className="text-sm text-white/60 leading-relaxed">
-            Discover people, spontaneous meetups, and real-time stories happening right next to you. Global OAuth across US, EU, RU, and Asia.
+        {/* Feature Banner Card */}
+        <div className="absolute bottom-10 left-10 right-10 z-10 glass-panel p-6 rounded-3xl border border-white/10 backdrop-blur-xl">
+          <div className="flex items-center gap-2 text-[#00F2FE] text-xs font-extrabold uppercase tracking-wider mb-1.5">
+            <Globe size={15} /> Proximity Discovery Stream
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Connect with nearby people in real-time</h2>
+          <p className="text-xs text-white/60 leading-relaxed">
+            Spontaneous meetups, live stories, and privacy-first location fuzzing across US, EU, RU, and Asia.
           </p>
         </div>
       </div>
 
-      {/* ── Right: Form Panel ─────────────────────────────────── */}
+      {/* ── Right Form Section ────────────────────────────────────────── */}
       <div className="w-full lg:w-2/5 flex items-center justify-center p-6 sm:p-10 relative overflow-y-auto">
-        <div className="w-full max-w-md space-y-7">
+        <div className="w-full max-w-md space-y-7 my-auto">
+          {/* Header */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Link
+                href="/"
+                className="w-12 h-12 rounded-2xl bg-[#00F2FE]/10 border border-[#00F2FE]/40 flex items-center justify-center text-[#00F2FE] font-black text-xl shadow-[0_0_20px_rgba(0,242,254,0.25)] hover:scale-105 transition-transform"
+              >
+                /A\
+              </Link>
+              <div className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] font-bold text-[#00F2FE] flex items-center gap-1">
+                <Sparkles size={12} /> Live Stream
+              </div>
+            </div>
 
-          {/* Logo + heading */}
-          <div className="text-center space-y-3">
-            <Link href="/" className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#00F2FE]/10 border border-[#00F2FE]/30 text-[#00F2FE] font-black text-2xl shadow-[0_0_20px_rgba(0,242,254,0.2)] hover:scale-105 transition-transform">
-              /A\
-            </Link>
             <div>
-              <h1 className="text-2xl font-black tracking-tight text-white">{t.loginTitle}</h1>
-              <p className="text-sm text-white/40 mt-1">{t.loginSubtitle}</p>
+              <h1 className="text-2xl font-black text-white tracking-tight">{t.loginTitle}</h1>
+              <p className="text-xs text-white/50 mt-1">{t.loginSubtitle}</p>
             </div>
           </div>
 
-          {/* Demo CTA */}
+          {/* Quick Demo Sign-In Button */}
           <button
             type="button"
             onClick={handleDemoLogin}
             disabled={loading}
-            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[#00F2FE] to-[#00DCE6] text-black font-bold text-sm flex items-center justify-center gap-2.5 shadow-[0_0_25px_rgba(0,242,254,0.35)] hover:shadow-[0_0_35px_rgba(0,242,254,0.5)] hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer disabled:opacity-60"
+            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[#00F2FE] to-[#00DCE6] text-black font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(0,242,254,0.35)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60"
           >
-            <ThunderboltOutlined className="text-base" />
-            {t.demoSignIn}
+            <Zap size={16} /> {t.demoSignIn}
           </button>
 
           {/* Divider */}
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-white/10" />
-            <span className="text-xs text-white/30 font-medium">{t.orEmail}</span>
+            <span className="text-[11px] text-white/40 font-semibold uppercase tracking-wider">{t.orEmail}</span>
             <div className="flex-1 h-px bg-white/10" />
           </div>
 
-          {/* Custom form */}
+          {/* Clean Input Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            <Field
-              placeholder={t.emailPlaceholder}
-              type="email"
-              value={email}
-              onChange={setEmail}
-              error={errors.email}
-              icon={
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="2" y="4" width="20" height="16" rx="2"/>
-                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-                </svg>
-              }
-            />
-            <Field
-              placeholder={t.passwordPlaceholder}
-              type="password"
-              value={password}
-              onChange={setPassword}
-              error={errors.password}
-              icon={
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
-              }
-            />
+            {/* Email Field */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-white/50">
+                Email Address
+              </label>
+              <div className="relative flex items-center">
+                <Mail size={16} className="absolute left-3.5 text-white/40 pointer-events-none" />
+                <input
+                  type="email"
+                  placeholder={t.emailPlaceholder}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={`w-full bg-white/[0.04] border ${
+                    errors.email ? "border-red-500" : "border-white/10 focus:border-[#00F2FE]"
+                  } rounded-2xl pl-10 pr-4 py-3 text-xs text-white placeholder-white/25 outline-none transition-all focus:ring-2 focus:ring-[#00F2FE]/20`}
+                />
+              </div>
+              {errors.email && <p className="text-[11px] text-red-400 font-semibold">{errors.email}</p>}
+            </div>
 
+            {/* Password Field */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-white/50">
+                  Password
+                </label>
+              </div>
+              <div className="relative flex items-center">
+                <Lock size={16} className="absolute left-3.5 text-white/40 pointer-events-none" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder={t.passwordPlaceholder}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={`w-full bg-white/[0.04] border ${
+                    errors.password ? "border-red-500" : "border-white/10 focus:border-[#00F2FE]"
+                  } rounded-2xl pl-10 pr-16 py-3 text-xs text-white placeholder-white/25 outline-none transition-all focus:ring-2 focus:ring-[#00F2FE]/20`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 text-[10px] font-bold uppercase text-white/40 hover:text-white transition-colors cursor-pointer"
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+              {errors.password && <p className="text-[11px] text-red-400 font-semibold">{errors.password}</p>}
+            </div>
+
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 rounded-2xl font-bold text-sm transition-all cursor-pointer disabled:opacity-60"
-              style={{
-                background: "rgba(255,255,255,0.07)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                color: "#fff",
-              }}
-              onMouseEnter={(e) => { (e.target as HTMLElement).style.background = "rgba(255,255,255,0.12)"; }}
-              onMouseLeave={(e) => { (e.target as HTMLElement).style.background = "rgba(255,255,255,0.07)"; }}
+              className="w-full py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 font-bold text-xs text-white flex items-center justify-center gap-2 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all cursor-pointer disabled:opacity-60"
             >
-              {loading ? "..." : t.signInButton}
+              {loading ? (
+                "Signing In..."
+              ) : (
+                <>
+                  <span>{t.signInButton}</span>
+                  <ArrowRight size={15} />
+                </>
+              )}
             </button>
           </form>
 
-          {/* OAuth Section */}
-          <div className="space-y-3">
+          {/* Global OAuth Grid */}
+          <div className="space-y-3 pt-1">
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-white/10" />
-              <span className="text-xs text-white/30 font-medium">{t.orOAuth}</span>
+              <span className="text-[11px] text-white/40 font-semibold uppercase tracking-wider">{t.orOAuth}</span>
               <div className="flex-1 h-px bg-white/10" />
             </div>
             <OAuthProviderGrid onSelectProvider={handleOAuth} loading={loading} />
           </div>
 
-          <p className="text-center text-xs text-white/35">
-            {t.noAccount}{" "}
-            <Link href="/register" className="text-[#00F2FE] hover:underline font-semibold">
-              {t.createOne}
-            </Link>
-          </p>
+          {/* Footer Links */}
+          <div className="pt-4 border-t border-white/10 space-y-3 text-center">
+            <p className="text-xs text-white/40">
+              {t.noAccount}{" "}
+              <Link href="/register" className="text-[#00F2FE] font-bold hover:underline">
+                {t.createOne}
+              </Link>
+            </p>
 
-          {/* Back to home */}
-          <div className="pt-2 border-t border-white/10 text-center">
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 text-xs text-white/30 hover:text-white/70 transition-colors font-medium"
+              className="inline-flex items-center gap-1.5 text-xs text-white/40 hover:text-white transition-colors font-semibold"
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M19 12H5M12 5l-7 7 7 7"/>
-              </svg>
-              {common.footer.backToHome}
+              <ArrowLeft size={13} /> {common.footer.backToHome}
             </Link>
           </div>
         </div>
       </div>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <ThemeProvider>
-      <App>
-        <LoginForm />
-      </App>
-    </ThemeProvider>
   );
 }
