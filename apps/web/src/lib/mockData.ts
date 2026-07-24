@@ -73,6 +73,101 @@ export const MOCK_NEARBY_USERS = [
       "Ahoj! Kreslím zrovna stromy v parku pod hradem, vezmi si skicák a přijď! 🎨",
       "Používám hlavně uhel a akvarel. Zkoušíš taky?"
     ]
+  },
+  // ── OAuth Platform Demo Accounts ───────────────────────────────────────────────
+  {
+    id: "oauth-google-1",
+    username: "alex_google",
+    message: "Building spatial AI & cloud apps ☁️",
+    distanceMeters: 180,
+    hasActiveStories: true,
+    stories: [
+      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=600"
+    ],
+    bio: "Google Workspace Engineer | Tech, Specialty Coffee & Cloud Architecture ☕☁️",
+    privacyMode: "PUBLIC",
+    avatarColor: "bg-blue-600",
+    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150&h=150",
+    bannerUrl: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=1200",
+    initial: "A",
+    oauthProvider: "google",
+    oauthProviderLabel: "Google Auth 🔵",
+    oauthScopes: ["email", "profile", "openid"],
+    verifiedOAuth: true,
+    replyTemplates: [
+      "Hey! Signed in via Google OAuth. Working on web components & AI integrations today! 🚀",
+      "Always up for coffee & cloud talk!"
+    ]
+  },
+  {
+    id: "oauth-github-2",
+    username: "dev_github",
+    message: "Shipping open source & Rust tools 🦀",
+    distanceMeters: 310,
+    hasActiveStories: true,
+    stories: [
+      "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=600"
+    ],
+    bio: "Core contributor @ React & Rust crates. Hacking on local P2P mesh networking. 💻",
+    privacyMode: "PUBLIC",
+    avatarColor: "bg-gray-800",
+    avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150&h=150",
+    bannerUrl: "https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?auto=format&fit=crop&q=80&w=1200",
+    initial: "D",
+    oauthProvider: "github",
+    oauthProviderLabel: "GitHub Auth 🐙",
+    oauthScopes: ["read:user", "user:email"],
+    verifiedOAuth: true,
+    replyTemplates: [
+      "Hey there! Connected via GitHub OAuth. Check out my latest repos when you have time! 🐙",
+      "Building fast code & drinking espresso."
+    ]
+  },
+  {
+    id: "oauth-spotify-3",
+    username: "music_spotify",
+    message: "Curating indie electronic playlists 🎧",
+    distanceMeters: 520,
+    hasActiveStories: true,
+    stories: [
+      "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=600"
+    ],
+    bio: "Audio Engineer & Spotify Curator. Currently listening to synthwave & ambient 🎹",
+    privacyMode: "PUBLIC",
+    avatarColor: "bg-emerald-600",
+    avatarUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=150&h=150",
+    bannerUrl: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&q=80&w=1200",
+    initial: "M",
+    oauthProvider: "spotify",
+    oauthProviderLabel: "Spotify Auth 🟢",
+    oauthScopes: ["user-read-currently-playing", "playlist-read-private"],
+    verifiedOAuth: true,
+    replyTemplates: [
+      "Hey! Spotify OAuth connected. Sending vibes and track recommendations! 🎧",
+      "What album are you on today?"
+    ]
+  },
+  {
+    id: "oauth-twitter-4",
+    username: "creator_twitter",
+    message: "Designing UI micro-interactions 🎨",
+    distanceMeters: 640,
+    hasActiveStories: false,
+    stories: [],
+    bio: "X Tech Creator & Design Systems Architect. Sharing daily UI tricks & glassmorphism tips. 🖤",
+    privacyMode: "PUBLIC",
+    avatarColor: "bg-slate-700",
+    avatarUrl: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=150&h=150",
+    bannerUrl: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=1200",
+    initial: "S",
+    oauthProvider: "twitter",
+    oauthProviderLabel: "X / Twitter Auth ✖️",
+    oauthScopes: ["users.read", "tweet.read"],
+    verifiedOAuth: true,
+    replyTemplates: [
+      "Hi! Signed in with X / Twitter OAuth. Loving the design system here! ✨",
+      "Let's connect on design and tech."
+    ]
   }
 ];
 

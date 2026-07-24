@@ -9,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
   StatusBar,
+  Image,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -41,51 +42,79 @@ export default function ChatScreen() {
 
   const isNotificationChat = chatId === "ahoj-notification" || chatId === "ahoj-notifications";
 
-  const sampleNotifications: ChatMessage[] = [
+  const sampleNotifications: any[] = [
     {
       id: "n-1",
-      chatId: chatId || "ahoj-notification",
-      senderId: "ahoj",
-      content: "📸 @natalie_s posted a new story ~120m away: 'Hledám parťáka na turistiku 🏔️'\n\n👉 Tap to view story & profile",
-      type: "TEXT",
-      readAt: null,
-      createdAt: new Date(Date.now() - 120000).toISOString(),
+      title: "New Proximity Story 📸",
+      body: "@natalie_s (~120m away) posted a new story: 'Hledám parťáka na turistiku 🏔️'",
+      timestamp: "2m ago",
+      category: "USER",
+      categoryLabel: "Users 👤",
+      badgeIcon: "📸",
+      unread: true,
+      avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150&h=150",
+      actions: [{ label: "View Story 📸", variant: "primary" }],
     },
     {
       id: "n-2",
-      chatId: chatId || "ahoj-notification",
-      senderId: "ahoj",
-      content: "⚡ Spontaneous Spark Meetup: 'Specialty Coffee & Tech Chat ☕' created by @kubajz ~45m away.\n\n⚡ Tap to Join Spark",
-      type: "TEXT",
-      readAt: null,
-      createdAt: new Date(Date.now() - 900000).toISOString(),
+      title: "Spontaneous Spark Meetup ⚡",
+      body: "@kubajz created a Spark ~45m away: 'Specialty Coffee & Tech Chat ☕' at Skog Urban Hub.",
+      timestamp: "15m ago",
+      category: "SPARK",
+      categoryLabel: "Sparks ⚡",
+      badgeIcon: "⚡",
+      unread: true,
+      avatarUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=150&h=150",
+      actions: [{ label: "Join Spark ⚡", variant: "primary" }],
     },
     {
       id: "n-3",
-      chatId: chatId || "ahoj-notification",
-      senderId: "ahoj",
-      content: "🔒 @secret_vibe requested permission to view your private profile and stories.\n\n✓ Approve  |  ✕ Deny",
-      type: "TEXT",
-      readAt: null,
-      createdAt: new Date(Date.now() - 2700000).toISOString(),
+      title: "Private Profile Access Request 🔒",
+      body: "@secret_vibe requested access to view your stories and private profile details.",
+      timestamp: "45m ago",
+      category: "USER",
+      categoryLabel: "Users 👤",
+      badgeIcon: "🔒",
+      unread: true,
+      avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=150&h=150",
+      actions: [
+        { label: "Approve ✓", variant: "success" },
+        { label: "Deny ✕", variant: "danger" },
+      ],
     },
     {
       id: "n-4",
-      chatId: chatId || "ahoj-notification",
-      senderId: "ahoj",
-      content: "🎉 @emma_art and 5 nearby users +1'd your status message: 'Ahoj Brno!'",
-      type: "TEXT",
-      readAt: null,
-      createdAt: new Date(Date.now() - 3600000).toISOString(),
+      title: "Google+ +1 Endorsement 🎉",
+      body: "@emma_art and 5 nearby users +1'd your status message: 'Ahoj Brno!'",
+      timestamp: "1h ago",
+      category: "USER",
+      categoryLabel: "Users 👤",
+      badgeIcon: "🎉",
+      unread: false,
+      avatarUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=150&h=150",
+      actions: [{ label: "View Profile", variant: "secondary" }],
     },
     {
       id: "n-5",
-      chatId: chatId || "ahoj-notification",
-      senderId: "ahoj",
-      content: "👻 Ghost Mode location protection is active (300m fuzzing radius).",
-      type: "TEXT",
-      readAt: null,
-      createdAt: new Date(Date.now() - 14400000).toISOString(),
+      title: "Proximity Radar Sweep 📡",
+      body: "4 active users found in your 3km radius around Brno Center.",
+      timestamp: "2h ago",
+      category: "RADAR",
+      categoryLabel: "Radar 📍",
+      badgeIcon: "📍",
+      unread: false,
+      actions: [{ label: "Open Radar 📡", variant: "primary" }],
+    },
+    {
+      id: "n-6",
+      title: "Ghost Mode Security Guard 👻",
+      body: "Location fuzzing is set to 300m. Your exact location is hidden while keeping nearby discovery active.",
+      timestamp: "4h ago",
+      category: "INFO",
+      categoryLabel: "Info ℹ️",
+      badgeIcon: "ℹ️",
+      unread: false,
+      actions: [{ label: "Privacy Settings ⚙️", variant: "secondary" }],
     },
   ];
 
@@ -98,15 +127,11 @@ export default function ChatScreen() {
     mutationFn: () => chatsApi.sendMessage(chatId, messageText),
     onSuccess: (newMsg) => {
       setMessageText("");
-      // Optimistic update
       queryClient.setQueryData(["messages", chatId], (prev: any) => [
         newMsg,
         ...(prev || []),
       ]);
-      // Emit via socket and clear local typing state
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       socketRef.current?.emit("typing:stop", chatId);
       setIsTyping(false);
     },
@@ -116,7 +141,6 @@ export default function ChatScreen() {
   useEffect(() => {
     if (!token) return;
 
-    // Connect socket
     const socket = io(API_URL, {
       auth: { token },
     });
@@ -126,7 +150,6 @@ export default function ChatScreen() {
       socket.emit("chat:join", chatId);
     });
 
-    // Listen for new messages
     socket.on("message:new", (msg: ChatMessage) => {
       if (msg.chatId === chatId && msg.senderId !== user?.id) {
         queryClient.setQueryData(["messages", chatId], (prev: any) => [
@@ -136,34 +159,9 @@ export default function ChatScreen() {
       }
     });
 
-    // Listen for partner typing indicators
-    socket.on("user:typing", (data) => {
-      if (data.chatId === chatId && data.userId !== user?.id) {
-        setPartnerTyping(true);
-        if (partnerTypingTimeoutRef.current) {
-          clearTimeout(partnerTypingTimeoutRef.current);
-        }
-        partnerTypingTimeoutRef.current = setTimeout(() => {
-          setPartnerTyping(false);
-        }, 4000);
-      }
-    });
-
-    // Listen for partner typing stopped indicator
-    socket.on("user:typing_stop", (data) => {
-      if (data.chatId === chatId && data.userId !== user?.id) {
-        if (partnerTypingTimeoutRef.current) {
-          clearTimeout(partnerTypingTimeoutRef.current);
-        }
-        setPartnerTyping(false);
-      }
-    });
-
     return () => {
       socket.emit("chat:leave", chatId);
       socket.disconnect();
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      if (partnerTypingTimeoutRef.current) clearTimeout(partnerTypingTimeoutRef.current);
     };
   }, [chatId, token]);
 
@@ -172,96 +170,71 @@ export default function ChatScreen() {
     sendMessageMutation.mutate();
   };
 
-  const handleTextChange = (text: string) => {
-    setMessageText(text);
-
-    if (!isTyping) {
-      setIsTyping(true);
-      socketRef.current?.emit("typing:start", chatId);
-    }
-
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-
-    typingTimeoutRef.current = setTimeout(() => {
-      socketRef.current?.emit("typing:stop", chatId);
-      setIsTyping(false);
-    }, 2500);
-  };
-
-  const renderItem = ({ item }: { item: ChatMessage }) => {
-    const isMe = item.senderId === user?.id;
+  if (isNotificationChat) {
     return (
-      <View style={[styles.messageBubble, isMe ? styles.bubbleMe : styles.bubblePartner]}>
-        <Text style={[styles.messageContent, isMe ? styles.textMe : styles.textPartner]}>
-          {item.content}
-        </Text>
-        <Text style={styles.timeLabel}>
-          {new Date(item.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-        </Text>
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" />
+
+        {/* Traditional Notification Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+            <Text style={styles.backText}>← Back</Text>
+          </TouchableOpacity>
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerTitle}>Notifications</Text>
+            <Text style={styles.notifSubtitle}>3 unread alerts</Text>
+          </View>
+          <View style={{ width: 60 }} />
+        </View>
+
+        {/* Traditional Notifications List */}
+        <FlatList
+          data={sampleNotifications}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={[styles.notifItem, item.unread && styles.notifItemUnread]}>
+              <View style={styles.avatarWrap}>
+                <Image source={{ uri: item.avatarUrl }} style={styles.notifAvatar} />
+                <View style={styles.badgeOverlay}>
+                  <Text style={{ fontSize: 10 }}>{item.badgeIcon}</Text>
+                </View>
+              </View>
+
+              <View style={{ flex: 1, gap: 4 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
+                  <Text style={styles.notifTitle} numberOfLines={1}>{item.title}</Text>
+                  <Text style={styles.categoryBadge}>{item.categoryLabel}</Text>
+                </View>
+
+                <Text style={styles.notifBody}>{item.body}</Text>
+
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    {item.actions?.map((act: any, idx: number) => (
+                      <TouchableOpacity
+                        key={idx}
+                        style={[
+                          styles.actionBtn,
+                          act.variant === "primary" && styles.btnPrimary,
+                          act.variant === "success" && styles.btnSuccess,
+                          act.variant === "danger" && styles.btnDanger,
+                        ]}
+                      >
+                        <Text style={[styles.actionBtnText, act.variant === "primary" && { color: "#000" }]}>
+                          {act.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <Text style={styles.notifTime}>{item.timestamp}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+        />
       </View>
     );
-  };
-
-  return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-    >
-      <StatusBar barStyle="light-content" />
-
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle}>Conversation</Text>
-          {partnerTyping && (
-            <Text style={styles.typingIndicator}>typing...</Text>
-          )}
-        </View>
-        <View style={{ width: 60 }} />
-      </View>
-
-      {/* Chat messages */}
-      {isLoading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} size="large" />
-        </View>
-      ) : (
-        <FlatList
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          inverted
-          contentContainerStyle={styles.messageList}
-        />
-      )}
-
-      {/* Input bar */}
-      <View style={styles.inputBar}>
-        <TextInput
-          style={styles.input}
-          value={messageText}
-          onChangeText={handleTextChange}
-          placeholder="Send a message..."
-          placeholderTextColor={colors.text.tertiary}
-          onSubmitEditing={handleSend}
-          returnKeyType="send"
-        />
-        <TouchableOpacity
-          style={[styles.sendBtn, !messageText.trim() && styles.sendBtnDisabled]}
-          onPress={handleSend}
-          disabled={!messageText.trim()}
-        >
-          <Text style={styles.sendBtnText}>➔</Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
-  );
+  }
 }
 
 const styles = StyleSheet.create({
@@ -355,5 +328,93 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: typography.bold,
+  },
+  notifSubtitle: {
+    fontSize: 10,
+    color: colors.primary,
+    fontWeight: typography.bold,
+    marginTop: 2,
+  },
+  notifItem: {
+    padding: spacing.md,
+    flexDirection: "row",
+    gap: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+    backgroundColor: colors.background.primary,
+  },
+  notifItemUnread: {
+    backgroundColor: "rgba(0, 242, 254, 0.05)",
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+  },
+  avatarWrap: {
+    position: "relative",
+  },
+  notifAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  badgeOverlay: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#0C0C0C",
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notifTitle: {
+    fontSize: typography.base,
+    fontWeight: typography.bold,
+    color: colors.text.primary,
+    flex: 1,
+  },
+  categoryBadge: {
+    fontSize: 10,
+    fontWeight: typography.bold,
+    color: colors.primary,
+    backgroundColor: "rgba(0, 242, 254, 0.1)",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radius.full,
+  },
+  notifBody: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    lineHeight: 18,
+  },
+  notifTime: {
+    fontSize: 10,
+    color: colors.text.tertiary,
+  },
+  actionBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radius.md,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+  },
+  btnPrimary: {
+    backgroundColor: colors.primary,
+  },
+  btnSuccess: {
+    backgroundColor: "#4CAF50",
+  },
+  btnDanger: {
+    backgroundColor: "rgba(244, 67, 54, 0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(244, 67, 54, 0.4)",
+  },
+  actionBtnText: {
+    fontSize: 11,
+    fontWeight: typography.bold,
+    color: "#fff",
   },
 });

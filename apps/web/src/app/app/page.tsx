@@ -1243,6 +1243,11 @@ export default function FullWebAppDashboard() {
                         <div className="min-w-0">
                           <div className="font-bold text-xs text-white flex items-center gap-1.5 truncate">
                             @{u.username}
+                            {u.oauthProviderLabel && (
+                              <span className="text-[8px] font-mono font-bold px-1 rounded bg-[#00F2FE]/15 text-[#00F2FE] border border-[#00F2FE]/30">
+                                {u.oauthProviderLabel}
+                              </span>
+                            )}
                             <span className="text-[9px] font-mono text-[#00F2FE]">~{u.distanceMeters}m</span>
                           </div>
                           <div className="text-[10px] text-white/50 truncate">&ldquo;{u.message}&rdquo;</div>

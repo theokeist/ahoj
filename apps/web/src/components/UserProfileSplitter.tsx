@@ -46,6 +46,11 @@ export interface UserProfileData {
   }>;
   plusOneCount?: number;
   interests?: string[];
+  oauthProvider?: "google" | "github" | "spotify" | "twitter" | "apple";
+  oauthProviderLabel?: string;
+  oauthScopes?: string[];
+  verifiedOAuth?: boolean;
+  bannerUrl?: string;
 }
 
 interface UserProfileSplitterProps {
@@ -149,7 +154,11 @@ export function UserProfileSplitter({
               <div className="max-w-2xl mx-auto space-y-4">
                 {/* Sleek Ambient Header Banner */}
                 <div className="relative h-28 rounded-2xl bg-gradient-to-r from-[#00F2FE]/20 via-purple-500/15 to-[#FF6B6B]/15 border border-white/10 overflow-hidden">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(0,242,254,0.15),transparent_60%)]" />
+                  {user.bannerUrl ? (
+                    <img src={user.bannerUrl} alt="Cover Banner" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(0,242,254,0.15),transparent_60%)]" />
+                  )}
                 </div>
 
                 {/* User Header & Avatar Row (Overlapping Cover) */}
@@ -181,6 +190,11 @@ export function UserProfileSplitter({
                       <span className="text-[#00F2FE] text-xs font-bold flex items-center gap-1">
                         <CheckCircle2 size={13} /> Verified
                       </span>
+                      {user.oauthProviderLabel && (
+                        <span className="px-2.5 py-0.5 rounded-full bg-[#00F2FE]/15 text-[#00F2FE] border border-[#00F2FE]/30 text-[10px] font-bold font-mono">
+                          {user.oauthProviderLabel}
+                        </span>
+                      )}
                       {user.privacyMode === "PRIVATE" && (
                         <span className="text-amber-400 text-xs font-bold flex items-center gap-1">
                           <Lock size={12} /> Private
