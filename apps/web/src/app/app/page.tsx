@@ -181,11 +181,16 @@ export default function FullWebAppDashboard() {
   const [viewMode, setViewMode] = useState<"grid" | "radar">("grid");
   const [radiusKm, setRadiusKm] = useState<number>(3);
 
-  // In-App Notification System State
+  // In-App Notification & Theme State
   const [inAppNotifications, setInAppNotifications] = useState<any[]>(INITIAL_INAPP_NOTIFICATIONS);
   const [notificationToast, setNotificationToast] = useState<string | null>(null);
   const [notifCategoryFilter, setNotifCategoryFilter] = useState<"ALL" | "INFO" | "SPARK" | "RADAR" | "USER">("ALL");
   const [notifCardSize, setNotifCardSize] = useState<"EE" | "MEDIUM">("EE");
+  const [appTheme, setAppTheme] = useState<"CURRENT" | "GREY" | "HATRIX">("CURRENT");
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", appTheme.toLowerCase());
+  }, [appTheme]);
 
   // Data collections
   const [nearbyUsers, setNearbyUsers] = useState<any[]>(MOCK_NEARBY_USERS);
@@ -1659,6 +1664,57 @@ export default function FullWebAppDashboard() {
                   <CheckCircle2 size={16} /> {t.savedToast}
                 </div>
               )}
+
+              {/* Theme & Accent Color Settings */}
+              <div className="glass-panel p-6 rounded-3xl space-y-4 border border-white/10">
+                <h3 className="font-bold text-sm text-[#00F2FE] uppercase tracking-wider flex items-center gap-2">
+                  <Sliders size={16} /> Theme & Accent Colors 🎨
+                </h3>
+                <p className="text-xs text-white/60">Customize your app interface accent colors and visual aesthetics.</p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    {
+                      id: "CURRENT",
+                      title: "Current (Cyber Cyan) ⚡",
+                      accentColor: "#00F2FE",
+                      desc: "Vibrant cyber cyan glow with volcanic obsidian backgrounds",
+                    },
+                    {
+                      id: "GREY",
+                      title: "Grey (Chrome OS Flat) 🌫️",
+                      accentColor: "#3B82F6",
+                      desc: "Modern flat grey interface inspired by Chrome OS & Material Slate",
+                    },
+                    {
+                      id: "HATRIX",
+                      title: "Hatrix (Matrix Green) 🟢",
+                      accentColor: "#00FF66",
+                      desc: "Digital rain cyberpunk aesthetic with matrix neon green accents",
+                    },
+                  ].map((thm) => (
+                    <button
+                      key={thm.id}
+                      type="button"
+                      onClick={() => setAppTheme(thm.id as any)}
+                      className={`p-4 rounded-2xl text-left border transition-all cursor-pointer space-y-2 ${
+                        appTheme === thm.id
+                          ? "bg-white/10 border-[#00F2FE] shadow-[0_0_15px_rgba(0,242,254,0.25)]"
+                          : "bg-[#121212] border-white/10 hover:bg-white/5"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-xs text-white">{thm.title}</span>
+                        <div
+                          className="w-3.5 h-3.5 rounded-full shadow shrink-0"
+                          style={{ backgroundColor: thm.accentColor }}
+                        />
+                      </div>
+                      <p className="text-[11px] text-white/50 leading-normal">{thm.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {/* Profile & Identity */}
               <div className="glass-panel p-6 rounded-3xl space-y-4 border border-white/10">

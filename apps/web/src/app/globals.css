@@ -100,6 +100,43 @@
   --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.30);
 }
 
+/* ── Theme Overrides (Current, Grey Chrome OS Flat, Hatrix Matrix Green) ── */
+[data-theme="current"] {
+  --bg-primary:   #0C0C0C;
+  --bg-secondary: #121212;
+  --color-primary:       #00F2FE;
+  --color-primary-dark:  #00DCE6;
+  --color-primary-light: #70F7FF;
+  --border:       rgba(0, 242, 254, 0.30);
+  --color-online:  #00F2FE;
+  --glow-primary: 0 0 12px rgba(0, 242, 254, 0.40);
+  --glow-primary-strong: 0 0 25px rgba(0, 242, 254, 0.50);
+}
+
+[data-theme="grey"] {
+  --bg-primary:   #1C1E21;
+  --bg-secondary: #282A2E;
+  --color-primary:       #3B82F6;
+  --color-primary-dark:  #2563EB;
+  --color-primary-light: #60A5FA;
+  --border:       rgba(59, 130, 246, 0.30);
+  --color-online:  #3B82F6;
+  --glow-primary: 0 0 10px rgba(59, 130, 246, 0.30);
+  --glow-primary-strong: 0 0 20px rgba(59, 130, 246, 0.40);
+}
+
+[data-theme="hatrix"] {
+  --bg-primary:   #050D08;
+  --bg-secondary: #0A1810;
+  --color-primary:       #00FF66;
+  --color-primary-dark:  #00CC52;
+  --color-primary-light: #66FF99;
+  --border:       rgba(0, 255, 102, 0.35);
+  --color-online:  #00FF66;
+  --glow-primary: 0 0 14px rgba(0, 255, 102, 0.45);
+  --glow-primary-strong: 0 0 28px rgba(0, 255, 102, 0.60);
+}
+
 /* ── Base Styles ─────────────────────────────────────────────────── */
 *,
 *::before,

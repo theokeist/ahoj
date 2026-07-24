@@ -42,6 +42,7 @@ export default function SettingsScreen() {
 
   const [language, setLanguage] = useState<SupportedLanguage>("cs");
   const [saveToast, setSaveToast] = useState<string | null>(null);
+  const [appTheme, setAppTheme] = useState<"CURRENT" | "GREY" | "HATRIX">("CURRENT");
 
   // Settings State
   const [settings, setSettings] = useState({
@@ -324,6 +325,20 @@ export default function SettingsScreen() {
             value={showStoryBar}
             onValueChange={setShowStoryBar}
             icon="📸"
+          />
+        </FormGroup>
+
+        {/* SECTION: THEME & ACCENT COLORS */}
+        <FormGroup title="Theme & Accent Colors 🎨" icon="🎨">
+          <FormSegmented
+            label="Theme Selection"
+            options={[
+              { id: "CURRENT", label: "Current ⚡" },
+              { id: "GREY", label: "Grey Flat 🌫️" },
+              { id: "HATRIX", label: "Hatrix 🟢" },
+            ]}
+            value={appTheme}
+            onChange={(val) => setAppTheme(val)}
           />
         </FormGroup>
 
