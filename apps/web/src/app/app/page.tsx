@@ -774,39 +774,41 @@ export default function FullWebAppDashboard() {
           {activeTab === "feed" && (
             <div className={`p-4 md:p-6 space-y-6 ${viewMode === "radar" ? "w-full" : "max-w-4xl mx-auto"}`}>
               
-              {/* Composer Box (X / Twitter style) */}
-              <div className="glass-panel p-4 rounded-3xl space-y-3 border border-white/10">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={myUser?.avatarUrl || settingsForm.avatarUrl || "https://randomuser.me/api/portraits/men/32.jpg"}
-                    alt="Avatar"
-                    className="w-10 h-10 rounded-2xl object-cover border border-[#00F2FE]/40"
-                  />
-                  <input
-                    type="text"
-                    placeholder="What's happening nearby in Brno?"
-                    className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder-white/40 font-medium"
-                    onClick={() => setIsCreateSparkOpen(true)}
-                  />
-                </div>
-                <div className="flex items-center justify-between pt-2 border-t border-white/10">
-                  <div className="flex items-center gap-2 text-xs text-[#00F2FE]">
-                    <button type="button" onClick={() => setIsStoryModalOpen(true)} className="p-2 rounded-xl hover:bg-[#00F2FE]/10 flex items-center gap-1">
-                      <Camera size={15} /> Photo Story
-                    </button>
-                    <button type="button" onClick={() => setIsCreateSparkOpen(true)} className="p-2 rounded-xl hover:bg-[#00F2FE]/10 flex items-center gap-1">
-                      <Flame size={15} /> Spark
+              {/* Composer Box (Only visible in Stream mode, hidden in Radar Map mode) */}
+              {viewMode !== "radar" && (
+                <div className="glass-panel p-4 rounded-3xl space-y-3 border border-white/10">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={myUser?.avatarUrl || settingsForm.avatarUrl || "https://randomuser.me/api/portraits/men/32.jpg"}
+                      alt="Avatar"
+                      className="w-10 h-10 rounded-2xl object-cover border border-[#00F2FE]/40"
+                    />
+                    <input
+                      type="text"
+                      placeholder="What's happening nearby in Brno?"
+                      className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder-white/40 font-medium"
+                      onClick={() => setIsCreateSparkOpen(true)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                    <div className="flex items-center gap-2 text-xs text-[#00F2FE]">
+                      <button type="button" onClick={() => setIsStoryModalOpen(true)} className="p-2 rounded-xl hover:bg-[#00F2FE]/10 flex items-center gap-1">
+                        <Camera size={15} /> Photo Story
+                      </button>
+                      <button type="button" onClick={() => setIsCreateSparkOpen(true)} className="p-2 rounded-xl hover:bg-[#00F2FE]/10 flex items-center gap-1">
+                        <Flame size={15} /> Spark
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsCreateSparkOpen(true)}
+                      className="px-4 py-1.5 rounded-xl bg-[#00F2FE] text-black font-bold text-xs hover:scale-105 transition-all"
+                    >
+                      Post Spark
                     </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsCreateSparkOpen(true)}
-                    className="px-4 py-1.5 rounded-xl bg-[#00F2FE] text-black font-bold text-xs hover:scale-105 transition-all"
-                  >
-                    Post Spark
-                  </button>
                 </div>
-              </div>
+              )}
 
               {/* ── Conditional View Mode: Full Size Edge-to-Edge Circular Radar Map View vs twttr Stream Cards ── */}
               {viewMode === "radar" ? (
