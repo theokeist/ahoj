@@ -11,79 +11,115 @@
 @import '@ionic/react/css/display.css';
 @import '@ionic/react/css/palettes/dark.always.css';
 
+/* BlackBerry OS 10 (Cascades UI) Theme Variables */
 :root {
-  --ion-font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-heading: 'Outfit', sans-serif;
+  --ion-font-family: 'Plus Jakarta Sans', 'Slate Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Outfit', 'Slate Pro', sans-serif;
 
-  /* Theme Primary - Electric Cyber Cyan */
-  --ion-color-primary: #00f2fe;
-  --ion-color-primary-rgb: 0, 242, 254;
-  --ion-color-primary-contrast: #030712;
-  --ion-color-primary-contrast-rgb: 3, 7, 18;
-  --ion-color-primary-shade: #00d5e0;
-  --ion-color-primary-tint: #1af3fe;
+  /* BlackBerry 10 Primary - Iconic BB Cyan Blue */
+  --ion-color-primary: #0099cc;
+  --ion-color-primary-rgb: 0, 153, 204;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #0087b3;
+  --ion-color-primary-tint: #1ab2e6;
 
-  /* Theme Secondary - Neon Purple */
-  --ion-color-secondary: #7928ca;
-  --ion-color-secondary-rgb: 121, 40, 202;
+  /* BlackBerry 10 Secondary - Deep Slate Blue */
+  --ion-color-secondary: #1c2636;
+  --ion-color-secondary-rgb: 28, 38, 54;
   --ion-color-secondary-contrast: #ffffff;
   --ion-color-secondary-contrast-rgb: 255, 255, 255;
-  --ion-color-secondary-shade: #6a23b2;
-  --ion-color-secondary-tint: #863ed0;
 
-  /* Theme Tertiary - Hot Pink Accent */
-  --ion-color-tertiary: #ff0080;
-  --ion-color-tertiary-rgb: 255, 0, 128;
+  /* BlackBerry Hub Red - Alert Badge Red */
+  --ion-color-tertiary: #ea4335;
+  --ion-color-tertiary-rgb: 234, 67, 53;
   --ion-color-tertiary-contrast: #ffffff;
-  --ion-color-tertiary-contrast-rgb: 255, 255, 255;
-  --ion-color-tertiary-shade: #e00071;
-  --ion-color-tertiary-tint: #ff1a8d;
 
-  /* Dark Backgrounds */
-  --ion-background-color: #090d16;
-  --ion-background-color-rgb: 9, 13, 22;
-  --ion-item-background: #111827;
+  /* BlackBerry 10 Slate Backgrounds */
+  --ion-background-color: #0b0e14;
+  --ion-background-color-rgb: 11, 14, 20;
+  --ion-item-background: #141a24;
 
-  /* Custom App Gradients */
-  --grad-ahoj: linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #7928ca 100%);
-  --grad-spark: linear-gradient(135deg, #ff0080 0%, #7928ca 100%);
-  --grad-card: linear-gradient(180deg, rgba(17, 24, 39, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-bg: rgba(17, 24, 39, 0.65);
+  /* BB10 Custom Design Tokens */
+  --bb10-bg: #0b0e14;
+  --bb10-surface: #141a24;
+  --bb10-surface-active: #1c2534;
+  --bb10-cyan: #0099cc;
+  --bb10-cyan-glow: rgba(0, 153, 204, 0.4);
+  --bb10-red: #ea4335;
+  --bb10-border: rgba(255, 255, 255, 0.12);
+  --bb10-action-bar-bg: #080a0e;
+
+  /* BB10 Gradients */
+  --grad-ahoj: linear-gradient(135deg, #0099cc 0%, #0077a3 50%, #004d66 100%);
+  --grad-spark: linear-gradient(135deg, #ea4335 0%, #0099cc 100%);
+  --grad-card: linear-gradient(180deg, rgba(20, 26, 36, 0.95) 0%, rgba(13, 17, 24, 0.98) 100%);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-bg: rgba(20, 26, 36, 0.85);
 }
 
 body {
   font-family: var(--ion-font-family);
-  background-color: var(--ion-background-color);
-  color: #f3f4f6;
+  background-color: var(--bb10-bg);
+  color: #f1f5f9;
 }
 
 h1, h2, h3, .heading-font {
   font-family: var(--font-heading);
+  letter-spacing: -0.02em;
 }
 
-/* Glassmorphism Card Style */
-.glass-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
-  border-radius: 20px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+/* BlackBerry 10 Active Frame Card Style (Cascades UI) */
+.glass-card, .bb10-card {
+  background: var(--bb10-surface);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
+  border: 1px solid var(--bb10-border);
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 8px 24px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.glass-pill {
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.glass-card:active, .bb10-card:active {
+  background: var(--bb10-surface-active);
+  border-color: var(--bb10-cyan);
+}
+
+.glass-pill, .bb10-pill {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-/* Pulse animation for radar & status */
+/* BlackBerry 10 LED Red Notification Pulse */
+@keyframes bb10-led-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(234, 67, 53, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(234, 67, 53, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(234, 67, 53, 0);
+  }
+}
+
+.bb10-led {
+  width: 8px;
+  height: 8px;
+  background-color: var(--bb10-red);
+  border-radius: 50%;
+  animation: bb10-led-pulse 2s infinite;
+}
+
+/* Radar pulse animation for BB10 Slate canvas */
 @keyframes radar-pulse {
   0% {
     transform: scale(0.6);
-    opacity: 0.8;
+    opacity: 0.9;
   }
   50% {
     opacity: 0.4;
@@ -97,7 +133,7 @@ h1, h2, h3, .heading-font {
 .pulse-ring {
   position: absolute;
   border-radius: 50%;
-  border: 2px solid var(--ion-color-primary);
+  border: 2px solid var(--bb10-cyan);
   animation: radar-pulse 3s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
 }
 
@@ -105,18 +141,18 @@ h1, h2, h3, .heading-font {
   animation-delay: 1.5s;
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar BB10 Style */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #090d16;
+  background: #0b0e14;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1f2937;
+  background: #1c2636;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+  background: #0099cc;
 }

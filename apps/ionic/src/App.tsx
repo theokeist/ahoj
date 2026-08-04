@@ -47,35 +47,44 @@ export const App: React.FC = () => (
           </SafeRoute>
         </IonRouterOutlet>
 
-        <IonTabBar slot="bottom" style={{ '--background': '#0b1120', '--border-color': 'rgba(255,255,255,0.08)', height: '68px' }}>
-          <IonTabButton tab="feed" href="/feed" style={{ '--color': '#9ca3af', '--color-selected': '#00f2fe' }}>
+        {/* BlackBerry 10 Cascades Action Bar */}
+        <IonTabBar
+          slot="bottom"
+          style={{
+            '--background': '#080a0e',
+            '--border-color': 'rgba(255, 255, 255, 0.12)',
+            height: '66px',
+            boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+          }}
+        >
+          <IonTabButton tab="feed" href="/feed" style={{ '--color': '#8e9aaf', '--color-selected': '#0099cc' }}>
             <Radar size={22} />
-            <span style={{ fontSize: '10px', fontWeight: 700, marginTop: '3px' }}>Radar</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, marginTop: '3px', letterSpacing: '0.03em', textTransform: 'uppercase' }}>Radar</span>
           </IonTabButton>
 
-          <IonTabButton tab="sparks" href="/sparks" style={{ '--color': '#9ca3af', '--color-selected': '#ff0080' }}>
+          <IonTabButton tab="sparks" href="/sparks" style={{ '--color': '#8e9aaf', '--color-selected': '#ea4335' }}>
             <Zap size={22} />
-            <span style={{ fontSize: '10px', fontWeight: 700, marginTop: '3px' }}>Sparks</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, marginTop: '3px', letterSpacing: '0.03em', textTransform: 'uppercase' }}>Sparks</span>
           </IonTabButton>
 
-          <IonTabButton tab="lounges" href="/lounges" style={{ '--color': '#9ca3af', '--color-selected': '#00f2fe' }}>
+          <IonTabButton tab="lounges" href="/lounges" style={{ '--color': '#8e9aaf', '--color-selected': '#0099cc' }}>
             <Radio size={22} />
-            <span style={{ fontSize: '10px', fontWeight: 700, marginTop: '3px' }}>Lounges</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, marginTop: '3px', letterSpacing: '0.03em', textTransform: 'uppercase' }}>Lounges</span>
           </IonTabButton>
 
-          <IonTabButton tab="stories" href="/stories" style={{ '--color': '#9ca3af', '--color-selected': '#7928ca' }}>
+          <IonTabButton tab="stories" href="/stories" style={{ '--color': '#8e9aaf', '--color-selected': '#0099cc' }}>
             <Camera size={22} />
-            <span style={{ fontSize: '10px', fontWeight: 700, marginTop: '3px' }}>Stories</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, marginTop: '3px', letterSpacing: '0.03em', textTransform: 'uppercase' }}>Stories</span>
           </IonTabButton>
 
-          <IonTabButton tab="chats" href="/chats" style={{ '--color': '#9ca3af', '--color-selected': '#00f2fe' }}>
+          <IonTabButton tab="chats" href="/chats" style={{ '--color': '#8e9aaf', '--color-selected': '#0099cc' }}>
             <MessageSquare size={22} />
-            <span style={{ fontSize: '10px', fontWeight: 700, marginTop: '3px' }}>Chats</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, marginTop: '3px', letterSpacing: '0.03em', textTransform: 'uppercase' }}>Chats</span>
           </IonTabButton>
 
-          <IonTabButton tab="profile" href="/profile" style={{ '--color': '#9ca3af', '--color-selected': '#00f2fe' }}>
+          <IonTabButton tab="profile" href="/profile" style={{ '--color': '#8e9aaf', '--color-selected': '#0099cc' }}>
             <User size={22} />
-            <span style={{ fontSize: '10px', fontWeight: 700, marginTop: '3px' }}>Profile</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, marginTop: '3px', letterSpacing: '0.03em', textTransform: 'uppercase' }}>Profile</span>
           </IonTabButton>
         </IonTabBar>
       </IonTabs>
