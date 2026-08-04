@@ -24,13 +24,13 @@ export const SparksPage: React.FC = () => {
   return (
     <IonPage>
       <IonHeader className="ion-no-border">
-        <IonToolbar style={{ '--background': '#090d16', padding: '0 12px' }}>
+        <IonToolbar style={{ '--background': '#080a0e', padding: '4px 12px', boxShadow: 'inset 0 -1px 0 rgba(255,255,255,0.1)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ background: 'var(--grad-spark)', padding: '6px 10px', borderRadius: '12px', color: '#fff', fontWeight: 800 }}>
+              <div style={{ background: 'linear-gradient(135deg, #ea4335 0%, #b91c1c 100%)', padding: '5px 10px', borderRadius: '8px', color: '#fff', fontWeight: 800, fontSize: '13px', letterSpacing: '0.02em' }}>
                 ⚡️ Sparks
               </div>
-              <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: 600 }}>Nearby Meetups</span>
+              <span style={{ fontSize: '11px', color: '#8e9aaf', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Nearby Meetups</span>
             </div>
 
             <button
@@ -39,23 +39,23 @@ export const SparksPage: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '8px 14px',
-                borderRadius: '20px',
+                padding: '6px 14px',
+                borderRadius: '10px',
                 border: 'none',
-                background: 'var(--grad-spark)',
+                background: 'linear-gradient(135deg, #ea4335 0%, #0099cc 100%)',
                 color: '#fff',
                 fontWeight: 700,
-                fontSize: '13px',
+                fontSize: '12px',
                 cursor: 'pointer'
               }}
             >
-              <Plus size={16} /> New Spark
+              <Plus size={15} /> New Spark
             </button>
           </div>
         </IonToolbar>
       </IonHeader>
 
-      <IonContent style={{ '--background': '#090d16' }}>
+      <IonContent style={{ '--background': '#0b0e14' }}>
         <div style={{ padding: '16px' }}>
 
           {/* Category Filter Pills */}
@@ -65,13 +65,14 @@ export const SparksPage: React.FC = () => {
                 key={cat}
                 onClick={() => setSelectedCat(cat)}
                 style={{
-                  padding: '8px 14px',
-                  borderRadius: '20px',
-                  border: selectedCat === cat ? '1px solid #ff0080' : '1px solid rgba(255,255,255,0.08)',
-                  background: selectedCat === cat ? 'rgba(255, 0, 128, 0.15)' : 'rgba(255,255,255,0.04)',
-                  color: selectedCat === cat ? '#ff0080' : '#9ca3af',
-                  fontSize: '12px',
+                  padding: '6px 12px',
+                  borderRadius: '10px',
+                  border: selectedCat === cat ? '1px solid #ea4335' : '1px solid rgba(255,255,255,0.12)',
+                  background: selectedCat === cat ? 'rgba(234, 67, 53, 0.2)' : 'rgba(255,255,255,0.04)',
+                  color: selectedCat === cat ? '#ea4335' : '#8e9aaf',
+                  fontSize: '11px',
                   fontWeight: 700,
+                  letterSpacing: '0.04em',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap'
                 }}
@@ -82,27 +83,27 @@ export const SparksPage: React.FC = () => {
           </div>
 
           {/* Sparks Cards */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {filteredSparks.map(spark => {
               const Icon = CAT_ICONS[spark.category] || Zap;
               return (
                 <div
                   key={spark.id}
-                  className="glass-card"
+                  className="bb10-card"
                   style={{
-                    padding: '18px',
+                    padding: '16px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '12px',
-                    borderLeft: '4px solid #ff0080'
+                    gap: '10px',
+                    borderLeft: '4px solid #ea4335'
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <img src={spark.userAvatarUrl} alt={spark.username} style={{ width: '36px', height: '36px', borderRadius: '50%' }} />
+                      <img src={spark.userAvatarUrl} alt={spark.username} style={{ width: '34px', height: '34px', borderRadius: '50%' }} />
                       <div>
                         <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>{spark.username}</span>
-                        <span style={{ display: 'block', fontSize: '11px', color: '#9ca3af' }}>{spark.distanceMeters}m away</span>
+                        <span style={{ display: 'block', fontSize: '11px', color: '#8e9aaf' }}>{spark.distanceMeters}m away</span>
                       </div>
                     </div>
 
@@ -110,41 +111,41 @@ export const SparksPage: React.FC = () => {
                       display: 'flex',
                       alignItems: 'center',
                       gap: '4px',
-                      padding: '4px 10px',
-                      borderRadius: '12px',
-                      background: 'rgba(255, 0, 128, 0.1)',
-                      color: '#ff0080',
-                      fontSize: '11px',
-                      fontWeight: 700
+                      padding: '3px 8px',
+                      borderRadius: '8px',
+                      background: 'rgba(234, 67, 53, 0.15)',
+                      color: '#ea4335',
+                      fontSize: '10px',
+                      fontWeight: 800
                     }}>
                       <Icon size={12} /> {spark.category}
                     </div>
                   </div>
 
                   <div>
-                    <h3 style={{ margin: '0 0 4px 0', fontSize: '17px', color: '#fff', fontFamily: 'var(--font-heading)' }}>
+                    <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', color: '#fff', fontFamily: 'var(--font-heading)' }}>
                       {spark.title}
                     </h3>
                     {spark.description && (
-                      <p style={{ margin: 0, fontSize: '13px', color: '#d1d5db', lineHeight: '1.4' }}>
+                      <p style={{ margin: 0, fontSize: '12px', color: '#cbd5e1', lineHeight: '1.4' }}>
                         {spark.description}
                       </p>
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                    <span style={{ fontSize: '11px', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                    <span style={{ fontSize: '11px', color: '#8e9aaf', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <Clock size={12} /> Expires soon • {spark.participantsCount || 1} attending
                     </span>
                     <button
                       onClick={() => joinSpark(spark.id)}
                       style={{
-                        background: spark.isJoined ? 'rgba(16, 185, 129, 0.2)' : 'var(--grad-spark)',
-                        border: spark.isJoined ? '1px solid #10b981' : 'none',
-                        padding: '6px 14px',
-                        borderRadius: '14px',
-                        color: spark.isJoined ? '#10b981' : '#fff',
-                        fontSize: '12px',
+                        background: spark.isJoined ? 'rgba(0, 200, 83, 0.2)' : 'linear-gradient(135deg, #ea4335 0%, #0099cc 100%)',
+                        border: spark.isJoined ? '1px solid #00c853' : 'none',
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        color: spark.isJoined ? '#00c853' : '#fff',
+                        fontSize: '11px',
                         fontWeight: 700,
                         cursor: 'pointer',
                         display: 'flex',
@@ -153,7 +154,7 @@ export const SparksPage: React.FC = () => {
                       }}
                     >
                       {spark.isJoined ? (
-                        <> <CheckCircle2 size={14} /> Attending </>
+                        <> <CheckCircle2 size={13} /> Attending </>
                       ) : (
                         'Join Spark'
                       )}
