@@ -17,7 +17,8 @@ import { ChatsPage } from './pages/ChatsPage';
 import { SafetyPage } from './pages/SafetyPage';
 import { DealsPage } from './pages/DealsPage';
 import { ProfilePage } from './pages/ProfilePage';
-import { Radar, Zap, Radio, Camera, MessageSquare, User } from 'lucide-react';
+import { ComponentPalettePage } from './pages/ComponentPalettePage';
+import { Radar, Zap, Radio, Camera, MessageSquare, User, Palette } from 'lucide-react';
 
 /* Core CSS required for Ionic components to work properly */
 import './theme/variables.css';
@@ -42,6 +43,7 @@ export const App: React.FC = () => (
           <SafeRoute exact path="/safety" component={SafetyPage} />
           <SafeRoute exact path="/deals" component={DealsPage} />
           <SafeRoute exact path="/profile" component={ProfilePage} />
+          <SafeRoute exact path="/palette" component={ComponentPalettePage} />
           <SafeRoute exact path="/">
             <SafeRedirect to="/feed" />
           </SafeRoute>

@@ -3,7 +3,7 @@ import { IonPage, IonHeader, IonToolbar, IonContent, IonRange, IonButton } from 
 import { useHistory } from 'react-router-dom';
 import { useApp, CurrentUser } from '../context/AppContext';
 import { AuthModal } from '../components/AuthModal';
-import { User, Shield, ShieldAlert, Eye, Ghost, Edit3, Settings, Globe, LogOut, Sparkles, Check, Ticket, MapPin, AlertTriangle, KeyRound } from 'lucide-react';
+import { User, Shield, ShieldAlert, Eye, Ghost, Edit3, Settings, Globe, LogOut, Sparkles, Check, Ticket, MapPin, AlertTriangle, KeyRound, Palette } from 'lucide-react';
 
 export const ProfilePage: React.FC = () => {
   const history = useHistory();
@@ -39,26 +39,26 @@ export const ProfilePage: React.FC = () => {
   return (
     <IonPage>
       <IonHeader className="ion-no-border">
-        <IonToolbar style={{ '--background': '#090d16', padding: '0 12px' }}>
+        <IonToolbar style={{ '--background': '#080a0e', padding: '0 12px', boxShadow: 'inset 0 -1px 0 rgba(255,255,255,0.1)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ background: 'var(--grad-ahoj)', padding: '6px 10px', borderRadius: '12px', color: '#030712', fontWeight: 800 }}>
+              <div style={{ background: 'var(--grad-ahoj)', padding: '5px 10px', borderRadius: '8px', color: '#fff', fontWeight: 800, fontSize: '13px' }}>
                 👤 Profile
               </div>
-              <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: 600 }}>Your Identity</span>
+              <span style={{ fontSize: '11px', color: '#8e9aaf', fontWeight: 700, textTransform: 'uppercase' }}>Your Identity</span>
             </div>
 
             {isLoggedIn ? (
               <button
                 onClick={() => setIsLoggedIn(false)}
-                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600 }}
+                style={{ background: 'none', border: 'none', color: '#ea4335', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700 }}
               >
-                <LogOut size={16} /> Logout
+                <LogOut size={15} /> Logout
               </button>
             ) : (
               <button
                 onClick={() => setIsAuthModalOpen(true)}
-                style={{ background: 'var(--grad-ahoj)', border: 'none', padding: '6px 14px', borderRadius: '14px', color: '#030712', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+                style={{ background: '#0099cc', border: 'none', padding: '6px 14px', borderRadius: '10px', color: '#fff', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
               >
                 Sign In
               </button>
@@ -67,41 +67,41 @@ export const ProfilePage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent style={{ '--background': '#090d16' }}>
+      <IonContent style={{ '--background': '#0b0e14' }}>
         <div style={{ padding: '16px' }}>
 
           {/* User Header */}
-          <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' }}>
+          <div className="bb10-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' }}>
             <div style={{
               position: 'relative',
-              width: '84px',
-              height: '84px',
+              width: '80px',
+              height: '80px',
               borderRadius: '50%',
               padding: '3px',
-              background: currentUser.privacyMode === 'GHOST' ? '#6b7280' : 'var(--grad-ahoj)',
-              boxShadow: '0 0 24px rgba(0, 242, 254, 0.35)'
+              background: currentUser.privacyMode === 'GHOST' ? '#5a6578' : '#0099cc',
+              boxShadow: '0 0 20px rgba(0, 153, 204, 0.4)'
             }}>
               <img src={currentUser.avatarUrl} alt={currentUser.username} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
             </div>
 
-            <h2 style={{ fontFamily: 'var(--font-heading)', margin: '12px 0 2px 0', fontSize: '22px', color: '#fff' }}>
+            <h2 style={{ fontFamily: 'var(--font-heading)', margin: '12px 0 2px 0', fontSize: '20px', color: '#fff' }}>
               {currentUser.username}
             </h2>
-            <p style={{ margin: '0 0 14px 0', fontSize: '13px', color: '#9ca3af', textAlign: 'center' }}>
+            <p style={{ margin: '0 0 14px 0', fontSize: '12px', color: '#8e9aaf', textAlign: 'center' }}>
               {currentUser.bio}
             </p>
 
             {/* Interest Badges */}
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '16px' }}>
               {currentUser.interests.map(interest => (
-                <span key={interest} style={{ fontSize: '11px', color: '#00f2fe', background: 'rgba(0, 242, 254, 0.1)', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>
+                <span key={interest} style={{ fontSize: '10px', color: '#0099cc', background: 'rgba(0, 153, 204, 0.15)', padding: '2px 8px', borderRadius: '8px', fontWeight: 700 }}>
                   #{interest}
                 </span>
               ))}
             </div>
 
             {/* Status Message */}
-            <div style={{ width: '100%', background: 'rgba(0, 242, 254, 0.08)', border: '1px solid rgba(0, 242, 254, 0.2)', borderRadius: '16px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ width: '100%', background: 'rgba(0, 153, 204, 0.1)', border: '1px solid rgba(0, 153, 204, 0.25)', borderRadius: '12px', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               {isEditingStatus ? (
                 <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
                   <input
@@ -109,70 +109,77 @@ export const ProfilePage: React.FC = () => {
                     value={statusInput}
                     onChange={e => setStatusInput(e.target.value)}
                     maxLength={60}
-                    style={{ flex: 1, background: '#1e293b', border: 'none', borderRadius: '10px', padding: '6px 10px', color: '#fff', fontSize: '13px', outline: 'none' }}
+                    style={{ flex: 1, background: '#1c2636', border: 'none', borderRadius: '8px', padding: '6px 10px', color: '#fff', fontSize: '13px', outline: 'none' }}
                   />
-                  <button onClick={handleSaveStatus} style={{ background: 'var(--grad-ahoj)', border: 'none', borderRadius: '10px', padding: '6px 12px', color: '#030712', fontWeight: 700, cursor: 'pointer' }}>
+                  <button onClick={handleSaveStatus} style={{ background: '#0099cc', border: 'none', borderRadius: '8px', padding: '6px 12px', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
                     <Check size={16} />
                   </button>
                 </div>
               ) : (
                 <>
-                  <span style={{ fontSize: '14px', color: '#00f2fe', fontWeight: 600 }}>
+                  <span style={{ fontSize: '13px', color: '#0099cc', fontWeight: 700 }}>
                     "{currentUser.statusMessage}"
                   </span>
-                  <button onClick={() => setIsEditingStatus(true)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}>
-                    <Edit3 size={16} />
+                  <button onClick={() => setIsEditingStatus(true)} style={{ background: 'none', border: 'none', color: '#8e9aaf', cursor: 'pointer' }}>
+                    <Edit3 size={15} />
                   </button>
                 </>
               )}
             </div>
           </div>
 
-          {/* Quick Navigation Cards (Safety Suite & Flash Deals & Access Requests) */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
+          {/* Quick Navigation Cards (Safety Suite & Flash Deals & UI Palette) */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
             <div
               onClick={() => history.push('/safety')}
-              className="glass-card"
-              style={{ padding: '14px', cursor: 'pointer', borderLeft: '4px solid #ef4444' }}
+              className="bb10-card"
+              style={{ padding: '12px', cursor: 'pointer', borderLeft: '3px solid #ea4335', textAlign: 'center' }}
             >
-              <ShieldAlert size={22} color="#ef4444" />
-              <h4 style={{ margin: '8px 0 2px 0', fontSize: '14px', color: '#fff', fontWeight: 700 }}>Safety Suite</h4>
-              <p style={{ margin: 0, fontSize: '11px', color: '#9ca3af' }}>Safe zones & SOS emergency</p>
+              <ShieldAlert size={20} color="#ea4335" style={{ margin: '0 auto 4px auto' }} />
+              <h4 style={{ margin: 0, fontSize: '12px', color: '#fff', fontWeight: 700 }}>Safety</h4>
             </div>
 
             <div
               onClick={() => history.push('/deals')}
-              className="glass-card"
-              style={{ padding: '14px', cursor: 'pointer', borderLeft: '4px solid #00f2fe' }}
+              className="bb10-card"
+              style={{ padding: '12px', cursor: 'pointer', borderLeft: '3px solid #0099cc', textAlign: 'center' }}
             >
-              <Ticket size={22} color="#00f2fe" />
-              <h4 style={{ margin: '8px 0 2px 0', fontSize: '14px', color: '#fff', fontWeight: 700 }}>Flash Deals</h4>
-              <p style={{ margin: 0, fontSize: '11px', color: '#9ca3af' }}>Claim merchant vouchers</p>
+              <Ticket size={20} color="#0099cc" style={{ margin: '0 auto 4px auto' }} />
+              <h4 style={{ margin: 0, fontSize: '12px', color: '#fff', fontWeight: 700 }}>Deals</h4>
+            </div>
+
+            <div
+              onClick={() => history.push('/palette')}
+              className="bb10-card"
+              style={{ padding: '12px', cursor: 'pointer', borderLeft: '3px solid #0099cc', textAlign: 'center' }}
+            >
+              <Palette size={20} color="#0099cc" style={{ margin: '0 auto 4px auto' }} />
+              <h4 style={{ margin: 0, fontSize: '12px', color: '#fff', fontWeight: 700 }}>UI Palette</h4>
             </div>
           </div>
 
           {/* Access Requests Quick Card */}
           <div
             onClick={() => setIsAccessRequestsOpen(true)}
-            className="glass-card"
-            style={{ padding: '14px 16px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+            className="bb10-card"
+            style={{ padding: '14px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <KeyRound size={20} color="#00f2fe" />
+              <KeyRound size={18} color="#0099cc" />
               <div>
                 <h4 style={{ margin: 0, fontSize: '14px', color: '#fff', fontWeight: 700 }}>Access Requests</h4>
-                <span style={{ fontSize: '12px', color: '#9ca3af' }}>{pendingRequestsCount} pending request permissions</span>
+                <span style={{ fontSize: '11px', color: '#8e9aaf' }}>{pendingRequestsCount} pending requests</span>
               </div>
             </div>
             {pendingRequestsCount > 0 && (
-              <span style={{ background: '#ff0080', color: '#fff', fontWeight: 800, padding: '2px 8px', borderRadius: '10px', fontSize: '11px' }}>
+              <span style={{ background: '#ea4335', color: '#fff', fontWeight: 800, padding: '2px 8px', borderRadius: '8px', fontSize: '10px' }}>
                 {pendingRequestsCount} NEW
               </span>
             )}
           </div>
 
           {/* Privacy Mode Selector */}
-          <h3 style={{ fontFamily: 'var(--font-heading)', margin: '0 0 12px 0', fontSize: '18px', color: '#fff' }}>
+          <h3 style={{ fontFamily: 'var(--font-heading)', margin: '0 0 12px 0', fontSize: '16px', color: '#fff' }}>
             Privacy Mode
           </h3>
 
@@ -184,28 +191,28 @@ export const ProfilePage: React.FC = () => {
                 <div
                   key={item.mode}
                   onClick={() => updateCurrentUser({ privacyMode: item.mode })}
-                  className="glass-card"
+                  className="bb10-card"
                   style={{
                     padding: '14px 16px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     cursor: 'pointer',
-                    border: isSelected ? '1px solid #00f2fe' : '1px solid rgba(255,255,255,0.08)',
-                    background: isSelected ? 'rgba(0, 242, 254, 0.1)' : 'var(--glass-bg)'
+                    border: isSelected ? '1px solid #0099cc' : '1px solid rgba(255,255,255,0.12)',
+                    background: isSelected ? 'rgba(0, 153, 204, 0.12)' : 'var(--bb10-surface)'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                    <div style={{ padding: '8px', borderRadius: '12px', background: isSelected ? 'var(--grad-ahoj)' : '#1e293b', color: isSelected ? '#030712' : '#9ca3af' }}>
-                      <Icon size={20} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ padding: '8px', borderRadius: '10px', background: isSelected ? '#0099cc' : '#1c2636', color: isSelected ? '#fff' : '#8e9aaf' }}>
+                      <Icon size={18} />
                     </div>
                     <div>
-                      <h4 style={{ margin: 0, fontSize: '15px', color: '#fff', fontWeight: 700 }}>{item.label}</h4>
-                      <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#9ca3af' }}>{item.desc}</p>
+                      <h4 style={{ margin: 0, fontSize: '14px', color: '#fff', fontWeight: 700 }}>{item.label}</h4>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#8e9aaf' }}>{item.desc}</p>
                     </div>
                   </div>
 
-                  {isSelected && <Check size={20} color="#00f2fe" />}
+                  {isSelected && <Check size={18} color="#0099cc" />}
                 </div>
               );
             })}
