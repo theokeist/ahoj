@@ -8,6 +8,7 @@
     "dev:backend": "turbo run dev --filter=@ahoj/backend",
     "dev:mobile": "turbo run dev --filter=@ahoj/mobile",
     "dev:web": "turbo run dev --filter=@ahoj/web",
+    "dev:ionic": "turbo run dev --filter=@ahoj/ionic",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
@@ -26,7 +27,7 @@
     "node": ">=20.0.0",
     "pnpm": ">=9.0.0"
   },
-  "packageManager": "pnpm@11.12.0",
+  "packageManager": "pnpm@9.15.4",
   "resolutions": {
     "react": "19.1.0",
     "react-dom": "19.1.0"

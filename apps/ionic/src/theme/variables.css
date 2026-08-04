@@ -1,0 +1,122 @@
+/* Ionic CSS Required imports */
+@import '@ionic/react/css/core.css';
+@import '@ionic/react/css/normalize.css';
+@import '@ionic/react/css/structure.css';
+@import '@ionic/react/css/typography.css';
+@import '@ionic/react/css/padding.css';
+@import '@ionic/react/css/float-elements.css';
+@import '@ionic/react/css/text-alignment.css';
+@import '@ionic/react/css/text-transformation.css';
+@import '@ionic/react/css/flex-utils.css';
+@import '@ionic/react/css/display.css';
+@import '@ionic/react/css/palettes/dark.always.css';
+
+:root {
+  --ion-font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Outfit', sans-serif;
+
+  /* Theme Primary - Electric Cyber Cyan */
+  --ion-color-primary: #00f2fe;
+  --ion-color-primary-rgb: 0, 242, 254;
+  --ion-color-primary-contrast: #030712;
+  --ion-color-primary-contrast-rgb: 3, 7, 18;
+  --ion-color-primary-shade: #00d5e0;
+  --ion-color-primary-tint: #1af3fe;
+
+  /* Theme Secondary - Neon Purple */
+  --ion-color-secondary: #7928ca;
+  --ion-color-secondary-rgb: 121, 40, 202;
+  --ion-color-secondary-contrast: #ffffff;
+  --ion-color-secondary-contrast-rgb: 255, 255, 255;
+  --ion-color-secondary-shade: #6a23b2;
+  --ion-color-secondary-tint: #863ed0;
+
+  /* Theme Tertiary - Hot Pink Accent */
+  --ion-color-tertiary: #ff0080;
+  --ion-color-tertiary-rgb: 255, 0, 128;
+  --ion-color-tertiary-contrast: #ffffff;
+  --ion-color-tertiary-contrast-rgb: 255, 255, 255;
+  --ion-color-tertiary-shade: #e00071;
+  --ion-color-tertiary-tint: #ff1a8d;
+
+  /* Dark Backgrounds */
+  --ion-background-color: #090d16;
+  --ion-background-color-rgb: 9, 13, 22;
+  --ion-item-background: #111827;
+
+  /* Custom App Gradients */
+  --grad-ahoj: linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #7928ca 100%);
+  --grad-spark: linear-gradient(135deg, #ff0080 0%, #7928ca 100%);
+  --grad-card: linear-gradient(180deg, rgba(17, 24, 39, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(17, 24, 39, 0.65);
+}
+
+body {
+  font-family: var(--ion-font-family);
+  background-color: var(--ion-background-color);
+  color: #f3f4f6;
+}
+
+h1, h2, h3, .heading-font {
+  font-family: var(--font-heading);
+}
+
+/* Glassmorphism Card Style */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-pill {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+}
+
+/* Pulse animation for radar & status */
+@keyframes radar-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.pulse-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid var(--ion-color-primary);
+  animation: radar-pulse 3s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+.pulse-ring-delayed {
+  animation-delay: 1.5s;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #090d16;
+}
+::-webkit-scrollbar-thumb {
+  background: #1f2937;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #374151;
+}
